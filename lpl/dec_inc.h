@@ -1,4 +1,5 @@
 #pragma once
+#include "cat.h"
 
 #define LPL_DEC_1 0
 #define LPL_DEC_2 1

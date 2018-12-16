@@ -1,10 +1,12 @@
+#include <assert.h>
+#include <functional>
+#include <string>
+
+#include "ltl/is_valid.h"
 #include "ltl/number_t.h"
 #include "ltl/overloader.h"
 #include "ltl/tuple.h"
 #include "ltl/type_t.h"
-#include <assert.h>
-#include <functional>
-#include <string>
 
 void bool_test() {
   static_assert(false_v == false_v);
@@ -180,9 +182,6 @@ void tuple_reference_test() {
   static_assert(ltl::type_v<decltype(std::declval<TestOpBracket>()[2_n])> ==
                 ltl::type_v<int &&>);
 }
-
-#include "ltl/is_valid.h"
-#include <iostream>
 
 void test_is_valid() {
   using namespace std::literals;

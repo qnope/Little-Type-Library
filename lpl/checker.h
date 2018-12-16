@@ -1,4 +1,5 @@
 #pragma once
+#include "cat.h"
 
 #define LPL_PROBE UNUSED, 1
 #define LPL_CHECK_IMPL(unused, n, ...) n

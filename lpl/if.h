@@ -1,4 +1,6 @@
 #pragma once
+#include "checker.h"
+#include "evaluation.h"
 
 #define LPL_IF_0(t, f) f
 #define LPL_IF_1(t, f) t
