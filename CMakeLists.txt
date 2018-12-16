@@ -33,7 +33,8 @@ set(HEADERS_LTL
     "ltl/overloader.h"
     "ltl/tuple.h"
     "ltl/type_t.h"
-	"ltl/strong_type.h"
+    "ltl/trait.h"
+    "ltl/strong_type.h"
     ${HEADERS_LTL_TUPLE} ${HEADERS_LTL_STRONG_TYPE})
 
 
