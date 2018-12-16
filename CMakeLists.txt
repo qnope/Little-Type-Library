@@ -22,6 +22,9 @@ set(HEADERS_LTL_TUPLE
     "ltl/tuple/template.h"
     "ltl/tuple/tuple_t.h")
 
+set(HEADERS_LTL_STRONG_TYPE
+    "ltl/strong_type/strong_type_t.h")
+
 set(HEADERS_LTL
     "ltl/bool_t.h"
     "ltl/decay_reference_wrapper.h"
@@ -30,7 +33,9 @@ set(HEADERS_LTL
     "ltl/overloader.h"
     "ltl/tuple.h"
     "ltl/type_t.h"
-    ${HEADERS_LTL_TUPLE})
+	"ltl/strong_type.h"
+    ${HEADERS_LTL_TUPLE} ${HEADERS_LTL_STRONG_TYPE})
+
 
 if(MSVC)
 	add_compile_options(/experimental:preprocessor /permissive-)
