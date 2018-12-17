@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(LittleTypeLibrary)
 
-set(CMAKE_CXX_STANDARD 17)
-
 set(SOURCES "main.cpp")
 
 set(HEADERS_LPL
@@ -23,17 +21,20 @@ set(HEADERS_LTL_TUPLE
     "ltl/tuple/tuple_t.h")
 
 set(HEADERS_LTL_STRONG_TYPE
-    "ltl/strong_type/strong_type_t.h")
+    "ltl/strong_type/strong_type_t.h"
+    "ltl/strong_type/equality.h"
+    "ltl/strong_type/arithmetic.h")
 
 set(HEADERS_LTL
     "ltl/bool_t.h"
+    "ltl/crtp.h"
     "ltl/decay_reference_wrapper.h"
     "ltl/is_valid.h"
     "ltl/number_t.h"
     "ltl/overloader.h"
     "ltl/tuple.h"
     "ltl/type_t.h"
-    "ltl/trait.h"
+    "ltl/type_trait.h"
     "ltl/strong_type.h"
     ${HEADERS_LTL_TUPLE} ${HEADERS_LTL_STRONG_TYPE})
 
@@ -41,5 +42,7 @@ set(HEADERS_LTL
 if(MSVC)
 	add_compile_options(/experimental:preprocessor /permissive-)
 endif(MSVC)
+
+set(CMAKE_CXX_STANDARD 17)
 
 add_executable(LittleTypeLibrary ${SOURCES} ${HEADERS_LPL} ${HEADERS_LTL})

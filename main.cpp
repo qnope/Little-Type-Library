@@ -7,6 +7,9 @@
 #include "ltl/overloader.h"
 #include "ltl/tuple.h"
 #include "ltl/type_t.h"
+#include "ltl/type_trait.h"
+
+#include "ltl/strong_type.h"
 
 void bool_test() {
   static_assert(false_v == false_v);
@@ -192,6 +195,38 @@ void test_is_valid() {
   typed_static_assert(!additionnable(integer, "lol"s));
 }
 
+void test_trait() {
+  struct Default {
+    Default() = default;
+  };
+
+  struct NonDefault {
+    NonDefault() = delete;
+  };
+
+  static_assert(ltl::is_default_constructible(ltl::type_v<Default>));
+  static_assert(!ltl::is_default_constructible(ltl::type_v<NonDefault>));
+}
+
+using Float =
+    ltl::strong_type_t<float, struct MeterTag, ltl::EqualityComparable,
+                       ltl::GreaterThan, ltl::LessThan, ltl::Addable,
+                       ltl::Subtractable>;
+
+void test_strong_type() {
+  constexpr Float floatDefault{};
+  constexpr Float floatSix{6.0f};
+  constexpr Float floatCopy(floatSix);
+  Float floatEquallyCopied;
+  floatEquallyCopied = floatCopy;
+  static_assert(floatSix == floatCopy);
+  static_assert(floatSix != floatDefault);
+  static_assert(floatSix > floatDefault);
+  static_assert(floatSix < floatDefault);
+  static_assert(floatSix + Float{6.0f} == Float{12.0f});
+  static_assert(floatSix - Float{6.0f} == Float{0.0f});
+}
+
 int main() {
   using namespace std::literals;
   bool_test();
@@ -203,6 +238,8 @@ int main() {
   push_pop_test();
 
   test_is_valid();
+  test_trait();
+  test_strong_type();
 
   return 0;
 }
