@@ -33,8 +33,6 @@ public:
   template <typename U>
   [[nodiscard]] static isSameKindTrait<std::decay_t<U>> isSameKind(U);
 
-  // static constexpr type_t<Tag> tag{};
-
   template <bool dc = isDefaultConstructible, typename = std::enable_if_t<dc>>
   explicit constexpr strong_type_t() : m_value{} {}
 
@@ -46,7 +44,6 @@ public:
 
   [[nodiscard]] T &get() & { return m_value; }
   [[nodiscard]] constexpr const T &get() const & { return m_value; }
-
   [[nodiscard]] constexpr T &&get() && { return std::move(m_value); }
 
   template <typename OtherConverter,
