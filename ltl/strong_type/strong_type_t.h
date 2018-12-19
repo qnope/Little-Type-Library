@@ -1,22 +1,46 @@
 #pragma once
-#include "../type_trait.h"
+#include "../type_traits.h"
 #include <utility>
 
 namespace ltl {
-template <typename T, typename Tag, template <typename...> typename... Skills>
-class strong_type_t : Skills<strong_type_t<T, Tag, Skills...>>... {
-public:
+struct ConverterIdentity {
+  template <typename T>
+  [[nodiscard]] static constexpr T convertToReference(const T &v) {
+    return v;
+  }
+
+  template <typename T>
+  [[nodiscard]] static constexpr T convertFromReference(const T &v) {
+    return v;
+  }
+};
+namespace detail {
+
+template <typename T, typename Tag, typename Converter,
+          template <typename...> typename... Skills>
+class strong_type_t : Skills<strong_type_t<T, Tag, Converter, Skills...>>... {
   static constexpr bool isDefaultConstructible =
       is_default_constructible(type_v<T>);
+
+  template <typename> struct isSameKindTrait : false_t {};
+  template <typename C>
+  struct isSameKindTrait<strong_type_t<T, Tag, C, Skills...>> : true_t {};
+
+  template <typename U>
+  static constexpr bool isSameKind_v = isSameKindTrait<std::decay_t<U>>{};
+
+public:
+  template <typename U>
+  [[nodiscard]] static isSameKindTrait<std::decay_t<U>> isSameKind(U);
+
+  // static constexpr type_t<Tag> tag{};
 
   template <bool dc = isDefaultConstructible, typename = std::enable_if_t<dc>>
   explicit constexpr strong_type_t() : m_value{} {}
 
   template <typename... Args,
             typename = std::enable_if_t<(sizeof...(Args) > 0)>,
-            typename = std::enable_if_t<
-                ((ltl::type_v<std::decay_t<Args>> !=
-                  ltl::type_v<strong_type_t<T, Tag, Skills...>>)&&...)>>
+            typename = std::enable_if_t<(!isSameKind_v<Args> && ...)>>
   explicit constexpr strong_type_t(Args &&... args)
       : m_value{std::forward<Args>(args)...} {}
 
@@ -25,7 +49,23 @@ public:
 
   [[nodiscard]] constexpr T &&get() && { return std::move(m_value); }
 
+  template <typename OtherConverter,
+            typename = std::enable_if_t<ltl::type_v<OtherConverter> !=
+                                        ltl::type_v<Converter>>>
+  [[nodiscard]] constexpr
+  operator strong_type_t<T, Tag, OtherConverter, Skills...>() const {
+    return strong_type_t<T, Tag, OtherConverter, Skills...>{
+        OtherConverter::convertFromReference(
+            Converter::convertToReference(m_value))};
+  }
+
 private:
   T m_value;
-};
+}; // namespace detail
+} // namespace detail
+
+template <typename T, typename Tag, template <typename...> typename... Skills>
+using strong_type_t =
+    detail::strong_type_t<T, Tag, ConverterIdentity, Skills...>;
+
 } // namespace ltl

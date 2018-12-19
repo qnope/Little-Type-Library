@@ -1,6 +1,7 @@
 #pragma once
 #include "../../lpl/cat.h"
 #include "../crtp.h"
+#include "../type_t.h"
 
 namespace ltl {
 #define OP(name, op)                                                           \
@@ -10,10 +11,22 @@ namespace ltl {
       return *this;                                                            \
     }                                                                          \
                                                                                \
-    constexpr friend T operator op(const T &a, const T &b) {                   \
+    [[nodiscard]] constexpr friend T operator op(const T &a, const T &b) {     \
       return T{a.get() op b.get()};                                            \
     }                                                                          \
-  };
+                                                                               \
+    template <typename T2> T &operator LPL_CAT(op, =)(const T2 &other) {       \
+      typed_static_assert(this->underlying().isSameKind(other));               \
+      this->underlying().get() LPL_CAT(op, =) static_cast<T>(other).get();     \
+      return *this;                                                            \
+    }                                                                          \
+                                                                               \
+    template <typename T2>                                                     \
+    [[nodiscard]] constexpr friend T operator op(const T &a, const T2 &b) {    \
+      typed_static_assert(a.isSameKind(b));                                    \
+      return T{a.get() op static_cast<T>(b).get()};                            \
+    }                                                                          \
+  }; // namespace ltl
 
 OP(Addable, +)
 OP(Subtractable, -)

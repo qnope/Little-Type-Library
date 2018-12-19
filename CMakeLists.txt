@@ -23,7 +23,8 @@ set(HEADERS_LTL_TUPLE
 set(HEADERS_LTL_STRONG_TYPE
     "ltl/strong_type/strong_type_t.h"
     "ltl/strong_type/equality.h"
-    "ltl/strong_type/arithmetic.h")
+    "ltl/strong_type/arithmetic.h"
+    "ltl/strong_type/comparator.h")
 
 set(HEADERS_LTL
     "ltl/bool_t.h"
@@ -34,7 +35,7 @@ set(HEADERS_LTL
     "ltl/overloader.h"
     "ltl/tuple.h"
     "ltl/type_t.h"
-    "ltl/type_trait.h"
+    "ltl/type_traits.h"
     "ltl/strong_type.h"
     ${HEADERS_LTL_TUPLE} ${HEADERS_LTL_STRONG_TYPE})
 

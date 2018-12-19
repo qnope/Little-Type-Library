@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../lpl/lpl.h"
 #include "bool_t.h"
-#include "lpl/lpl.h"
 #include <type_traits>
 
 namespace ltl {

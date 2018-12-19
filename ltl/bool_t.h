@@ -1,5 +1,5 @@
 #pragma once
-#include "lpl/lpl.h"
+#include "../lpl/lpl.h"
 
 namespace ltl {
 template <bool v> struct bool_t {

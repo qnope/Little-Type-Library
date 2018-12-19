@@ -1,22 +1,19 @@
 #pragma once
-
 #include "../crtp.h"
+#include "../type_t.h"
 
 namespace ltl {
-template <typename T> struct EqualityComparable {
-  constexpr friend bool operator==(const T &a, const T &b) {
-    return a.get() == b.get();
-  }
-
-  constexpr friend bool operator!=(const T &a, const T &b) {
-    return a.get() != b.get();
-  }
-};
 
 #define OP(name, op)                                                           \
   template <typename T> struct name {                                          \
-    constexpr friend bool operator op(const T &a, const T &b) {                \
-      return a.get() > b.get();                                                \
+    [[nodiscard]] constexpr friend bool operator op(const T &a, const T &b) {  \
+      return a.get() op b.get();                                               \
+    }                                                                          \
+                                                                               \
+    template <typename T2>                                                     \
+    [[nodiscard]] constexpr friend bool operator op(const T &a, const T2 &b) { \
+      typed_static_assert(a.isSameKind(b));                                    \
+      return a.get() op static_cast<T>(b).get();                               \
     }                                                                          \
   };
 
@@ -24,6 +21,15 @@ OP(GreaterThan, >)
 OP(LessThan, <)
 OP(GreaterThanEqual, >=)
 OP(LessThanEqual, <=)
+
+namespace detail {
+OP(LTLSTEquality, ==)
+OP(LTLSTInequality, !=)
+} // namespace detail
+
+template <typename T>
+struct EqualityComparable : detail::LTLSTEquality<T>,
+                            detail::LTLSTInequality<T> {};
 
 #undef OP
 

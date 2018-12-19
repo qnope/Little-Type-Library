@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <functional>
+#include <ratio>
 #include <string>
 
 #include "ltl/is_valid.h"
@@ -7,7 +8,7 @@
 #include "ltl/overloader.h"
 #include "ltl/tuple.h"
 #include "ltl/type_t.h"
-#include "ltl/type_trait.h"
+#include "ltl/type_traits.h"
 
 #include "ltl/strong_type.h"
 
@@ -209,9 +210,16 @@ void test_trait() {
 }
 
 using Float =
-    ltl::strong_type_t<float, struct MeterTag, ltl::EqualityComparable,
+    ltl::strong_type_t<float, struct FloatTag, ltl::EqualityComparable,
                        ltl::GreaterThan, ltl::LessThan, ltl::Addable,
                        ltl::Subtractable>;
+
+using Meter =
+    ltl::strong_type_t<float, struct DistanceTag, ltl::EqualityComparable,
+                       ltl::GreaterThan, ltl::LessThan, ltl::Addable,
+                       ltl::Subtractable>;
+
+using Km = ltl::multiple_of<Meter, std::ratio<1000>>;
 
 void test_strong_type() {
   constexpr Float floatDefault{};
@@ -222,9 +230,24 @@ void test_strong_type() {
   static_assert(floatSix == floatCopy);
   static_assert(floatSix != floatDefault);
   static_assert(floatSix > floatDefault);
-  static_assert(floatSix < floatDefault);
+  static_assert(floatDefault < floatSix);
   static_assert(floatSix + Float{6.0f} == Float{12.0f});
   static_assert(floatSix - Float{6.0f} == Float{0.0f});
+
+  constexpr Km oneKilometer{1.0f};
+  constexpr Meter oneKilometerInMeter{oneKilometer};
+  static_assert(oneKilometer == Meter{1000.0f});
+  static_assert(oneKilometer != Meter{1200.0f});
+  static_assert(oneKilometerInMeter < Meter{1200.0f});
+  static_assert(oneKilometer < Meter{1200.0f});
+  static_assert(oneKilometer + oneKilometerInMeter == Meter{2000.0f});
+  static_assert(Meter{1200.0f} == Km{1.2f});
+  static_assert(ltl::type_v<decltype(oneKilometer + oneKilometerInMeter)> ==
+                ltl::type_v<Km>);
+
+  // ratio<1000, 1000> is not the same type as ratio<1>, but it is equivalent
+  static_assert(ltl::type_v<ltl::multiple_of<Km, std::ratio<1, 1000>>> ==
+                ltl::type_v<ltl::multiple_of<Meter, std::ratio<1000, 1000>>>);
 }
 
 int main() {
