@@ -91,3 +91,94 @@ There is another little helper that has been made more for fun than other. The `
   typed_static_assert(additionnable(integer, 8));
   typed_static_assert(!additionnable(integer, "lol"s));
 ```
+
+## strong_type
+If you never heard about strong types, you better go to see the [Jonathan Boccara's blog](http://fluentcpp.com) before reading the following section. Actually, I was inspired a lot from his articles about strong typing. For people that does not want to read everything, here is a little summary.
+
+Let's say you want to develop a GUI application. You want to create a window with a width of 800, and a height of 600. You will probably write something like: `Window myWindow{800, 600};`. However, how do you know if you are using `800` for the width and not for the height? `strong_type`s solve this first problem. Now you will write something like : `Window myWindow{Width{800}, Height{600}};`. Now there is no shadow of a doubt, and, obviously, you can't convert a `Width` into a `Height`. We add a kind of *type-safety* into our code.
+
+### How to declare a strong type in LTL
+There is a type : `strong_type_t<T, Tag, Skills...>` in the `namespace ltl`. You can declare, for example, our prior `Width` and `Height` types as follow :
+
+```cpp
+using Width = ltl::strong_type_t<float, struct WidthTag>;
+using Height = ltl::strong_type_t<float, struct HeightTag>;
+```
+
+You can get the value using the `get` function :
+```cpp
+Width width{5.0f};
+std::cout << width.get() << std::endl;
+```
+
+### Add operation to strong types
+We saw that `strong_type_t`take `Skills...` template parameter. But how to use them?
+As of now, Little Type Library has several skills available :
+
+- Arithmetic ones:
+	- `Addable` : `operator +`
+	- `Subtractable` : `operator -`
+	- `Multipliable` : `operator *`
+	- `Dividable` : `operator /`
+	- `Moduloable` : `operator %`
+- Comparison ones:
+	- `GreatherThan` : `operator >`
+	- `LessThan` : `operator <`
+	- `GreatherThanEqual` : `operator >=`
+	- `LessThanEqual` : `operator <=`
+    - `EqualityComparable` : `operator==` and `operator!=`
+    - `AllComparable` : All of the above
+- Stream ones:
+    - `OStreamable` : `operator <<(std::ostream&)`
+
+You can do as follow with one or several skills above or your own skills :
+```cpp
+using Float = ltl::strong_type_t<float, struct FloatTag, ltl::OStreamable>;
+Float f{8.0f};
+std::cout << f << std::endl;
+```
+### Write your own skills :
+Let's say you want to write a skill `Printable`  that adds the function `print()` to the `strong_type`.
+There is two ways. The first one is to use CRTP, the second one is to not use CRTP. Basically, you need CRTP for adding member function, and you do not need it for adding `friend` functions. We will only see how to use CRTP because it is harder than not to use it.
+
+There is a little helper `class crtp` in the `namespace ltl`.
+
+```cpp
+template<typename TheStrongType>
+struct Printable : ltl::crtp<TheStrongType, Printable> {
+    void print() const {
+    	/* this->underlying is a crtp member function that
+           basically means static_cast<TheStrongType&>(*this) */
+    	std::cout << this->underlying().get() << std::endl;
+    }
+};
+```
+Done !
+
+### Convert a meter to a kilometer
+Let's say you have a type `Meter`. However, you want `Meter` to be convertible to `Kilometer`. We can define `Kilometer` as a multiple of `Meter` :
+
+```
+using Meter = ltl::strong_type_t<float, struct DistanceTag>;
+using Kilometer = ltl::multiple_of<Meter, std::ratio<1000>>;
+```
+
+### Write your own converter
+Imagine you want to convert radians to degrees, or Watts to decibels. It is not a simple ratio, and it is not integer values.
+The idea is to write your own convert functions !
+
+```cpp
+struct ConverterRadianDegree {
+  [[nodiscard]] static constexpr float convertToReference(float degree) {
+    return degree * pi / 180.0f;
+  }
+
+  [[nodiscard]] static constexpr float convertFromReference(float radians) {
+    return radians * 180.0f / pi;
+  }
+};
+
+using radians =
+    ltl::strong_type_t<float, struct AngleTag, ltl::EqualityComparable>;
+using degrees = ltl::add_converter<radians, ConverterRadianDegree>;
+```
