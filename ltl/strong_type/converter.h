@@ -17,6 +17,15 @@ template <typename Ratio> struct ConverterMultiplier {
 };
 
 namespace detail {
+template <typename Base, typename Converter> struct AddConverter;
+
+template <typename T, typename Tag, typename Converter,
+          template <typename...> typename... Skills>
+struct AddConverter<strong_type_t<T, Tag, ConverterIdentity, Skills...>,
+                    Converter> {
+  using type = strong_type_t<T, Tag, Converter, Skills...>;
+};
+
 template <typename Base, typename Ratio> struct MultipleOf;
 
 template <typename T, typename Tag, typename Ratio,
@@ -38,6 +47,9 @@ struct MultipleOf<
 };
 
 } // namespace detail
+
+template <typename Base, typename Converter>
+using add_converter = typename detail::AddConverter<Base, Converter>::type;
 
 template <typename Base, typename Ratio>
 using multiple_of = typename detail::MultipleOf<Base, Ratio>::type;
