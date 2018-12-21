@@ -31,6 +31,13 @@ template <typename T>
 struct EqualityComparable : detail::LTLSTEquality<T>,
                             detail::LTLSTInequality<T> {};
 
+template <typename T>
+struct AllComparable : EqualityComparable<T>,
+                       GreaterThan<T>,
+                       LessThan<T>,
+                       GreaterThanEqual<T>,
+                       LessThanEqual<T> {};
+
 #undef OP
 
 } // namespace ltl
