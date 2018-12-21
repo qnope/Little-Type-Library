@@ -24,7 +24,8 @@ set(HEADERS_LTL_STRONG_TYPE
     "ltl/strong_type/strong_type_t.h"
     "ltl/strong_type/equality.h"
     "ltl/strong_type/arithmetic.h"
-    "ltl/strong_type/comparator.h")
+    "ltl/strong_type/converter.h"
+    "ltl/strong_type/stream.h")
 
 set(HEADERS_LTL
     "ltl/bool_t.h"
