@@ -217,9 +217,25 @@ using Float =
 using Meter =
     ltl::strong_type_t<float, struct DistanceTag, ltl::EqualityComparable,
                        ltl::GreaterThan, ltl::LessThan, ltl::Addable,
-                       ltl::Subtractable>;
+                       ltl::Subtractable, ltl::OStreamable>;
 
 using Km = ltl::multiple_of<Meter, std::ratio<1000>>;
+
+constexpr float pi = 3.1415926535f;
+
+struct ConverterRadianDegree {
+  [[nodiscard]] static constexpr float convertToReference(float degree) {
+    return degree * pi / 180.0f;
+  }
+
+  [[nodiscard]] static constexpr float convertFromReference(float radians) {
+    return radians * 180.0f / pi;
+  }
+};
+
+using radians =
+    ltl::strong_type_t<float, struct AngleTag, ltl::EqualityComparable>;
+using degrees = ltl::add_converter<radians, ConverterRadianDegree>;
 
 void test_strong_type() {
   constexpr Float floatDefault{};
@@ -248,6 +264,15 @@ void test_strong_type() {
   // ratio<1000, 1000> is not the same type as ratio<1>, but it is equivalent
   static_assert(ltl::type_v<ltl::multiple_of<Km, std::ratio<1, 1000>>> ==
                 ltl::type_v<ltl::multiple_of<Meter, std::ratio<1000, 1000>>>);
+
+  std::cout << oneKilometer << "km = " << oneKilometerInMeter << "m"
+            << std::endl;
+
+  constexpr radians rad{pi};
+  constexpr degrees deg(rad);
+  static_assert(rad == deg);
+  static_assert(rad.get() == deg.get() * pi / 180.0f);
+  static_assert(deg.get() == rad.get() * 180.0f / pi);
 }
 
 int main() {
