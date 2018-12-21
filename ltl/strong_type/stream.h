@@ -1,4 +1,12 @@
-#ifndef STREAM_H
-#define STREAM_H
+#pragma once
+#include "strong_type_t.h"
+#include <iostream>
 
-#endif // STREAM_H
+namespace ltl {
+template <typename T> struct OStreamable {
+  friend std::ostream &operator<<(std::ostream &s, const T &v) {
+    return s << v.get();
+  }
+};
+
+} // namespace ltl
