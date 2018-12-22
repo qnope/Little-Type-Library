@@ -1,7 +1,9 @@
+#include <array>
 #include <assert.h>
 #include <functional>
 #include <ratio>
 #include <string>
+#include <vector>
 
 #include "ltl/is_valid.h"
 #include "ltl/number_t.h"
@@ -223,6 +225,9 @@ void test_trait() {
   static_assert(ltl::extent(ltl::type_v<float[5][3]>, 0_n) == 5_n);
   static_assert(ltl::extent(ltl::type_v<float[5][3]>) == 5_n);
   static_assert(ltl::add_pointer(ltl::type_v<int>) == ltl::type_v<int *>);
+  static_assert(ltl::is_iterable(ltl::type_v<std::vector<int>>));
+  static_assert(!ltl::is_iterable(ltl::type_v<int>));
+  static_assert(ltl::is_iterable(ltl::type_v<std::array<int, 1>>));
 }
 
 using Float =

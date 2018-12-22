@@ -1,8 +1,10 @@
 #pragma once
+#include <type_traits>
+
 #include "../lpl/lpl.h"
+#include "is_valid.h"
 #include "tuple.h"
 #include "type_t.h"
-#include <type_traits>
 
 namespace ltl {
 #define TRAIT(name)                                                            \
@@ -127,4 +129,9 @@ LPL_MAP(TRAIT, make_signed, make_unsigned)
 LPL_MAP(TRAIT, remove_extent, remove_all_extents)
 
 #undef TRAIT
+
+template <typename T>[[nodiscard]] constexpr auto is_iterable(type_t<T>) {
+  constexpr auto trait = IS_VALID((x), (std::begin(x), std::end(x)));
+  return decltype(trait(std::declval<T>())){};
+}
 } // namespace ltl
