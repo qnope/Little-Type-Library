@@ -5,12 +5,11 @@
 
 namespace ltl {
 template <typename... Fs> struct overloader : Fs... {
-  template <typename... _Fs>
-  constexpr overloader(_Fs &&... fs) : Fs{std::forward<_Fs>(fs)}... {}
+  constexpr overloader(Fs &&... fs) : Fs{std::move(fs)}... {}
 
   using Fs::operator()...;
 };
 
-template <typename... Fs> overloader(Fs &&...)->overloader<std::decay_t<Fs>...>;
+template <typename... Fs> overloader(Fs...)->overloader<Fs...>;
 
 } // namespace ltl
