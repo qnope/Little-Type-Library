@@ -80,6 +80,22 @@ template <typename N1, typename N2>
 
 Without these macros, the following code won't compile because `n1 < n2` must work in run-time context and it is the same for `is_number_t`.
 
+## Trait
+Some traits are imported from the STL. They have the same name as in the STL, instead, you can use them through functions.
+
+```cpp
+  struct Default {
+    Default() = default;
+  };
+
+  struct NonDefault {
+    NonDefault() = delete;
+  };
+
+  static_assert(ltl::is_default_constructible(ltl::type_v<Default>));
+  static_assert(!ltl::is_default_constructible(ltl::type_v<NonDefault>));
+```
+
 ## is_valid
 There is another little helper that has been made more for fun than other. The `IS_VALID(variables, expression)` macro.
 
@@ -137,7 +153,7 @@ using Float = ltl::strong_type_t<float, struct FloatTag, ltl::OStreamable>;
 Float f{8.0f};
 std::cout << f << std::endl;
 ```
-### Write your own skills :
+### Write your own skills
 Let's say you want to write a skill `Printable`  that adds the function `print()` to the `strong_type`.
 There is two ways. The first one is to use CRTP, the second one is to not use CRTP. Basically, you need CRTP for adding member function, and you do not need it for adding `friend` functions. We will only see how to use CRTP because it is harder than not to use it.
 
