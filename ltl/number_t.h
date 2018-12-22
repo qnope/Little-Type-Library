@@ -1,6 +1,6 @@
 #pragma once
+#include "../lpl/and.h"
 #include "bool_t.h"
-#include "lpl/and.h"
 #include <cstddef>
 
 namespace ltl {

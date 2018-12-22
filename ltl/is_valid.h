@@ -22,7 +22,7 @@ template <typename F> constexpr auto is_valid(F f) {
 
 } // namespace ltl
 
-#define LTL_WRITE_AUTO_WITH_COMMA_IMPL(x, ...) , auto x
+#define LTL_WRITE_AUTO_WITH_COMMA_IMPL(x) , auto x
 
 #define LTL_WRITE_AUTO_IMPL(x, ...)                                            \
   (auto x LPL_MAP(LTL_WRITE_AUTO_WITH_COMMA_IMPL, __VA_ARGS__))
