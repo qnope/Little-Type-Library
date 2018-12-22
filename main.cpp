@@ -207,6 +207,22 @@ void test_trait() {
 
   static_assert(ltl::is_default_constructible(ltl::type_v<Default>));
   static_assert(!ltl::is_default_constructible(ltl::type_v<NonDefault>));
+  static_assert(ltl::is_void(ltl::type_v<void>));
+  static_assert(!ltl::is_void(ltl::type_v<int>));
+  static_assert(ltl::is_null_pointer(ltl::type_v<decltype(nullptr)>));
+  static_assert(ltl::is_integral(ltl::type_v<int>));
+  static_assert(ltl::is_floating_point(ltl::type_v<double>));
+  static_assert(ltl::is_array(ltl::type_v<float[]>));
+  static_assert(ltl::is_class(ltl::type_v<Default>));
+  static_assert(ltl::is_lvalue_reference(ltl::type_v<int &>));
+  static_assert(ltl::is_rvalue_reference(ltl::type_v<int &&>));
+  static_assert(ltl::is_reference(ltl::type_v<int &>));
+  static_assert(ltl::is_const(ltl::type_v<const int>));
+  static_assert(ltl::is_trivially_destructible(ltl::type_v<Default>));
+  static_assert(ltl::extent(ltl::type_v<float[5][3]>, 1_n) == 3_n);
+  static_assert(ltl::extent(ltl::type_v<float[5][3]>, 0_n) == 5_n);
+  static_assert(ltl::extent(ltl::type_v<float[5][3]>) == 5_n);
+  static_assert(ltl::add_pointer(ltl::type_v<int>) == ltl::type_v<int *>);
 }
 
 using Float =
