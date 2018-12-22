@@ -36,3 +36,5 @@ template <typename T>
 
 #define typed_static_assert(f) static_assert(decltype(f){});
 #define if_constexpr(c) if constexpr (decltype(c){})
+
+#define LTL_REQUIRE(b) typename = std::enable_if_t<(b)>

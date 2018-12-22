@@ -8,9 +8,8 @@
 namespace ltl {
 namespace detail {
 template <typename... Ts> struct tuple_applied {
-  template <bool isNotEmpty = (sizeof...(Ts) > 0)>
-  constexpr tuple_applied(std::enable_if_t<isNotEmpty, bool> = true)
-      : m_tuple{Ts{}...} {}
+  template <bool isNotEmpty = (sizeof...(Ts) > 0), LTL_REQUIRE(isNotEmpty)>
+  constexpr tuple_applied() : m_tuple{Ts{}...} {}
 
   constexpr tuple_applied(Ts &&... ts) : m_tuple{std::forward<Ts>(ts)...} {}
 
@@ -31,11 +30,12 @@ template <typename... Ts> struct tuple_applied {
 
 } // namespace detail
 
-template <typename... Ts> struct tuple_t {
+template <typename... Ts> class tuple_t {
+public:
   constexpr static auto length = number_v<sizeof...(Ts)>;
   constexpr static auto isEmpty = length == 0_n;
 
-  template <bool isNotEmpty = !isEmpty, typename = std::enable_if<isNotEmpty>>
+  template <bool isNotEmpty = !isEmpty, LTL_REQUIRE(isNotEmpty)>
   explicit constexpr tuple_t() : m_storage{} {}
 
   explicit constexpr tuple_t(Ts... ts) : m_storage{std::forward<Ts>(ts)...} {}
@@ -104,16 +104,14 @@ template <typename... Ts> struct tuple_t {
   }
 
   template <typename... _Ts,
-            typename = std::enable_if_t<(type_v<tuple_t<_Ts...>> !=
-                                         type_v<tuple_t<Ts...>>)>>
+            LTL_REQUIRE(type_v<tuple_t<_Ts...>> != type_v<tuple_t<Ts...>>)>
   [[nodiscard]] constexpr bool operator==(const tuple_t<_Ts...> &) const
       noexcept {
     return false;
   }
 
   template <typename... _Ts,
-            typename = std::enable_if_t<(type_v<tuple_t<_Ts...>> !=
-                                         type_v<tuple_t<Ts...>>)>>
+            LTL_REQUIRE(type_v<tuple_t<_Ts...>> != type_v<tuple_t<Ts...>>)>
   [[nodiscard]] constexpr bool operator!=(const tuple_t<_Ts...> &) const
       noexcept {
     return true;

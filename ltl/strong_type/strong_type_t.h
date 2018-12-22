@@ -33,12 +33,11 @@ public:
   template <typename U>
   [[nodiscard]] static isSameKindTrait<std::decay_t<U>> isSameKind(U);
 
-  template <bool dc = isDefaultConstructible, typename = std::enable_if_t<dc>>
+  template <bool dc = isDefaultConstructible, LTL_REQUIRE(dc)>
   explicit constexpr strong_type_t() : m_value{} {}
 
-  template <typename... Args,
-            typename = std::enable_if_t<(sizeof...(Args) > 0)>,
-            typename = std::enable_if_t<(!isSameKind_v<Args> && ...)>>
+  template <typename... Args, LTL_REQUIRE(sizeof...(Args) > 0),
+            LTL_REQUIRE(!isSameKind_v<Args> && ...)>
   explicit constexpr strong_type_t(Args &&... args)
       : m_value{std::forward<Args>(args)...} {}
 
@@ -47,8 +46,7 @@ public:
   [[nodiscard]] constexpr T &&get() && { return std::move(m_value); }
 
   template <typename OtherConverter,
-            typename = std::enable_if_t<ltl::type_v<OtherConverter> !=
-                                        ltl::type_v<Converter>>>
+            LTL_REQUIRE(ltl::type_v<OtherConverter> != ltl::type_v<Converter>)>
   [[nodiscard]] constexpr
   operator strong_type_t<T, Tag, OtherConverter, Skills...>() const {
     return strong_type_t<T, Tag, OtherConverter, Skills...>{
