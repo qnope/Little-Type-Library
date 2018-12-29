@@ -38,3 +38,7 @@ template <typename T>
 #define if_constexpr(c) if constexpr (decltype(c){})
 
 #define LTL_REQUIRE(b) typename = std::enable_if_t<(b)>
+#define LTL_REQUIRE_T(b) std::enable_if_t<decltype(b){}, bool> = true
+#define LTL_REQUIRE_RT(b, returnType) std::enable_if_t<(b), returnType>
+#define LTL_REQUIRE_RE(b, returnExpression)                                    \
+  std::enable_if_t<(b), decltype(returnExpression)>

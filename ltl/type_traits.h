@@ -134,4 +134,9 @@ template <typename T>[[nodiscard]] constexpr auto is_iterable(type_t<T>) {
   constexpr auto trait = IS_VALID((x), (std::begin(x), std::end(x)));
   return decltype(trait(std::declval<T>())){};
 }
+
+template <typename T>[[nodiscard]] constexpr auto is_iterable(T) {
+  return is_iterable(type_v<T>);
+}
+
 } // namespace ltl

@@ -15,36 +15,61 @@ template <size_t... Ns> constexpr number_list_t<Ns...> number_list_v{};
 template <bool... Bs> constexpr bool_list_t<Bs...> bool_list_v{};
 
 // Conditional functions
-template <typename T> constexpr false_t is_tuple_t(const T &) { return {}; }
-template <typename... Ts> constexpr true_t is_tuple_t(const tuple_t<Ts...> &) {
+template <typename T>[[nodiscard]] constexpr false_t is_tuple_t(T) {
   return {};
 }
-
-template <typename T> constexpr false_t is_type_list_t(const T &) { return {}; }
 template <typename... Ts>
-constexpr true_t is_type_list_t(const type_list_t<Ts...> &) {
+[[nodiscard]] constexpr true_t is_tuple_t(tuple_t<Ts...>) {
   return {};
 }
 
-template <typename T> constexpr false_t is_number_list_t(const T &) {
+template <typename T>[[nodiscard]] constexpr false_t is_type_list_t(T) {
+  return {};
+}
+template <typename... Ts>
+[[nodiscard]] constexpr true_t is_type_list_t(type_list_t<Ts...>) {
+  return {};
+}
+
+template <typename T>[[nodiscard]] constexpr false_t is_number_list_t(T) {
   return {};
 }
 template <size_t... Ns>
-constexpr true_t is_number_list_t(number_list_t<Ns...>) {
+constexpr [[nodiscard]] true_t is_number_list_t(number_list_t<Ns...>) {
   return {};
 }
 
-template <typename T> constexpr false_t is_bool_list_t(const T &) { return {}; }
-template <bool... Bs> constexpr true_t is_bool_list_t(bool_list_t<Bs...>) {
+template <typename T>[[nodiscard]] constexpr false_t is_bool_list_t(T) {
+  return {};
+}
+template <bool... Bs>
+[[nodiscard]] constexpr true_t is_bool_list_t(bool_list_t<Bs...>) {
   return {};
 }
 
-template <typename T> constexpr false_t is_number_t(const T &) { return {}; }
-template <size_t N> constexpr true_t is_number_t(const number_t<N> &) {
+template <typename T>[[nodiscard]] constexpr false_t is_number_t(T) {
+  return {};
+}
+template <size_t N>[[nodiscard]] constexpr true_t is_number_t(number_t<N>) {
   return {};
 }
 
-template <typename T> constexpr false_t is_bool_t(const T &) { return {}; }
-template <bool B> constexpr true_t is_bool_t(const bool_t<B> &) { return {}; }
+template <typename T>[[nodiscard]] constexpr false_t is_bool_t(T) { return {}; }
+template <bool B>[[nodiscard]] constexpr true_t is_bool_t(bool_t<B>) {
+  return {};
+}
 
+#define IS_TYPE(name)                                                          \
+  template <typename T>                                                        \
+  [[nodiscard]] constexpr decltype(name(std::declval<T>())) name(type_t<T>) {  \
+    return {};                                                                 \
+  }
+
+IS_TYPE(is_bool_t)
+IS_TYPE(is_bool_list_t)
+IS_TYPE(is_number_t)
+IS_TYPE(is_number_list_t)
+IS_TYPE(is_type_list_t)
+IS_TYPE(is_tuple_t)
+#undef IS_TYPE
 } // namespace ltl
