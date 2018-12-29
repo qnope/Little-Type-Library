@@ -6,7 +6,9 @@
 #include "type_traits.h"
 
 namespace ltl {
-using Index = strong_type_t<std::size_t, struct IndexTag, Incrementable>;
+
+namespace detail {
+using Index = ltl::strong_type_t<std::size_t, struct IndexTag, Incrementable>;
 
 template <typename It> class enumerate_range {
   struct enumerate_iterator {
@@ -40,10 +42,12 @@ private:
   enumerate_iterator m_begin;
   enumerate_iterator m_end;
 };
+} // namespace detail
 
 template <typename C, LTL_REQUIRE_T(is_iterable(type_v<C>))>
 constexpr auto enumerate(C &&c) {
-  return enumerate_range<decltype(std::begin(c))>{std::begin(c), std::end(c)};
+  return detail::enumerate_range<decltype(std::begin(c))>{std::begin(c),
+                                                          std::end(c)};
 }
 
 } // namespace ltl
