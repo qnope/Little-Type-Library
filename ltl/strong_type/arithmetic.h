@@ -26,13 +26,31 @@ namespace ltl {
       typed_static_assert(a.isSameKind(b));                                    \
       return T{a.get() op static_cast<T>(b).get()};                            \
     }                                                                          \
-  }; // namespace ltl
+  };
 
 OP(Addable, +)
 OP(Subtractable, -)
 OP(Multipliable, *)
 OP(Dividable, /)
 OP(Moduloable, %)
+
 #undef OP
 
+#define OP(name, op)                                                           \
+  template <typename T> struct name : crtp<T, name> {                          \
+    constexpr T &operator op() {                                               \
+      op this->underlying().get();                                             \
+      return this->underlying();                                               \
+    }                                                                          \
+                                                                               \
+    constexpr T operator op(int) {                                             \
+      this->underlying().get() op;                                             \
+      return *this->underlying();                                              \
+    }                                                                          \
+  };
+
+OP(Incrementable, ++)
+OP(Decrementable, --)
+
+#undef OP
 } // namespace ltl

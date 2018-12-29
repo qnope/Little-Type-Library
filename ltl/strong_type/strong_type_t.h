@@ -18,7 +18,8 @@ namespace detail {
 
 template <typename T, typename Tag, typename Converter,
           template <typename...> typename... Skills>
-class strong_type_t : Skills<strong_type_t<T, Tag, Converter, Skills...>>... {
+class strong_type_t
+    : public Skills<strong_type_t<T, Tag, Converter, Skills...>>... {
   static constexpr bool isDefaultConstructible =
       is_default_constructible(type_v<T>);
 
