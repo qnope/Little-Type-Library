@@ -15,6 +15,8 @@
 
 #include "ltl/strong_type.h"
 
+#include "ltl/smart_iterator.h"
+
 void bool_test() {
   static_assert(false_v == false_v);
   static_assert(false_v != true_v);
@@ -320,6 +322,10 @@ void test_range() {
   auto &oddsRef = ltl::sort(odds);
   assert(&oddsRef == &odds);
   assert(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
+
+  for (auto [i, v] : ltl::enumerate(odds)) {
+    std::cout << i.get() << ":" << v << std::endl;
+  }
 }
 
 int main() {

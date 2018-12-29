@@ -39,6 +39,7 @@ set(HEADERS_LTL
     "ltl/type_traits.h"
     "ltl/strong_type.h"
     "ltl/range.h"
+    "ltl/smart_iterator.h"
     ${HEADERS_LTL_TUPLE} ${HEADERS_LTL_STRONG_TYPE})
 
 
