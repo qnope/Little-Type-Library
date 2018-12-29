@@ -18,7 +18,9 @@ template <typename It> class enumerate_range {
       return *this;
     }
 
-    constexpr auto operator*() { return std::pair{index, *it}; }
+    constexpr auto operator*() {
+      return std::pair<std::size_t, decltype(*it)>{index.get(), *it};
+    }
 
     constexpr bool operator!=(const enumerate_iterator &it2) {
       return it != it2.it;

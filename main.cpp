@@ -324,7 +324,7 @@ void test_range() {
   assert(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
 
   for (auto [i, v] : ltl::enumerate(odds)) {
-    std::cout << i.get() << ":" << v << std::endl;
+    std::cout << i << ":" << v << std::endl;
   }
 }
 
