@@ -38,6 +38,7 @@ set(HEADERS_LTL
     "ltl/type_t.h"
     "ltl/type_traits.h"
     "ltl/strong_type.h"
+    "ltl/range.h"
     ${HEADERS_LTL_TUPLE} ${HEADERS_LTL_STRONG_TYPE})
 
 

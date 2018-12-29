@@ -8,6 +8,7 @@
 #include "ltl/is_valid.h"
 #include "ltl/number_t.h"
 #include "ltl/overloader.h"
+#include "ltl/range.h"
 #include "ltl/tuple.h"
 #include "ltl/type_t.h"
 #include "ltl/type_traits.h"
@@ -296,6 +297,31 @@ void test_strong_type() {
   static_assert(deg.get() == rad.get() * 180.0f / pi);
 }
 
+void test_range() {
+  std::array<int, 5> odds = {3, 5, 7, 9, 11};
+  auto areEvens = [](auto x) { return (x & 1) == 0; };
+  auto areOdds = [](auto x) { return (x & 1) != 0; };
+  auto isSuperiorTo = [](auto n) { return [n](auto x) { return x > n; }; };
+
+  assert(ltl::all_of(odds, areOdds));
+  assert(ltl::any_of(odds, isSuperiorTo(10)));
+  assert(ltl::none_of(odds, areEvens));
+  assert(ltl::count(odds, 5) == 1);
+  assert(ltl::count(odds, 1) == 0);
+  assert(ltl::count_if(odds, isSuperiorTo(4)) == 4);
+  assert(ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
+  assert(ltl::accumulate(odds, 0) == 3 + 5 + 7 + 9 + 11);
+
+  std::array<int, 5> reverseOdds = {11, 9, 7, 5, 3};
+  assert(!ltl::equal(reverseOdds, odds));
+  ltl::reverse(odds);
+  assert(ltl::equal(reverseOdds, odds));
+
+  auto &oddsRef = ltl::sort(odds);
+  assert(&oddsRef == &odds);
+  assert(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
+}
+
 int main() {
   using namespace std::literals;
   bool_test();
@@ -310,5 +336,6 @@ int main() {
   test_trait();
   test_strong_type();
 
+  test_range();
   return 0;
 }
