@@ -322,8 +322,24 @@ void test_range() {
   auto &oddsRef = ltl::sort(odds);
   assert(&oddsRef == &odds);
   assert(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
+}
 
+void test_smart_iterator() {
+  std::array<int, 5> odds = {3, 5, 7, 9, 11};
+  auto isSuperiorTo = [](auto n) { return [n](auto x) { return x > n; }; };
+  auto multiplyBy = [](auto n) { return [n](auto x) { return x * n; }; };
   for (auto [i, v] : ltl::enumerate(odds)) {
+    std::cout << i << ":" << v << std::endl;
+  }
+
+  auto superiorThan8 = ltl::filter(isSuperiorTo(8));
+  auto multiplyBy2 = ltl::map(multiplyBy(2));
+
+  for (auto [i, v] : ltl::enumerate(superiorThan8(odds))) {
+    std::cout << i << ":" << v << std::endl;
+  }
+
+  for (auto [i, v] : ltl::enumerate(multiplyBy2(odds))) {
     std::cout << i << ":" << v << std::endl;
   }
 }
@@ -343,5 +359,6 @@ int main() {
   test_strong_type();
 
   test_range();
+  test_smart_iterator();
   return 0;
 }
