@@ -1,7 +1,9 @@
 #include <array>
 #include <assert.h>
+#include <deque>
 #include <functional>
 #include <ratio>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -328,20 +330,69 @@ void test_smart_iterator() {
   std::array<int, 5> odds = {3, 5, 7, 9, 11};
   auto isSuperiorTo = [](auto n) { return [n](auto x) { return x > n; }; };
   auto multiplyBy = [](auto n) { return [n](auto x) { return x * n; }; };
-  for (auto [i, v] : ltl::enumerate(odds)) {
-    std::cout << i << ":" << v << std::endl;
-  }
 
   auto superiorThan8 = ltl::filter(isSuperiorTo(8));
   auto multiplyBy2 = ltl::map(multiplyBy(2));
 
-  for (auto [i, v] : ltl::enumerate(superiorThan8(odds))) {
-    std::cout << i << ":" << v << std::endl;
+  {
+    auto oddsEnumerateRange = ltl::enumerate(odds);
+    std::vector oddsEnumerate(oddsEnumerateRange.begin(),
+                              oddsEnumerateRange.end());
+
+    assert(oddsEnumerate.size() == 5);
+    assert(
+        ltl::accumulate(oddsEnumerate, std::size_t{0}, [](auto init, auto t) {
+          auto [i, v] = t;
+          return init + i;
+        }) == 0 + 1 + 2 + 3 + 4);
+
+    assert(ltl::accumulate(oddsEnumerate, 0, [](auto init, auto t) {
+             auto [i, v] = t;
+             return init + v;
+           }) == 3 + 5 + 7 + 9 + 11);
   }
 
-  for (auto [i, v] : ltl::enumerate(multiplyBy2(odds))) {
+  {
+    auto oddsSuperiorThan8Range = superiorThan8(odds);
+    std::vector oddsSuperiorThan8(oddsSuperiorThan8Range.begin(),
+                                  oddsSuperiorThan8Range.end());
+    assert(oddsSuperiorThan8.size() == 2);
+    assert(oddsSuperiorThan8[0] == 9 && oddsSuperiorThan8[1] == 11);
+  }
+
+  {
+    auto oddsMultipliedBy2Range = multiplyBy2(odds);
+    std::vector oddsMultipliedBy2(oddsMultipliedBy2Range.begin(),
+                                  oddsMultipliedBy2Range.end());
+
+    assert(oddsMultipliedBy2.size() == 5);
+    assert(ltl::accumulate(oddsMultipliedBy2, std::size_t{0}) ==
+           6 + 10 + 14 + 18 + 22);
+  }
+
+  auto superiorThan8AfterMultipliedBy2 = superiorThan8(multiplyBy2(odds));
+  for (auto [i, v] : ltl::enumerate(superiorThan8AfterMultipliedBy2)) {
     std::cout << i << ":" << v << std::endl;
   }
+}
+
+void test_sorted_iterator() {
+  std::vector<int> v1 = {25,  -65, 39,  41,   21, -98, 64, -74,
+                         -42, 98,  125, -145, 68, 75,  14, 32};
+
+  std::vector<int> v2;
+  std::set<int> set;
+  std::deque<int> deque;
+
+  ltl::copy(v1, ltl::sorted_inserter(v2));
+  ltl::copy(v1, ltl::sorted_inserter(set));
+  ltl::copy(v1, ltl::sorted_inserter(deque));
+
+  ltl::sort(v1);
+
+  assert(ltl::equal(v1, v2));
+  assert(ltl::equal(v1, set));
+  assert(ltl::equal(v1, deque));
 }
 
 int main() {
@@ -360,5 +411,6 @@ int main() {
 
   test_range();
   test_smart_iterator();
+  test_sorted_iterator();
   return 0;
 }
