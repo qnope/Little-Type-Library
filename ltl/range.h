@@ -26,7 +26,7 @@ namespace ltl {
 
 // Non modifying
 LPL_MAP(ALGO_MONO_ITERATOR, all_of, any_of, none_of, count, count_if, for_each,
-        find, find_if, find_if_not, adjacent_find, mismatch);
+        find, find_if, find_if_not, adjacent_find, mismatch)
 
 LPL_MAP(ALGO_DOUBLE_ITERATOR, find_first_of, find_end, search)
 
@@ -50,7 +50,7 @@ LPL_MAP(ALGO_MONO_ITERATOR, is_sorted, is_sorted_until)
 template <typename C, typename... P,
           LTL_REQUIRE_T(is_iterable(type_v<C>) &&
                         !is_const(remove_reference(type_v<C>)))>
-[[nodiscard]] C sort(C &&c, P &&... p) {
+C sort(C &&c, P &&... p) {
   std::sort(std::begin(c), std::end(c), std::forward<P>(p)...);
   return c;
 }
@@ -58,7 +58,7 @@ template <typename C, typename... P,
 template <typename C, typename... P,
           LTL_REQUIRE_T(is_iterable(type_v<C>) &&
                         !is_const(remove_reference(type_v<C>)))>
-[[nodiscard]] C stable_sort(C &&c, P &&... p) {
+C stable_sort(C &&c, P &&... p) {
   std::stable_sort(std::begin(c), std::end(c), std::forward<P>(p)...);
   return c;
 }

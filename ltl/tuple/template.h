@@ -35,7 +35,7 @@ template <typename T>[[nodiscard]] constexpr false_t is_number_list_t(T) {
   return {};
 }
 template <size_t... Ns>
-constexpr [[nodiscard]] true_t is_number_list_t(number_list_t<Ns...>) {
+[[nodiscard]] constexpr true_t is_number_list_t(number_list_t<Ns...>) {
   return {};
 }
 

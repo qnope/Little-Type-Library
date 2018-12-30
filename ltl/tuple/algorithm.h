@@ -3,8 +3,6 @@
 #include "template.h"
 
 namespace ltl {
-namespace detail {} // namespace detail
-
 template <typename N1, typename N2>
 [[nodiscard]] constexpr auto build_index_sequence(N1 n1, N2 n2) {
   typed_static_assert(is_number_t(n1));
@@ -16,5 +14,4 @@ template <typename N1, typename N2>
 template <typename N>[[nodiscard]] constexpr auto build_index_sequence(N n) {
   return build_index_sequence(0_n, n);
 }
-
 } // namespace ltl
