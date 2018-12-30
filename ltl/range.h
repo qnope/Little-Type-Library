@@ -4,6 +4,7 @@
 #include <numeric>
 
 #include "../lpl/if.h"
+#include "smart_iterator.h"
 #include "tuple/template.h"
 #include "type_t.h"
 #include "type_traits.h"
@@ -61,6 +62,14 @@ template <typename C, typename... P,
 C stable_sort(C &&c, P &&... p) {
   std::stable_sort(std::begin(c), std::end(c), std::forward<P>(p)...);
   return c;
+}
+
+template <typename C, LTL_REQUIRE_T(is_iterable(type_v<C>) &&
+                                    is_const(remove_reference(type_v<C>)))>
+[[nodiscard]] std::decay_t<C> sort(C &&c) {
+  std::decay_t<C> newContainer;
+  ltl::copy(c, ltl::sorted_inserter(newContainer));
+  return newContainer;
 }
 
 // binary search operations

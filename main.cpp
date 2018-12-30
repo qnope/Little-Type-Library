@@ -324,6 +324,10 @@ void test_range() {
   auto &oddsRef = ltl::sort(odds);
   assert(&oddsRef == &odds);
   assert(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
+
+  const std::vector<int> vec1 = {10, 9, 5, 45, 98};
+  auto vec2 = ltl::sort(vec1);
+  assert(ltl::equal(vec2, std::vector<int>{5, 9, 10, 45, 98}));
 }
 
 void test_smart_iterator() {
