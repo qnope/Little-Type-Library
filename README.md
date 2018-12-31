@@ -1,9 +1,10 @@
+
 # Little Type Library
 
 ## Introduction
 **Little Type Library** is a little metaprogramming library that can be used if you do not want depends on **boost::hana** or equivalent because they are too heavy or whatsoever.
 
-The namespace of thiss library is `namespace ltl`. The library provides several different types as `bool_t`, `number_t`, `type_t` and `tuple_t`
+The namespace of this library is `namespace ltl`. The library provides several different types as `bool_t`, `number_t`, `type_t` and `tuple_t`
 
 ## bool_t
 
@@ -111,7 +112,7 @@ There is another little helper that has been made more for fun than other. The `
 ## strong_type
 If you never heard about strong types, you better go to see the [Jonathan Boccara's blog](http://fluentcpp.com) before reading the following section. Actually, I was inspired a lot from his articles about strong typing. For people that does not want to read everything, here is a little summary.
 
-Let's say you want to develop a GUI application. You want to create a window with a width of 800, and a height of 600. You will probably write something like: `Window myWindow{800, 600};`. However, how do you know if you are using `800` for the width and not for the height? `strong_type`s solve this first problem. Now you will write something like : `Window myWindow{Width{800}, Height{600}};`. Now there is no shadow of a doubt, and, obviously, you can't convert a `Width` into a `Height`. We add a kind of *type-safety* into our code.
+Let's say you want to develop a GUI application. You want to create a window with a width of 800, and a height of 600. You will probably write something like: `Window myWindow{800, 600};`. However, how do you know if you are using `800` for the width and not for the height? `strong_type`s solve this first problem. Now you will write something like : `Window myWindow{Width{800}, Height{600}};`. Now there is no shadow of a doubt, and, obviously, you can not convert a `Width` into a `Height`. We add a kind of *type-safety* into our code.
 
 ### How to declare a strong type in LTL
 There is a type : `strong_type_t<T, Tag, Skills...>` in the `namespace ltl`. You can declare, for example, our prior `Width` and `Height` types as follow :
@@ -137,6 +138,8 @@ As of now, Little Type Library has several skills available :
 	- `Multipliable` : `operator *`
 	- `Dividable` : `operator /`
 	- `Moduloable` : `operator %`
+	- `Incrementable` : `operator++`
+	- `Decrementable`: `operator--`
 - Comparison ones:
 	- `GreatherThan` : `operator >`
 	- `LessThan` : `operator <`
@@ -197,4 +200,59 @@ struct ConverterRadianDegree {
 using radians =
     ltl::strong_type_t<float, struct AngleTag, ltl::EqualityComparable>;
 using degrees = ltl::add_converter<radians, ConverterRadianDegree>;
+```
+
+## Range
+This part of **Little Type Library** is for people that are somehow  _lazy_.
+Instead of writing for example 
+```cpp
+auto v1 = getVector();
+std::vector<int> v2;
+std::copy(std::begin(v1), std::end(v1), std::back_inserter(v2));
+```
+You can just write :
+```cpp
+auto v1 = getVector();
+std::vector<int> v2;
+ltl::copy(v1, std::back_inserter(v2));
+```
+## Smart iterators
+If you are familiar with [range-v3](https://github.com/ericniebler/range-v3) library, you may already know what is it about. To put it simply, a smart-iterator is an iterator type that add some operations to a normal iterator. **Little Type Library** provides currently 4 kinds of smart-iterator.
+
+### enumerate_iterator
+This one will make happy python developers, it will let you to write something like :
+```cpp
+std::vector<int> vector = {5, 4, 3, 1, 8, 9, 10};
+for(auto [index, value] : ltl::enumerate(vector)) {
+    std::cout << "vector[" << index << "] = " << value << "\n";
+}
+```
+### filter_iterator
+If you want to filter with lazy initialization your vector, you can do it with this iterator :
+```cpp
+auto superiorThan8 = ltl::filter([](auto n){return n > 8;});
+// will write only values superior than 8
+for(auto v : superiorThan8(vector)) {
+	std::cout << v << std::endl;
+}
+```
+
+### map_iterator
+You can perform transformation also through this iterator :
+```cpp
+auto multiplyBy2 = ltl::map([](auto n){return n * 2;});
+// will write values multiplied by 2
+for(auto v : multiplyBy2(vector)) {
+	std::cout << v << std::endl;
+}
+```
+
+### sorted_iterator
+Let's say you want to insert values into a `std::vector` or `std::deque` in a sorted way. 
+You can use use a `sorted_inserter_iterator` :
+
+```cpp
+std::vector<int> v1 = {25, -65, 39, 41, 21, -98, 64, -74};
+std::vector<int> v2;
+ltl::copy(v1, ltl::sorted_inserter(v2));
 ```
