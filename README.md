@@ -2,13 +2,13 @@
 # Little Type Library
 
 ## Introduction
-**Little Type Library** is a little metaprogramming library that can be used if you do not want depends on **boost::hana** or equivalent because they are too heavy or whatsoever.
+**Little Type Library** is a little metaprogramming library that can be used if you do not want to depend on **boost::hana** or equivalent because they are too heavy or for whatever reason.
 
-The namespace of this library is `namespace ltl`. The library provides several different types as `bool_t`, `number_t`, `type_t` and `tuple_t`
+The namespace of this library is `namespace ltl`. The library provides several different types such as `bool_t`, `number_t`, `type_t` and `tuple_t`
 
 ## bool_t
 
-The `bool_t` type is used to have a compile time type that means `true` or `false`. For using these tlypes, there are the following declarations 
+The `bool_t` type is used to have a compile time type that means `true` or `false`. To use these types, use the following declarations:
 
 ```cpp
 constexpr ltl::true_t true_v;
@@ -17,7 +17,7 @@ constexpr ltl::false_t false_v;
 
 ## number_t
 
-As for `bool_t`, `number_t` type is used to have a compile type unsigned integer value. You can use it as follow :
+As for `bool_t`, `number_t` type is used to have a compile type unsigned integer value. You can use it as follows:
 
 ```cpp
 constexpr ltl::number_t<1> one{};
@@ -27,7 +27,7 @@ static_assert(3_n == one + two && one < two);
 
 ## type_t
 
-This type is special. It holds a type to give a type to a function by value instead of by template argument. It is easy to use :
+This type is special. It holds a type to give a type to a function by value instead of by template argument. It is easy to use:
 
 ```cpp
 constexpr ltl::type_t<int> intType;
@@ -37,7 +37,7 @@ static_constexpr(intType != doubleType);
 ```
 
 ## tuple_t
-The `tuple_t` is a kind of `std::tuple` but it is easier to use because it does not need to use the `<>` template notation.
+The `tuple_t` is a kind of `std::tuple` but it is easier to use because it does not need you to use the `<>` template notation.
 
 ```cpp
 constexpr ltl::tuple_t tuple{5, 3.0};
@@ -49,7 +49,7 @@ for_each(tuple, printTuple);
 static_assert(tuple[0_n] == 5);
 ```
 You can also append, prepend, remove values from a tuple through `pop/push_front/back` functions.
-There are also some helpers if you need them :
+There are also some helpers if you need them:
 
 ```cpp
 // Convenience types
@@ -64,7 +64,7 @@ template <bool... Bs> constexpr bool_list_t<Bs...> bool_list_v{};
 ```
 
 ## typed_static_assert and if_constexpr macro
-When you want to check at compile time parameter for a function, it is not possible because `constexpr` function must work in a run-time context. However, since we are using our `false_t` or `true_t`, it is possible to tell the compiler to not call the function that operate the test, but only check its return type. That is why you may need such macro.
+When one wants to check parameters of a function at compile time, it is not possible because `constexpr` function must work in a run-time context. However, since we are using our `false_t` or `true_t`, it is possible to tell the compiler to not call the function that operates the test, but only check its return type. That is why you may need such a macro.
 
 ```cpp
 #define typed_static_assert(f) static_assert(decltype(f){});
@@ -79,10 +79,10 @@ template <typename N1, typename N2>
 }
 ```
 
-Without these macros, the following code won't compile because `n1 < n2` must work in run-time context and it is the same for `is_number_t`.
+Without these macros, the following code wouldn't compile because `n1 < n2` must work in run-time context and it is the same for `is_number_t`.
 
 ## Trait
-Some traits are imported from the STL. They have the same name as in the STL, instead, you can use them through functions.
+Some traits are imported from the STL. They have the same name as in the STL, but you can use them through functions.
 
 ```cpp
   struct Default {
@@ -98,7 +98,7 @@ Some traits are imported from the STL. They have the same name as in the STL, in
 ```
 
 ## is_valid
-There is another little helper that has been made more for fun than other. The `IS_VALID(variables, expression)` macro.
+There is another little helper that has mainly been made for fun. The `IS_VALID(variables, expression)` macro.
 
 ```cpp
   using namespace std::literals;
@@ -110,27 +110,27 @@ There is another little helper that has been made more for fun than other. The `
 ```
 
 ## strong_type
-If you never heard about strong types, you better go to see the [Jonathan Boccara's blog](http://fluentcpp.com) before reading the following section. Actually, I was inspired a lot from his articles about strong typing. For people that does not want to read everything, here is a little summary.
+If you have never heard about strong types, you better go to see [Jonathan Boccara's blog](http://fluentcpp.com) before reading the following section. Actually, I was inspired a lot by his articles about strong typing. For people who do not want to read everything, here is a little summary.
 
-Let's say you want to develop a GUI application. You want to create a window with a width of 800, and a height of 600. You will probably write something like: `Window myWindow{800, 600};`. However, how do you know if you are using `800` for the width and not for the height? `strong_type`s solve this first problem. Now you will write something like : `Window myWindow{Width{800}, Height{600}};`. Now there is no shadow of a doubt, and, obviously, you can not convert a `Width` into a `Height`. We add a kind of *type-safety* into our code.
+Let's say you want to develop a GUI application. You want to create a window with a width of 800, and a height of 600. You will probably write something like: `Window myWindow{800, 600};`. However, how do you know if you are using `800` for the width and not for the height? `strong_type`s solves this first problem. Now you will write something like : `Window myWindow{Width{800}, Height{600}};`. Now there is no shadow of a doubt, and, obviously, you can not convert a `Width` into a `Height`. We add a kind of *type-safety* into our code.
 
 ### How to declare a strong type in LTL
-There is a type : `strong_type_t<T, Tag, Skills...>` in the `namespace ltl`. You can declare, for example, our prior `Width` and `Height` types as follow :
+There is a type : `strong_type_t<T, Tag, Skills...>` in the `namespace ltl`. You can declare, for example, our prior `Width` and `Height` types as follows:
 
 ```cpp
 using Width = ltl::strong_type_t<float, struct WidthTag>;
 using Height = ltl::strong_type_t<float, struct HeightTag>;
 ```
 
-You can get the value using the `get` function :
+You can get the value using the `get` function:
 ```cpp
 Width width{5.0f};
 std::cout << width.get() << std::endl;
 ```
 
 ### Add operation to strong types
-We saw that `strong_type_t`take `Skills...` template parameter. But how to use them?
-As of now, Little Type Library has several skills available :
+We saw that `strong_type_t`takes `Skills...` template parameters. But how to use them?
+As of now, Little Type Library has several skills available:
 
 - Arithmetic ones:
 	- `Addable` : `operator +`
@@ -150,7 +150,7 @@ As of now, Little Type Library has several skills available :
 - Stream ones:
     - `OStreamable` : `operator <<(std::ostream&)`
 
-You can do as follow with one or several skills above or your own skills :
+You can do as follows with one or several skills above or your own skills:
 ```cpp
 using Float = ltl::strong_type_t<float, struct FloatTag, ltl::OStreamable>;
 Float f{8.0f};
@@ -158,7 +158,7 @@ std::cout << f << std::endl;
 ```
 ### Write your own skills
 Let's say you want to write a skill `Printable`  that adds the function `print()` to the `strong_type`.
-There is two ways. The first one is to use CRTP, the second one is to not use CRTP. Basically, you need CRTP for adding member function, and you do not need it for adding `friend` functions. We will only see how to use CRTP because it is harder than not to use it.
+There are two ways. The first one is to use CRTP, the second one is not to use CRTP. Basically, you need CRTP to add member functions, and you do not need it to add `friend` functions. We will only see how to use CRTP because it is harder than not to use it.
 
 There is a little helper `class crtp` in the `namespace ltl`.
 
@@ -175,7 +175,7 @@ struct Printable : ltl::crtp<TheStrongType, Printable> {
 Done !
 
 ### Convert a meter to a kilometer
-Let's say you have a type `Meter`. However, you want `Meter` to be convertible to `Kilometer`. We can define `Kilometer` as a multiple of `Meter` :
+Let's say you have a type `Meter`. However, you want `Meter` to be convertible to `Kilometer`. We can define `Kilometer` as a multiple of `Meter`:
 
 ```
 using Meter = ltl::strong_type_t<float, struct DistanceTag>;
@@ -184,7 +184,7 @@ using Kilometer = ltl::multiple_of<Meter, std::ratio<1000>>;
 
 ### Write your own converter
 Imagine you want to convert radians to degrees, or Watts to decibels. It is not a simple ratio, and it is not integer values.
-The idea is to write your own convert functions !
+The idea is to write your own convert functions!
 
 ```cpp
 struct ConverterRadianDegree {
@@ -203,24 +203,24 @@ using degrees = ltl::add_converter<radians, ConverterRadianDegree>;
 ```
 
 ## Range
-This part of **Little Type Library** is for people that are somehow  _lazy_.
+This part of **Little Type Library** is for people who are somewhat _lazy_.
 Instead of writing for example 
 ```cpp
 auto v1 = getVector();
 std::vector<int> v2;
 std::copy(std::begin(v1), std::end(v1), std::back_inserter(v2));
 ```
-You can just write :
+One can simply write:
 ```cpp
 auto v1 = getVector();
 std::vector<int> v2;
 ltl::copy(v1, std::back_inserter(v2));
 ```
 ## Smart iterators
-If you are familiar with [range-v3](https://github.com/ericniebler/range-v3) library, you may already know what is it about. To put it simply, a smart-iterator is an iterator type that add some operations to a normal iterator. **Little Type Library** provides currently 4 kinds of smart-iterator.
+If you are familiar with [range-v3](https://github.com/ericniebler/range-v3) library, you may already know what it is about. To put it simply, a smart-iterator is an iterator type that adds some operations to a normal iterator. **Little Type Library** currently provides 4 kinds of smart-iterators.
 
 ### enumerate_iterator
-This one will make happy python developers, it will let you to write something like :
+This one will make python developers happy, it will let you to write something like:
 ```cpp
 std::vector<int> vector = {5, 4, 3, 1, 8, 9, 10};
 for(auto [index, value] : ltl::enumerate(vector)) {
@@ -228,7 +228,7 @@ for(auto [index, value] : ltl::enumerate(vector)) {
 }
 ```
 ### filter_iterator
-If you want to filter with lazy initialization your vector, you can do it with this iterator :
+If you want to filter your vector with lazy initialization, you can do it with this iterator:
 ```cpp
 auto superiorThan8 = ltl::filter([](auto n){return n > 8;});
 // will write only values superior than 8
@@ -238,7 +238,7 @@ for(auto v : superiorThan8(vector)) {
 ```
 
 ### map_iterator
-You can perform transformation also through this iterator :
+You can also perform transformation through this iterator:
 ```cpp
 auto multiplyBy2 = ltl::map([](auto n){return n * 2;});
 // will write values multiplied by 2
@@ -249,7 +249,7 @@ for(auto v : multiplyBy2(vector)) {
 
 ### sorted_iterator
 Let's say you want to insert values into a `std::vector` or `std::deque` in a sorted way. 
-You can use use a `sorted_inserter_iterator` :
+You can use use a `sorted_inserter_iterator`:
 
 ```cpp
 std::vector<int> v1 = {25, -65, 39, 41, 21, -98, 64, -74};
