@@ -399,6 +399,35 @@ void test_sorted_iterator() {
   assert(ltl::equal(v1, deque));
 }
 
+void test_find_range() {
+  const std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+  {
+    auto notFind = ltl::find(v, 25);
+    auto find = ltl::find(v, 2);
+
+    assert(!notFind);
+    assert(find);
+    assert(*find == v.begin() + 2);
+    assert(**find == 2);
+  }
+
+  {
+    const std::vector<int> toFind = {3, 4, 5, 6};
+    const std::vector<int> toNotFind = {3, 4, 5, 7};
+
+    auto notFind = ltl::find_end(v, toNotFind);
+    auto find = ltl::find_end(v, toFind);
+    auto findOneOf = ltl::find_first_of(v, toFind);
+
+    assert(!notFind);
+    assert(find);
+    assert(findOneOf);
+    assert(*find == v.begin() + 3);
+    assert(*findOneOf == v.begin() + 3);
+  }
+}
+
 int main() {
   using namespace std::literals;
   bool_test();
@@ -416,5 +445,6 @@ int main() {
   test_range();
   test_smart_iterator();
   test_sorted_iterator();
+  test_find_range();
   return 0;
 }

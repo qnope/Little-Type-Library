@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <optional>
 
 #include "../lpl/if.h"
 #include "smart_iterator.h"
@@ -25,11 +26,30 @@ namespace ltl {
                      std::end(c2), std::forward<As>(as)...);                   \
   }
 
-// Non modifying
-LPL_MAP(ALGO_MONO_ITERATOR, all_of, any_of, none_of, count, count_if, for_each,
-        find, find_if, find_if_not, adjacent_find, mismatch)
+// Version for finds
+#define ALGO_FIND_VALUE(name) template<typename C, typename ...As, LTL_REQUIRE_T(is_iterable(type_v<C>))> \
+    auto name(C &&c, As &&...as) -> std::optional<decltype(c.begin())> {\
+        auto it = std::name(std::begin(c), std::end(c), std::forward<As>(as)...); \
+        if(it == std::end(c)) \
+            return std::nullopt; \
+        return it; \
+    }
 
-LPL_MAP(ALGO_DOUBLE_ITERATOR, find_first_of, find_end, search)
+#define ALGO_FIND_RANGE(name) template<typename C1, typename C2, typename ...As, LTL_REQUIRE_T(is_iterable(type_v<C1>) && is_iterable(type_v<C2>))> \
+    auto name(C1 &&c1, C2 &&c2, As &&...as) -> std::optional<decltype(c1.begin())> {\
+        auto it = std::name(std::begin(c1), std::end(c1), std::begin(c2), std::end(c2), std::forward<As>(as)...); \
+        if(it == std::end(c1)) \
+            return std::nullopt; \
+        return it; \
+    }
+
+// Version for finds
+LPL_MAP(ALGO_FIND_VALUE, find, find_if, find_if_not, adjacent_find)
+LPL_MAP(ALGO_FIND_RANGE, find_first_of, find_end, search)
+
+// Non modifying
+LPL_MAP(ALGO_MONO_ITERATOR, all_of, any_of, none_of, count, count_if, for_each, mismatch)
+
 
 // Modifying
 LPL_MAP(ALGO_MONO_ITERATOR, copy, copy_if, copy_backward, move, move_backward,
