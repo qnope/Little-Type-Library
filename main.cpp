@@ -1,25 +1,15 @@
 #include <array>
-#include <assert.h>
+#include <cassert>
 #include <deque>
-#include <functional>
-#include <ratio>
+#include <iostream>
 #include <set>
 #include <string>
 #include <vector>
 
-#include "ltl/is_valid.h"
-#include "ltl/number_t.h"
-#include "ltl/overloader.h"
-#include "ltl/range.h"
-#include "ltl/tuple.h"
-#include "ltl/type_t.h"
-#include "ltl/type_traits.h"
-
-#include "ltl/strong_type.h"
-
-#include "ltl/smart_iterator.h"
+#include "ltl/ltl.h"
 
 void bool_test() {
+  using namespace ltl;
   static_assert(false_v == false_v);
   static_assert(false_v != true_v);
   static_assert(true_v != false_v);
@@ -44,11 +34,12 @@ void type_test() {
   static_assert(ltl::type_v<int> == ltl::type_v<int>);
   static_assert(ltl::type_v<int> != ltl::type_v<double>);
   static_assert(!(ltl::type_v<int> == ltl::type_v<double>));
-  static_assert(ltl::type_v<decltype(true_v == true_v)> ==
+  static_assert(ltl::type_v<decltype(ltl::true_v == ltl::true_v)> ==
                 ltl::type_v<ltl::true_t>);
 }
 
 void number_test() {
+  using namespace ltl::literals;
   constexpr ltl::number_t<1> one;
   constexpr auto two = 2_n;
   static_assert(3_n == one + two && one < two);
@@ -63,6 +54,7 @@ void number_test() {
 }
 
 void constexpr_tuple_test() {
+  using namespace ltl::literals;
   constexpr ltl::tuple_t tuple{5, 3.0};
 
   static_assert(ltl::type_v<std::decay_t<decltype(tuple)>> ==
@@ -110,6 +102,7 @@ void constexpr_tuple_test() {
 }
 
 void tuple_test() {
+  using namespace ltl::literals;
   ltl::tuple_t _tuple{5, 3.0};
 
   assert(apply(_tuple, [](auto a, auto b) { return a + b; }) == 8.0);
@@ -125,7 +118,26 @@ void tuple_test() {
                            [](double v) { assert(v == 25.3); }});
 }
 
+void tuple_test_contains_count() {
+  {
+    int a;
+    ltl::tuple_t<int &, double, ltl::type_t<int>, int> tuple(
+        a, 5.0, ltl::type_v<int>, 5);
+    typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int>));
+    typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int &>));
+    typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<double &>));
+    typed_static_assert(
+        ltl::contains_type(tuple, ltl::type_v<ltl::type_t<int>>));
+    typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<char>));
+
+    ltl::type_list_t<int, double, int, int> tuple2;
+    typed_static_assert(ltl::contains_type(tuple2, ltl::type_v<int>));
+    typed_static_assert(!ltl::contains_type(tuple2, ltl::type_v<char>));
+  }
+}
+
 void push_pop_test() {
+  using namespace ltl::literals;
   using namespace std::literals;
   ltl::tuple_t all_pop{"0"s, "1"s, "2"s};
   auto l02_pop = all_pop.extract(0_n, 2_n);
@@ -148,6 +160,7 @@ void push_pop_test() {
 }
 
 void tuple_reference_test() {
+  using namespace ltl::literals;
   int a{0};
   using base = decltype(ltl::tuple_t{a, std::ref(a), 0});
 
@@ -204,6 +217,7 @@ void test_is_valid() {
 }
 
 void test_trait() {
+  using namespace ltl::literals;
   struct Default {
     Default() = default;
   };
@@ -434,6 +448,7 @@ int main() {
   type_test();
   number_test();
   tuple_test();
+  tuple_test_contains_count();
   constexpr_tuple_test();
   tuple_reference_test();
   push_pop_test();

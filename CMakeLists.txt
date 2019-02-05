@@ -3,44 +3,9 @@ project(LittleTypeLibrary)
 
 set(SOURCES "main.cpp")
 
-set(HEADERS_LPL
-    "lpl/and.h"
-    "lpl/cat.h"
-    "lpl/checker.h"
-    "lpl/compl.h"
-    "lpl/dec_inc.h"
-    "lpl/evaluation.h"
-    "lpl/if.h"
-    "lpl/lpl.h"
-    "lpl/stringify.h")
-
-set(HEADERS_LTL_TUPLE
-    "ltl/tuple/algorithm.h"
-    "ltl/tuple/argument.h"
-    "ltl/tuple/template.h"
-    "ltl/tuple/tuple_t.h")
-
-set(HEADERS_LTL_STRONG_TYPE
-    "ltl/strong_type/strong_type_t.h"
-    "ltl/strong_type/equality.h"
-    "ltl/strong_type/arithmetic.h"
-    "ltl/strong_type/converter.h"
-    "ltl/strong_type/stream.h")
-
-set(HEADERS_LTL
-    "ltl/bool_t.h"
-    "ltl/crtp.h"
-    "ltl/decay_reference_wrapper.h"
-    "ltl/is_valid.h"
-    "ltl/number_t.h"
-    "ltl/overloader.h"
-    "ltl/tuple.h"
-    "ltl/type_t.h"
-    "ltl/type_traits.h"
-    "ltl/strong_type.h"
-    "ltl/range.h"
-    "ltl/smart_iterator.h"
-    ${HEADERS_LTL_TUPLE} ${HEADERS_LTL_STRONG_TYPE})
+set(HEADERS
+    ltl/ltl.h
+    lpl/lpl.h)
 
 
 if(MSVC)
@@ -49,4 +14,4 @@ endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(LittleTypeLibrary ${SOURCES} ${HEADERS_LPL} ${HEADERS_LTL})
+add_executable(LittleTypeLibrary ${SOURCES} ${HEADERS})

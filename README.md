@@ -1,4 +1,3 @@
-
 # Little Type Library
 
 ## Introduction
