@@ -51,6 +51,14 @@ void number_test() {
 
   static_assert(1024_n - 25_n == 999_n);
   static_assert(1024_n / 2_n == 512_n);
+
+  static_assert((8_n & 2_n) == 0_n);
+  static_assert(((6_n & 1_n) == 0_n) && ((6_n & 2_n) == 2_n));
+  static_assert((8_n | 7_n) == 15_n);
+  static_assert((8_n ^ 15_n) == 7_n);
+
+  static_assert(ltl::true_v + 1_n == 2_n);
+  static_assert(ltl::false_v + 1_n == 1_n);
 }
 
 void constexpr_tuple_test() {
@@ -66,8 +74,7 @@ void constexpr_tuple_test() {
                 ltl::tuple_t{5, 3.0}.get(1_n) == 3.0);
 
   static_assert(tuple[0_n] == 5 && tuple[1_n] == 3.0);
-  static_assert(ltl::tuple_t{5, 3.0}[0_n] == 5 &&
-                ltl::tuple_t{5, 3.0}[1_n] == 3.0);
+  static_assert(ltl::tuple_t{5, 3.0}[0_n] == 5 && ltl::tuple_t{5, 3.0}[1_n] == 3.0);
 
   static_assert(tuple == ltl::tuple_t<int, double>{5, 3.0});
   static_assert(tuple != ltl::tuple_t<int, double>{5, 3.1});
@@ -76,8 +83,7 @@ void constexpr_tuple_test() {
   static_assert(tuple != ltl::number_list_v<5, 3>);
   static_assert(tuple != ltl::bool_list_v<false, true>);
 
-  static_assert(ltl::type_list_v<int, double, char> !=
-                ltl::type_list_v<int, double>);
+  static_assert(ltl::type_list_v<int, double, char> != ltl::type_list_v<int, double>);
 
   static_assert(
       ltl::type_list_v<int, double, char> ==
@@ -113,26 +119,36 @@ void tuple_test() {
   assert(tuple[3_n] == 95);
   tuple[1_n] = 25;
   tuple[2_n] = 25.3;
-  for_each(tuple.extract(1_n, 2_n),
-           ltl::overloader{[](int v) { assert(v == 25); },
-                           [](double v) { assert(v == 25.3); }});
+  for_each(tuple.extract(1_n, 2_n), ltl::overloader{[](int v) { assert(v == 25); },
+                                                    [](double v) { assert(v == 25.3); }});
 }
 
-void tuple_test_contains_count() {
+void tuple_test_algo() {
+  using namespace ltl::literals;
   {
     int a;
-    ltl::tuple_t<int &, double, ltl::type_t<int>, int> tuple(
-        a, 5.0, ltl::type_v<int>, 5);
+    ltl::tuple_t<int &, double, ltl::type_t<int>, int> tuple(a, 5.0, ltl::type_v<int>, 5);
     typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int>));
     typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int &>));
     typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<double &>));
-    typed_static_assert(
-        ltl::contains_type(tuple, ltl::type_v<ltl::type_t<int>>));
+    typed_static_assert(ltl::contains_type(tuple, ltl::type_v<ltl::type_t<int>>));
     typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<char>));
 
-    ltl::type_list_t<int, double, int, int> tuple2;
-    typed_static_assert(ltl::contains_type(tuple2, ltl::type_v<int>));
-    typed_static_assert(!ltl::contains_type(tuple2, ltl::type_v<char>));
+    typed_static_assert(ltl::count_type(tuple, ltl::type_v<int>) == 1_n);
+    typed_static_assert(ltl::count_type(tuple, ltl::type_v<char>) == 0_n);
+
+    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<double>) == 1_n);
+    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<int>) == 3_n);
+  }
+
+  {
+    ltl::type_list_t<int, double, int, int> tuple;
+    typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int>));
+    typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<char>));
+    typed_static_assert(ltl::count_type(tuple, ltl::type_v<int>) == 3_n);
+    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<int>) == 0_n);
+    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<int>, 0_n + 1_n) == 2_n);
+    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<double>) == 1_n);
   }
 }
 
@@ -172,8 +188,7 @@ void tuple_reference_test() {
   using popBack = decltype(std::declval<base>().pop_back());
   using popFront = decltype(std::declval<base>().pop_front());
 
-  static_assert(ltl::type_v<base> ==
-                ltl::type_v<ltl::tuple_t<int, int &, int>>);
+  static_assert(ltl::type_v<base> == ltl::type_v<ltl::tuple_t<int, int &, int>>);
 
   static_assert(ltl::type_v<pushedBackRef> ==
                 ltl::type_v<ltl::tuple_t<int, int &, int, int &>>);
@@ -190,14 +205,10 @@ void tuple_reference_test() {
   ltl::tuple_t testOpBracket{a, std::ref(a), 0};
   using TestOpBracket = decltype(testOpBracket);
 
-  static_assert(ltl::type_v<TestOpBracket> ==
-                ltl::type_v<ltl::tuple_t<int, int &, int>>);
-  static_assert(ltl::type_v<decltype(testOpBracket[1_n])> ==
-                ltl::type_v<int &>);
-  static_assert(ltl::type_v<decltype(testOpBracket[0_n])> ==
-                ltl::type_v<int &>);
-  static_assert(ltl::type_v<decltype(testOpBracket[2_n])> ==
-                ltl::type_v<int &>);
+  static_assert(ltl::type_v<TestOpBracket> == ltl::type_v<ltl::tuple_t<int, int &, int>>);
+  static_assert(ltl::type_v<decltype(testOpBracket[1_n])> == ltl::type_v<int &>);
+  static_assert(ltl::type_v<decltype(testOpBracket[0_n])> == ltl::type_v<int &>);
+  static_assert(ltl::type_v<decltype(testOpBracket[2_n])> == ltl::type_v<int &>);
 
   static_assert(ltl::type_v<decltype(std::declval<TestOpBracket>()[1_n])> ==
                 ltl::type_v<int &>);
@@ -250,14 +261,12 @@ void test_trait() {
 }
 
 using Float =
-    ltl::strong_type_t<float, struct FloatTag, ltl::EqualityComparable,
-                       ltl::GreaterThan, ltl::LessThan, ltl::Addable,
-                       ltl::Subtractable>;
+    ltl::strong_type_t<float, struct FloatTag, ltl::EqualityComparable, ltl::GreaterThan,
+                       ltl::LessThan, ltl::Addable, ltl::Subtractable>;
 
-using Meter =
-    ltl::strong_type_t<float, struct DistanceTag, ltl::EqualityComparable,
-                       ltl::GreaterThan, ltl::LessThan, ltl::Addable,
-                       ltl::Subtractable, ltl::OStreamable>;
+using Meter = ltl::strong_type_t<float, struct DistanceTag, ltl::EqualityComparable,
+                                 ltl::GreaterThan, ltl::LessThan, ltl::Addable,
+                                 ltl::Subtractable, ltl::OStreamable>;
 
 using Km = ltl::multiple_of<Meter, std::ratio<1000>>;
 
@@ -273,8 +282,7 @@ struct ConverterRadianDegree {
   }
 };
 
-using radians =
-    ltl::strong_type_t<float, struct AngleTag, ltl::EqualityComparable>;
+using radians = ltl::strong_type_t<float, struct AngleTag, ltl::EqualityComparable>;
 using degrees = ltl::add_converter<radians, ConverterRadianDegree>;
 
 void test_strong_type() {
@@ -305,8 +313,7 @@ void test_strong_type() {
   static_assert(ltl::type_v<ltl::multiple_of<Km, std::ratio<1, 1000>>> ==
                 ltl::type_v<ltl::multiple_of<Meter, std::ratio<1000, 1000>>>);
 
-  std::cout << oneKilometer << "km = " << oneKilometerInMeter << "m"
-            << std::endl;
+  std::cout << oneKilometer << "km = " << oneKilometerInMeter << "m" << std::endl;
 
   constexpr radians rad{pi};
   constexpr degrees deg(rad);
@@ -354,15 +361,13 @@ void test_smart_iterator() {
 
   {
     auto oddsEnumerateRange = ltl::enumerate(odds);
-    std::vector oddsEnumerate(oddsEnumerateRange.begin(),
-                              oddsEnumerateRange.end());
+    std::vector oddsEnumerate(oddsEnumerateRange.begin(), oddsEnumerateRange.end());
 
     assert(oddsEnumerate.size() == 5);
-    assert(
-        ltl::accumulate(oddsEnumerate, std::size_t{0}, [](auto init, auto t) {
-          auto [i, v] = t;
-          return init + i;
-        }) == 0 + 1 + 2 + 3 + 4);
+    assert(ltl::accumulate(oddsEnumerate, std::size_t{0}, [](auto init, auto t) {
+             auto [i, v] = t;
+             return init + i;
+           }) == 0 + 1 + 2 + 3 + 4);
 
     assert(ltl::accumulate(oddsEnumerate, 0, [](auto init, auto t) {
              auto [i, v] = t;
@@ -384,8 +389,7 @@ void test_smart_iterator() {
                                   oddsMultipliedBy2Range.end());
 
     assert(oddsMultipliedBy2.size() == 5);
-    assert(ltl::accumulate(oddsMultipliedBy2, std::size_t{0}) ==
-           6 + 10 + 14 + 18 + 22);
+    assert(ltl::accumulate(oddsMultipliedBy2, std::size_t{0}) == 6 + 10 + 14 + 18 + 22);
   }
 
   auto superiorThan8AfterMultipliedBy2 = superiorThan8(multiplyBy2(odds));
@@ -448,7 +452,7 @@ int main() {
   type_test();
   number_test();
   tuple_test();
-  tuple_test_contains_count();
+  tuple_test_algo();
   constexpr_tuple_test();
   tuple_reference_test();
   push_pop_test();
