@@ -137,8 +137,8 @@ void tuple_test_algo() {
     typed_static_assert(ltl::count_type(tuple, ltl::type_v<int>) == 1_n);
     typed_static_assert(ltl::count_type(tuple, ltl::type_v<char>) == 0_n);
 
-    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<double>) == 1_n);
-    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<int>) == 3_n);
+    typed_static_assert(ltl::find_type(tuple, ltl::type_v<double>) == 1_n);
+    typed_static_assert(ltl::find_type(tuple, ltl::type_v<int>) == 3_n);
   }
 
   {
@@ -146,9 +146,17 @@ void tuple_test_algo() {
     typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int>));
     typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<char>));
     typed_static_assert(ltl::count_type(tuple, ltl::type_v<int>) == 3_n);
-    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<int>) == 0_n);
-    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<int>, 0_n + 1_n) == 2_n);
-    typed_static_assert(ltl::index_of_type(tuple, ltl::type_v<double>) == 1_n);
+    typed_static_assert(ltl::find_type(tuple, ltl::type_v<int>) == 0_n);
+    typed_static_assert(ltl::find_type(tuple, ltl::type_v<int>, 0_n + 1_n) == 2_n);
+    typed_static_assert(ltl::find_type(tuple, ltl::type_v<double>) == 1_n);
+  }
+
+  {
+    ltl::type_list_t<int, double *, int *, int, char *> tuple;
+    typed_static_assert(ltl::contains_if_type(tuple, ltl::is_pointer));
+    typed_static_assert(ltl::count_if_type(tuple, ltl::is_pointer) == 3_n);
+    typed_static_assert(ltl::find_if_type(tuple, ltl::is_pointer) == 1_n);
+    typed_static_assert(ltl::find_if_type(tuple, ltl::is_pointer, 2_n) == 2_n);
   }
 }
 

@@ -2,6 +2,7 @@
 #include "../lpl/lpl.h"
 
 #include <algorithm>
+#include <cassert>
 #include <functional>
 #include <numeric>
 #include <optional>
@@ -10,14 +11,13 @@
 
 #define decltype_t(t) typename std::decay_t<decltype(t)>::type
 
-#define typed_static_assert(f) static_assert(decltype(f){});
+#define typed_static_assert(f) static_assert(decltype(f){})
+#define typed_static_assert_msg(f, msg) static_assert(decltype(f){}, msg)
 #define if_constexpr(c) if constexpr (decltype(c){})
+#define else_if_constexpr(c) else if constexpr (decltype(c){})
 
 #define LTL_REQUIRE(b) typename = std::enable_if_t<(b)>
 #define LTL_REQUIRE_T(b) std::enable_if_t<decltype(b){}, bool> = true
-#define LTL_REQUIRE_RT(b, returnType) std::enable_if_t<(b), returnType>
-#define LTL_REQUIRE_RE(b, returnExpression)                                              \
-  std::enable_if_t<(b), decltype(returnExpression)>
 
 namespace ltl {
 /////////////////////// FWD
@@ -167,7 +167,10 @@ constexpr auto testValidity(F &&f, Fs &&... fs) -> decltype(FWD(f)(FWD(fs)...), 
 constexpr false_t testValidity(...);
 } // namespace detail
 template <typename F> constexpr auto is_valid(F f) {
-  return [f](auto &&... x) -> decltype(detail::testValidity(f, FWD(x)...)) { return {}; };
+  return [f](auto &&... x) -> decltype(detail::testValidity(f, FWD(x)...)) {
+    (void)f;
+    return {};
+  };
 }
 
 #define LTL_WRITE_AUTO_WITH_COMMA_IMPL(x) , auto x
@@ -470,37 +473,62 @@ template <typename N>[[nodiscard]] constexpr auto build_index_sequence(N n) {
   return build_index_sequence(0_n, n);
 }
 
-template <typename T, typename... Ts>
+template <typename... Ts, typename T>
 constexpr auto contains_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
   if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (Ts{} == type));
   else return contains_type(type_list_v<Ts...>, type);
 }
 
-template <typename T, typename... Ts>
+template <typename... Ts, typename T>
 constexpr auto count_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
   using namespace literals;
   if_constexpr(is_type_list_t(tuple)) return (0_n + ... + (Ts{} == type));
   else return count_type(type_list_v<Ts...>, type);
 }
 
-template <typename T, typename... Ts, std::size_t N = 0>
-constexpr auto index_of_type(const tuple_t<Ts...> &tuple, type_t<T> type,
-                             number_t<N> first = number_v<N>) {
+template <typename... Ts, typename T, std::size_t N = 0>
+constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
+                         number_t<N> first = {}) {
   using namespace literals;
   if_constexpr(is_type_list_t(tuple)) {
     if_constexpr(tuple[first] == type) return first;
-    else return index_of_type(tuple, type, first + 1_n);
+    else return find_type(tuple, type, first + 1_n);
   }
 
-  else return index_of_type(type_list_v<Ts...>, type, first);
+  else return find_type(type_list_v<Ts...>, type, first);
+}
+
+template <typename... Ts, typename P, std::size_t N = 0>
+constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P &&p, number_t<N> first = {}) {
+  using namespace literals;
+  if_constexpr(is_type_list_t(tuple)) {
+    if_constexpr(FWD(p)(tuple[first])) return first;
+    else return find_if_type(tuple, FWD(p), first + 1_n);
+  }
+  else return find_if_type(type_list_v<Ts...>, FWD(p), first);
+}
+
+template <typename... Ts, typename P>
+constexpr auto contains_if_type(const tuple_t<Ts...> &tuple, P &&p) {
+  if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (FWD(p)(Ts{})));
+  else return contains_type(type_list_v<Ts...>, FWD(p));
+}
+
+template <typename... Ts, typename P>
+constexpr auto count_if_type(const tuple_t<Ts...> &tuple, P &&p) {
+  using namespace literals;
+  if_constexpr(is_type_list_t(tuple)) return (0_n + ... + (FWD(p)(Ts{})));
+  else return count_type(type_list_v<Ts...>, FWD(p));
 }
 
 /////////////////////////// Traits
 #define TRAIT(name)                                                                      \
   template <typename T>                                                                  \
-      [[nodiscard]] constexpr bool_t<std::LPL_CAT(name, _v) < T>> name(type_t<T>) {      \
+      [[nodiscard]] constexpr bool_t<std::LPL_CAT(name, _v) < T>>                        \
+      LPL_CAT(name, _Impl)(type_t<T>) {                                                  \
     return {};                                                                           \
-  }
+  }                                                                                      \
+  constexpr auto name = [](auto x) constexpr { return LPL_CAT(name, _Impl)(x); };
 
 #define TRAIT_ARG(name)                                                                  \
   template <typename T, typename Arg>                                                    \
@@ -984,8 +1012,8 @@ private:
 
 } // namespace detail
 
-template <typename C, LTL_REQUIRE_T(is_iterable(type_v<C>))>
-constexpr auto enumerate(C &&c) {
+template <typename R> constexpr auto enumerate(R &&c) {
+  typed_static_assert_msg(is_iterable(type_v<R>), "R must be an iterable");
   return detail::enumerate_range<decltype(std::begin(c))>{std::begin(c), std::end(c)};
 }
 
