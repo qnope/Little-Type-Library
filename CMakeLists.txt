@@ -7,7 +7,6 @@ set(HEADERS
     ltl/ltl.h
     lpl/lpl.h)
 
-
 if(MSVC)
 	add_compile_options(/experimental:preprocessor /permissive-)
 endif(MSVC)

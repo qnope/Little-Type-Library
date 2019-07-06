@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cassert>
 #include <functional>
+#include <iterator>
 #include <numeric>
 #include <optional>
 #include <ratio>
@@ -57,10 +58,12 @@ template <bool v> struct bool_t {
 
 using false_t = bool_t<false>;
 using true_t = bool_t<true>;
+} // namespace ltl
 
-constexpr false_t false_v;
-constexpr true_t true_v;
+constexpr ltl::false_t false_v;
+constexpr ltl::true_t true_v;
 
+namespace ltl {
 template <bool v> constexpr bool_t<v> bool_v{};
 
 #define OP(op)                                                                           \
@@ -102,36 +105,41 @@ template <typename T>[[nodiscard]] constexpr false_t operator!=(type_t<T>, type_
 }
 
 ////////////////////// number
-template <std::size_t N> struct number_t { constexpr static std::size_t value = N; };
-
-template <std::size_t N> constexpr number_t<N> number_v{};
+template <int N> struct number_t { constexpr static int value = N; };
 
 namespace detail {
-template <char... _digits>[[nodiscard]] constexpr std::size_t digits_to_size_t() {
-  char digits[] = {_digits...};
-  std::size_t result = 0;
-
-  for (auto d : digits) {
+template <char... _digits>[[nodiscard]] constexpr int digits_to_int() {
+  constexpr char digits[] = {_digits...};
+  int result = 0;
+  for (int digit : digits) {
     result *= 10;
-    result += d - '0';
+    result += digit - '0';
   }
 
   return result;
 }
 } // namespace detail
+} // namespace ltl
+
+template <int N> constexpr ltl::number_t<N> number_v{};
+template <char... digits>[[nodiscard]] constexpr auto operator""_n() {
+  return number_v<ltl::detail::digits_to_int<digits...>()>;
+}
+
+namespace ltl {
 
 #define OP(op)                                                                           \
-  template <std::size_t N1, std::size_t N2>                                              \
+  template <int N1, int N2>                                                              \
   [[nodiscard]] constexpr number_t<(N1 op N2)> operator op(number_t<N1>, number_t<N2>) { \
     return {};                                                                           \
   }                                                                                      \
-  template <std::size_t N, bool v>                                                       \
-  [[nodiscard]] constexpr number_t<(N op static_cast<std::size_t>(v))> operator op(      \
-      number_t<N>, bool_t<v>) {                                                          \
+  template <int N, bool v>                                                               \
+  [[nodiscard]] constexpr number_t<(N op static_cast<int>(v))> operator op(number_t<N>,  \
+                                                                           bool_t<v>) {  \
     return {};                                                                           \
   }                                                                                      \
-  template <std::size_t N, bool v>                                                       \
-  [[nodiscard]] constexpr number_t<(static_cast<std::size_t>(v) op N)> operator op(      \
+  template <int N, bool v>                                                               \
+  [[nodiscard]] constexpr number_t<(static_cast<int>(v) op N)> operator op(              \
       bool_t<v>, number_t<N>) {                                                          \
     return {};                                                                           \
   }
@@ -139,7 +147,7 @@ LPL_MAP(OP, +, -, *, /, %, &, |, ^, <<, >>)
 #undef OP
 
 #define OP(op)                                                                           \
-  template <std::size_t N1, std::size_t N2>                                              \
+  template <int N1, int N2>                                                              \
   [[nodiscard]] constexpr bool_t<(N1 op N2)> operator op(number_t<N1>, number_t<N2>) {   \
     return {};                                                                           \
   }
@@ -147,17 +155,27 @@ LPL_MAP(OP, +, -, *, /, %, &, |, ^, <<, >>)
 LPL_MAP(OP, ==, !=, >, >=, <, <=)
 #undef OP
 
-template <std::size_t N>[[nodiscard]] constexpr number_t<~N> operator~(number_t<N>) {
-  return {};
+#define OP(op)                                                                           \
+  template <int N>[[nodiscard]] constexpr number_t<(op N)> operator op(number_t<N>) {    \
+    return {};                                                                           \
+  }
+LPL_MAP(OP, ~, +, -)
+#undef OP
+
+template <typename T>[[nodiscard]] constexpr auto max(T a) { return a; }
+
+template <typename T1, typename T2, typename... Ts>
+[[nodiscard]] constexpr auto max(T1 a, T2 b, Ts... ts) {
+  if_constexpr(a > b) return ::ltl::max(a, ts...);
+  else return ::ltl::max(b, ts...);
 }
 
-namespace literals {
-template <char... digits>
-[[nodiscard]] constexpr ltl::number_t<ltl::detail::digits_to_size_t<digits...>()>
-operator""_n() {
-  return {};
+template <typename T>[[nodiscard]] constexpr auto min(T a) { return a; }
+template <typename T1, typename T2, typename... Ts>
+[[nodiscard]] constexpr auto min(T1 a, T2 b, Ts... ts) {
+  if_constexpr(a < b) return ::ltl::min(a, ts...);
+  else return ::ltl::min(b, ts...);
 }
-} // namespace literals
 
 ///////////////////////// is_valid
 namespace detail {
@@ -211,7 +229,7 @@ template <typename... Ts> struct tuple_applied {
 template <typename... Ts> class tuple_t {
 public:
   constexpr static auto length = number_v<sizeof...(Ts)>;
-  constexpr static auto isEmpty = length == number_v<0>;
+  constexpr static auto isEmpty = length == 0_n;
 
   template <bool isNotEmpty = !isEmpty, LTL_REQUIRE(isNotEmpty)>
   explicit constexpr tuple_t() : m_storage{} {}
@@ -236,43 +254,41 @@ public:
     return std::move(m_storage)(FWD(f));
   }
 
-  template <std::size_t N>[[nodiscard]] auto &get(number_t<N> n) & noexcept {
+  template <int N>[[nodiscard]] auto &get(number_t<N> n) & noexcept {
     typed_static_assert(n < length);
     return std::get<N>(m_storage.m_tuple);
   }
 
-  template <std::size_t N>
-  [[nodiscard]] constexpr const auto &get(number_t<N> n) const &noexcept {
+  template <int N>[[nodiscard]] constexpr const auto &get(number_t<N> n) const &noexcept {
     typed_static_assert(n < length);
     return std::get<N>(m_storage.m_tuple);
   }
 
-  template <std::size_t N>[[nodiscard]] constexpr auto &&get(number_t<N> n) && noexcept {
+  template <int N>[[nodiscard]] constexpr auto &&get(number_t<N> n) && noexcept {
     typed_static_assert(n < length);
     return std::get<N>(std::move(m_storage.m_tuple));
   }
 
-  template <std::size_t N>[[nodiscard]] auto &operator[](number_t<N> n) & noexcept {
+  template <int N>[[nodiscard]] auto &operator[](number_t<N> n) & noexcept {
     return get(n);
   }
 
-  template <std::size_t N>
+  template <int N>
   [[nodiscard]] constexpr const auto &operator[](number_t<N> n) const &noexcept {
     return get(n);
   }
 
-  template <std::size_t N>
-      [[nodiscard]] constexpr auto &&operator[](number_t<N> n) && noexcept {
+  template <int N>[[nodiscard]] constexpr auto &&operator[](number_t<N> n) && noexcept {
     return std::move(*this).get(n);
   }
 
-  template <std::size_t... Is>
+  template <int... Is>
   [[nodiscard]] constexpr auto extract(number_t<Is>... ns) const &noexcept {
     constexpr tuple_t<type_t<Ts>...> types{};
     return tuple_t<decltype_t(types[ns])...>{get(ns)...};
   }
 
-  template <std::size_t... Is>
+  template <int... Is>
       [[nodiscard]] constexpr auto extract(number_t<Is>... ns) && noexcept {
     constexpr tuple_t<type_t<Ts>...> types{};
     return tuple_t<decltype_t(types[ns])...>{std::move(*this).get(ns)...};
@@ -327,14 +343,12 @@ public:
   }
 
   [[nodiscard]] constexpr auto pop_back() const & {
-    using namespace ltl::literals;
     auto extracter = [this](auto... numbers) { return this->extract(numbers...); };
     constexpr auto numbers = build_index_sequence(length - 1_n);
     return numbers(extracter);
   }
 
   [[nodiscard]] constexpr auto pop_back() && {
-    using namespace ltl::literals;
     auto extracter = [this](auto... numbers) {
       return std::move(*this).extract(numbers...);
     };
@@ -343,14 +357,12 @@ public:
   }
 
   [[nodiscard]] constexpr auto pop_front() const & {
-    using namespace ltl::literals;
     auto extracter = [this](auto... numbers) { return this->extract(numbers...); };
     constexpr auto numbers = build_index_sequence(1_n, length);
     return apply(numbers, extracter);
   }
 
   [[nodiscard]] constexpr auto pop_front() && {
-    using namespace ltl::literals;
     auto extracter = [this](auto... numbers) {
       return std::move(*this).extract(numbers...);
     };
@@ -360,19 +372,19 @@ public:
 
   template <typename N1, typename N2>
   [[nodiscard]] static constexpr auto build_index_sequence(N1 n1, N2 n2) {
-    return build_index_sequence_helper(n1, n2, tuple_t<>{});
+    return build_index_sequence_helper(n1, n2);
   }
 
   template <typename N>[[nodiscard]] static constexpr auto build_index_sequence(N n) {
-    using namespace ltl::literals;
     return build_index_sequence(0_n, n);
   }
 
 private:
-  template <typename N1, typename N2, typename List>
-  [[nodiscard]] static constexpr auto build_index_sequence_helper(N1 n1, N2 n2,
-                                                                  const List list) {
-    using namespace ltl::literals;
+  template <int N1, int N2, typename List = tuple_t<>>
+  [[nodiscard]] static constexpr auto
+  build_index_sequence_helper(number_t<N1> n1, number_t<N2> n2,
+                              const List list = List{}) {
+    typed_static_assert_msg(n1 <= n2, "n1 must be lesser or equal to n2");
     if constexpr (n1 == n2) {
       return list;
     }
@@ -391,12 +403,12 @@ template <typename... Ts> tuple_t(Ts...)->tuple_t<decay_reference_wrapper_t<Ts>.
 ////////////////////// Templates
 /// Convenience types
 template <typename... Types> using type_list_t = tuple_t<type_t<Types>...>;
-template <size_t... Ns> using number_list_t = tuple_t<number_t<Ns>...>;
+template <int... Ns> using number_list_t = tuple_t<number_t<Ns>...>;
 template <bool... Bs> using bool_list_t = tuple_t<bool_t<Bs>...>;
 
 // Convenience variables
 template <typename... Types> constexpr type_list_t<Types...> type_list_v{};
-template <size_t... Ns> constexpr number_list_t<Ns...> number_list_v{};
+template <int... Ns> constexpr number_list_t<Ns...> number_list_v{};
 template <bool... Bs> constexpr bool_list_t<Bs...> bool_list_v{};
 
 // Conditional functions
@@ -412,7 +424,7 @@ template <typename... Ts>
 }
 
 template <typename T>[[nodiscard]] constexpr false_t is_number_list_t(T) { return {}; }
-template <size_t... Ns>
+template <int... Ns>
 [[nodiscard]] constexpr true_t is_number_list_t(number_list_t<Ns...>) {
   return {};
 }
@@ -423,7 +435,7 @@ template <bool... Bs>[[nodiscard]] constexpr true_t is_bool_list_t(bool_list_t<B
 }
 
 template <typename T>[[nodiscard]] constexpr false_t is_number_t(T) { return {}; }
-template <size_t N>[[nodiscard]] constexpr true_t is_number_t(number_t<N>) { return {}; }
+template <int N>[[nodiscard]] constexpr true_t is_number_t(number_t<N>) { return {}; }
 
 template <typename T>[[nodiscard]] constexpr false_t is_bool_t(T) { return {}; }
 template <bool B>[[nodiscard]] constexpr true_t is_bool_t(bool_t<B>) { return {}; }
@@ -443,14 +455,14 @@ IS_TYPE(is_tuple_t)
 #undef IS_TYPE
 
 /////////////////////// Arguments
-template <typename F, typename Tuple, LTL_REQUIRE_T(is_tuple_t(type_v<Tuple>))>
+template <typename F, typename Tuple, LTL_REQUIRE(is_tuple_t(type_v<Tuple>))>
 constexpr decltype(auto) apply(Tuple &&tuple,
                                F &&f) noexcept(noexcept(FWD(tuple)(FWD(f)))) {
   typed_static_assert(is_tuple_t(tuple));
   return FWD(tuple)(FWD(f));
 }
 
-template <typename F, typename Tuple, LTL_REQUIRE_T(is_tuple_t(type_v<Tuple>))>
+template <typename F, typename Tuple, LTL_REQUIRE(is_tuple_t(type_v<Tuple>))>
 F &&for_each(Tuple &&tuple, F &&f) {
   typed_static_assert(is_tuple_t(tuple));
 
@@ -462,15 +474,11 @@ F &&for_each(Tuple &&tuple, F &&f) {
 ////////////////////// Algorithm tuple
 template <typename N1, typename N2>
 [[nodiscard]] constexpr auto build_index_sequence(N1 n1, N2 n2) {
-  typed_static_assert(is_number_t(n1));
-  typed_static_assert(is_number_t(n2));
-  typed_static_assert(n1 < n2);
   return tuple_t<>::build_index_sequence(n1, n2);
 }
 
 template <typename N>[[nodiscard]] constexpr auto build_index_sequence(N n) {
-  using namespace ltl::literals;
-  return build_index_sequence(0_n, n);
+  return tuple_t<>::build_index_sequence(0_n, n); // does not compile
 }
 
 template <typename... Ts, typename T>
@@ -481,15 +489,13 @@ constexpr auto contains_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
 
 template <typename... Ts, typename T>
 constexpr auto count_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
-  using namespace literals;
   if_constexpr(is_type_list_t(tuple)) return (0_n + ... + (Ts{} == type));
   else return count_type(type_list_v<Ts...>, type);
 }
 
-template <typename... Ts, typename T, std::size_t N = 0>
+template <typename... Ts, typename T, int N = 0>
 constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
                          number_t<N> first = {}) {
-  using namespace literals;
   if_constexpr(is_type_list_t(tuple)) {
     if_constexpr(tuple[first] == type) return first;
     else return find_type(tuple, type, first + 1_n);
@@ -498,9 +504,8 @@ constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
   else return find_type(type_list_v<Ts...>, type, first);
 }
 
-template <typename... Ts, typename P, std::size_t N = 0>
+template <typename... Ts, typename P, int N = 0>
 constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P &&p, number_t<N> first = {}) {
-  using namespace literals;
   if_constexpr(is_type_list_t(tuple)) {
     if_constexpr(FWD(p)(tuple[first])) return first;
     else return find_if_type(tuple, FWD(p), first + 1_n);
@@ -516,9 +521,25 @@ constexpr auto contains_if_type(const tuple_t<Ts...> &tuple, P &&p) {
 
 template <typename... Ts, typename P>
 constexpr auto count_if_type(const tuple_t<Ts...> &tuple, P &&p) {
-  using namespace literals;
   if_constexpr(is_type_list_t(tuple)) return (0_n + ... + (FWD(p)(Ts{})));
   else return count_type(type_list_v<Ts...>, FWD(p));
+}
+
+template <typename... Ts, typename P>
+constexpr auto all_of_type(const tuple_t<Ts...> &tuple, P &&p) {
+  if_constexpr(is_type_list_t(tuple)) return (true_v && ... && (FWD(p)(Ts{})));
+  else return all_of_type(type_list_v<Ts...>, FWD(p));
+}
+
+template <typename... Ts, typename P>
+constexpr auto any_of_type(const tuple_t<Ts...> &tuple, P &&p) {
+  if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (FWD(p)(Ts{})));
+  else return any_of_type(type_list_v<Ts...>, FWD(p));
+}
+
+template <typename... Ts, typename P>
+constexpr auto none_of_type(const tuple_t<Ts...> &tuple, P &&p) {
+  return !any_of_type(tuple, FWD(p));
 }
 
 /////////////////////////// Traits
@@ -607,7 +628,7 @@ LPL_MAP(TRAIT_ARGS, is_invocable, is_invocable_r, is_nothrow_invocable,
   }
 
 // Property queries
-template <typename T, size_t N = 0>
+template <typename T, int N = 0>
 [[nodiscard]] constexpr number_t<std::extent_v<T, N>>
 extent(type_t<T>, number_t<N> = number_t<N>{}) {
   return {};
@@ -637,7 +658,6 @@ LPL_MAP(TRAIT, make_signed, make_unsigned)
 
 // Arrays
 LPL_MAP(TRAIT, remove_extent, remove_all_extents)
-
 #undef TRAIT
 
 template <typename T>[[nodiscard]] constexpr auto is_iterable(type_t<T>) {
@@ -647,6 +667,29 @@ template <typename T>[[nodiscard]] constexpr auto is_iterable(type_t<T>) {
 
 template <typename T>[[nodiscard]] constexpr auto is_iterable(T) {
   return is_iterable(type_v<T>);
+}
+
+#define LTL_MAKE_IS_KIND(type, name)                                                     \
+  template <typename T>                                                                  \
+  [[nodiscard]] constexpr ::ltl::false_t LPL_CAT(name, Impl)(::ltl::type_t<T>) {         \
+    return {};                                                                           \
+  }                                                                                      \
+  template <typename... Ts>                                                              \
+  [[nodiscard]] constexpr ::ltl::true_t LPL_CAT(name,                                    \
+                                                Impl)(::ltl::type_t<type<Ts...>>) {      \
+    return {};                                                                           \
+  }                                                                                      \
+  template <typename T>[[nodiscard]] constexpr auto LPL_CAT(name, Impl)(T &&) {          \
+    return LPL_CAT(name, Impl)(::ltl::type_v<::std::decay_t<T>>);                        \
+  }                                                                                      \
+  constexpr auto name = [](auto &&x) constexpr { return LPL_CAT(name, Impl)(FWD(x)); }
+
+template <typename T> constexpr auto is_type(type_t<T> type) {
+  return [type](auto x) constexpr { return type == x; };
+}
+
+template <typename T> constexpr auto is_derived_from(type_t<T> type) {
+  return [type](auto x) constexpr { return is_base_of(type, x); };
 }
 
 ////////////// StrongTypes
@@ -981,6 +1024,59 @@ private:
   map_iterator m_end;
 };
 
+template <typename... Containers> class zip_range {
+  type_list_t<Containers...> container_types;
+
+  typed_static_assert_msg(container_types.length > 0_n, "Containers must not be empty");
+
+  struct zip_range_iterator {
+    using difference_type = int;
+    using value_type = std::tuple<decltype(*std::declval<Containers>().begin())...>;
+    using pointer = value_type;
+    using reference = value_type;
+    using iterator_category = std::input_iterator_tag;
+
+    template <typename... Its>
+    constexpr zip_range_iterator(Its &&... iterators)
+        : m_iterators{std::forward<Its>(iterators)...} {}
+
+    constexpr auto operator*() {
+      auto foo = [](auto &... xs) { return value_type(*xs...); };
+      return m_iterators(foo);
+    }
+
+    constexpr auto operator!=(const zip_range_iterator &other) {
+      return m_iterators[0_n] != other.m_iterators[0_n];
+    }
+
+    constexpr zip_range_iterator &operator++() {
+      m_iterators([](auto &... xs) { (xs++, ...); });
+      return *this;
+    }
+
+    ltl::tuple_t<decltype(std::declval<Containers>().begin())...> m_iterators;
+  };
+
+public:
+  constexpr zip_range(Containers... containers)
+      : m_containers{std::forward<Containers>(containers)...} {
+    m_containers([](auto &c0, auto &... cs) {
+      assert((true && ... && (c0.size() == cs.size())));
+    });
+  }
+
+  constexpr auto begin() {
+    return m_containers([](auto &... cs) { return zip_range_iterator{cs.begin()...}; });
+  }
+
+  constexpr auto end() {
+    return m_containers([](auto &... cs) { return zip_range_iterator{cs.end()...}; });
+  }
+
+private:
+  tuple_t<Containers...> m_containers;
+};
+
 template <typename Container> class sorted_inserter_iterator {
 public:
   using difference_type = void;
@@ -1035,9 +1131,13 @@ template <typename Container> constexpr auto sorted_inserter(Container &c) {
   return ltl::detail::sorted_inserter_iterator<Container>{c};
 }
 
+template <typename... Containers> constexpr auto zip(Containers &&... cs) {
+  return ltl::detail::zip_range<Containers...>{std::forward<Containers>(cs)...};
+}
+
 //////////////////// Algorithms
 #define ALGO_MONO_ITERATOR(name)                                                         \
-  template <typename C, typename... As, LTL_REQUIRE_T(is_iterable(type_v<C>))>           \
+  template <typename C, typename... As, LTL_REQUIRE(is_iterable(type_v<C>))>             \
   auto name(C &&c, As &&... as) {                                                        \
     typed_static_assert(is_iterable(c));                                                 \
     return std::name(std::begin(c), std::end(c), FWD(as)...);                            \
@@ -1045,7 +1145,7 @@ template <typename Container> constexpr auto sorted_inserter(Container &c) {
 
 #define ALGO_DOUBLE_ITERATOR(name)                                                       \
   template <typename C1, typename C2, typename... As,                                    \
-            LTL_REQUIRE_T(is_iterable(type_v<C1>) && is_iterable(type_v<C2>))>           \
+            LTL_REQUIRE(is_iterable(type_v<C1>) && is_iterable(type_v<C2>))>             \
   auto name(C1 &&c1, C2 &&c2, As &&... as) {                                             \
     return std::name(std::begin(c1), std::end(c1), std::begin(c2), std::end(c2),         \
                      FWD(as)...);                                                        \
@@ -1053,17 +1153,25 @@ template <typename Container> constexpr auto sorted_inserter(Container &c) {
 
 // Version for finds
 #define ALGO_FIND_VALUE(name)                                                            \
-  template <typename C, typename... As, LTL_REQUIRE_T(is_iterable(type_v<C>))>           \
+  template <typename C, typename... As, LTL_REQUIRE(is_iterable(type_v<C>))>             \
   auto name(C &&c, As &&... as)->std::optional<decltype(c.begin())> {                    \
     auto it = std::name(std::begin(c), std::end(c), FWD(as)...);                         \
     if (it == std::end(c))                                                               \
       return std::nullopt;                                                               \
     return it;                                                                           \
+  }                                                                                      \
+  template <typename C, typename... As, LTL_REQUIRE(is_iterable(type_v<C>))>             \
+  auto LPL_CAT(name, _by_value)(C && c, As && ... as)                                    \
+      ->std::optional<std::decay_t<decltype(*FWD(c).begin())>> {                         \
+    auto opt = name(FWD(c), FWD(as)...);                                                 \
+    if (opt)                                                                             \
+      return **opt;                                                                      \
+    return std::nullopt;                                                                 \
   }
 
 #define ALGO_FIND_RANGE(name)                                                            \
   template <typename C1, typename C2, typename... As,                                    \
-            LTL_REQUIRE_T(is_iterable(type_v<C1>) && is_iterable(type_v<C2>))>           \
+            LTL_REQUIRE(is_iterable(type_v<C1>) && is_iterable(type_v<C2>))>             \
   auto name(C1 &&c1, C2 &&c2, As &&... as)->std::optional<decltype(c1.begin())> {        \
     auto it = std::name(std::begin(c1), std::end(c1), std::begin(c2), std::end(c2),      \
                         FWD(as)...);                                                     \
@@ -1097,21 +1205,21 @@ LPL_MAP(ALGO_MONO_ITERATOR, is_partitioned, partition, partition_copy, stable_pa
 LPL_MAP(ALGO_MONO_ITERATOR, is_sorted, is_sorted_until)
 
 template <typename C, typename... P,
-          LTL_REQUIRE_T(is_iterable(type_v<C>) && !is_const(remove_reference(type_v<C>)))>
+          LTL_REQUIRE(is_iterable(type_v<C>) && !is_const(remove_reference(type_v<C>)))>
 C sort(C &&c, P &&... p) {
   std::sort(std::begin(c), std::end(c), FWD(p)...);
   return c;
 }
 
 template <typename C, typename... P,
-          LTL_REQUIRE_T(is_iterable(type_v<C>) && !is_const(remove_reference(type_v<C>)))>
+          LTL_REQUIRE(is_iterable(type_v<C>) && !is_const(remove_reference(type_v<C>)))>
 C stable_sort(C &&c, P &&... p) {
   std::stable_sort(std::begin(c), std::end(c), FWD(p)...);
   return c;
 }
 
 template <typename C,
-          LTL_REQUIRE_T(is_iterable(type_v<C>) && is_const(remove_reference(type_v<C>)))>
+          LTL_REQUIRE(is_iterable(type_v<C>) && is_const(remove_reference(type_v<C>)))>
 [[nodiscard]] std::decay_t<C> sort(C &&c) {
   std::decay_t<C> newContainer;
   ltl::copy(c, ltl::sorted_inserter(newContainer));

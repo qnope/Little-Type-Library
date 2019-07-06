@@ -34,20 +34,21 @@ void type_test() {
   static_assert(ltl::type_v<int> == ltl::type_v<int>);
   static_assert(ltl::type_v<int> != ltl::type_v<double>);
   static_assert(!(ltl::type_v<int> == ltl::type_v<double>));
-  static_assert(ltl::type_v<decltype(ltl::true_v == ltl::true_v)> ==
-                ltl::type_v<ltl::true_t>);
+  static_assert(ltl::type_v<decltype(true_v == true_v)> == ltl::type_v<ltl::true_t>);
 }
 
 void number_test() {
-  using namespace ltl::literals;
   constexpr ltl::number_t<1> one;
   constexpr auto two = 2_n;
   static_assert(3_n == one + two && one < two);
   static_assert(1_n + 4_n == 5_n);
   static_assert(4_n + 1_n != 6_n);
+  static_assert(-1_n + 5_n == 4_n);
+  static_assert(5_n + -3_n == 2_n);
 
   static_assert(2_n * 3_n == 6_n);
   static_assert(!(3_n * 0_n != 0_n));
+  static_assert(8_n * -5_n == -40_n);
 
   static_assert(1024_n - 25_n == 999_n);
   static_assert(1024_n / 2_n == 512_n);
@@ -57,12 +58,14 @@ void number_test() {
   static_assert((8_n | 7_n) == 15_n);
   static_assert((8_n ^ 15_n) == 7_n);
 
-  static_assert(ltl::true_v + 1_n == 2_n);
-  static_assert(ltl::false_v + 1_n == 1_n);
+  static_assert(true_v + 1_n == 2_n);
+  static_assert(false_v + 1_n == 1_n);
+
+  static_assert(ltl::max(5_n, 3_n, 8_n, 4_n) == 8_n);
+  static_assert(ltl::min(4_n, -8_n, 8_n, 4_n) == -8_n);
 }
 
 void constexpr_tuple_test() {
-  using namespace ltl::literals;
   constexpr ltl::tuple_t tuple{5, 3.0};
 
   static_assert(ltl::type_v<std::decay_t<decltype(tuple)>> ==
@@ -93,8 +96,9 @@ void constexpr_tuple_test() {
                 ltl::type_list_v<int, double, char>);
 
   static_assert(
-      ltl::type_list_v<float, int, double, double, char, double>.pop_front().pop_back().pop_back().pop_back().push_back(ltl::type_v<char>) ==
-      ltl::type_list_v<int, double, char>);
+        ltl::type_list_v<float, int, double, double, char,
+   double>.pop_front().pop_back().pop_back().pop_back().push_back(ltl::type_v<char>) ==
+        ltl::type_list_v<int, double, char>);
 
   constexpr auto number_list = ltl::number_list_v<2, 3, 4>;
 
@@ -105,10 +109,10 @@ void constexpr_tuple_test() {
 
   static_assert(number_list.pop_back().pop_back() == ltl::number_list_v<2>);
   static_assert(number_list.pop_front().pop_front() == ltl::number_list_v<4>);
+  static_assert(build_index_sequence(5_n) == ltl::number_list_v<0, 1, 2, 3, 4>);
 }
 
 void tuple_test() {
-  using namespace ltl::literals;
   ltl::tuple_t _tuple{5, 3.0};
 
   assert(apply(_tuple, [](auto a, auto b) { return a + b; }) == 8.0);
@@ -124,7 +128,6 @@ void tuple_test() {
 }
 
 void tuple_test_algo() {
-  using namespace ltl::literals;
   {
     int a;
     ltl::tuple_t<int &, double, ltl::type_t<int>, int> tuple(a, 5.0, ltl::type_v<int>, 5);
@@ -158,10 +161,16 @@ void tuple_test_algo() {
     typed_static_assert(ltl::find_if_type(tuple, ltl::is_pointer) == 1_n);
     typed_static_assert(ltl::find_if_type(tuple, ltl::is_pointer, 2_n) == 2_n);
   }
+
+  {
+    ltl::type_list_t<int, int, unsigned int, char> tuple1;
+    typed_static_assert(ltl::all_of_type(tuple1, ltl::is_integral));
+    typed_static_assert(ltl::none_of_type(tuple1, ltl::is_floating_point));
+    typed_static_assert(ltl::any_of_type(tuple1, ltl::is_unsigned));
+  }
 }
 
 void push_pop_test() {
-  using namespace ltl::literals;
   using namespace std::literals;
   ltl::tuple_t all_pop{"0"s, "1"s, "2"s};
   auto l02_pop = all_pop.extract(0_n, 2_n);
@@ -184,7 +193,6 @@ void push_pop_test() {
 }
 
 void tuple_reference_test() {
-  using namespace ltl::literals;
   int a{0};
   using base = decltype(ltl::tuple_t{a, std::ref(a), 0});
 
@@ -236,7 +244,6 @@ void test_is_valid() {
 }
 
 void test_trait() {
-  using namespace ltl::literals;
   struct Default {
     Default() = default;
   };
@@ -439,6 +446,14 @@ void test_find_range() {
   }
 
   {
+    auto notFind = ltl::find_by_value(v, 25);
+    auto find = ltl::find_by_value(v, 2);
+    assert(!notFind);
+    assert(find);
+    assert(*find == 2);
+  }
+
+  {
     const std::vector<int> toFind = {3, 4, 5, 6};
     const std::vector<int> toNotFind = {3, 4, 5, 7};
 
@@ -454,8 +469,16 @@ void test_find_range() {
   }
 }
 
+std::vector<std::string> getStrings() { return {"lol0", "lol1", "lol2"}; }
+
+void test_zip() {
+  const std::vector<int> indices = {0, 1, 2};
+  for (auto &&[index, string] : ltl::zip(indices, getStrings())) {
+    std::cout << index << ": " << string << std::endl;
+  }
+}
+
 int main() {
-  using namespace std::literals;
   bool_test();
   type_test();
   number_test();
@@ -473,5 +496,6 @@ int main() {
   test_smart_iterator();
   test_sorted_iterator();
   test_find_range();
+  test_zip();
   return 0;
 }
