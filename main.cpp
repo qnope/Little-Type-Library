@@ -360,76 +360,6 @@ void test_range() {
   auto &oddsRef = ltl::sort(odds);
   assert(&oddsRef == &odds);
   assert(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
-
-  const std::vector<int> vec1 = {10, 9, 5, 45, 98};
-  auto vec2 = ltl::sort(vec1);
-  assert(ltl::equal(vec2, std::vector<int>{5, 9, 10, 45, 98}));
-}
-
-void test_smart_iterator() {
-  std::array<int, 5> odds = {3, 5, 7, 9, 11};
-  auto isSuperiorTo = [](auto n) { return [n](auto x) { return x > n; }; };
-  auto multiplyBy = [](auto n) { return [n](auto x) { return x * n; }; };
-
-  auto superiorThan8 = ltl::filter(isSuperiorTo(8));
-  auto multiplyBy2 = ltl::map(multiplyBy(2));
-
-  {
-    auto oddsEnumerateRange = ltl::enumerate(odds);
-    std::vector oddsEnumerate(oddsEnumerateRange.begin(), oddsEnumerateRange.end());
-
-    assert(oddsEnumerate.size() == 5);
-    assert(ltl::accumulate(oddsEnumerate, std::size_t{0}, [](auto init, auto t) {
-             auto [i, v] = t;
-             return init + i;
-           }) == 0 + 1 + 2 + 3 + 4);
-
-    assert(ltl::accumulate(oddsEnumerate, 0, [](auto init, auto t) {
-             auto [i, v] = t;
-             return init + v;
-           }) == 3 + 5 + 7 + 9 + 11);
-  }
-
-  {
-    auto oddsSuperiorThan8Range = superiorThan8(odds);
-    std::vector oddsSuperiorThan8(oddsSuperiorThan8Range.begin(),
-                                  oddsSuperiorThan8Range.end());
-    assert(oddsSuperiorThan8.size() == 2);
-    assert(oddsSuperiorThan8[0] == 9 && oddsSuperiorThan8[1] == 11);
-  }
-
-  {
-    auto oddsMultipliedBy2Range = multiplyBy2(odds);
-    std::vector oddsMultipliedBy2(oddsMultipliedBy2Range.begin(),
-                                  oddsMultipliedBy2Range.end());
-
-    assert(oddsMultipliedBy2.size() == 5);
-    assert(ltl::accumulate(oddsMultipliedBy2, std::size_t{0}) == 6 + 10 + 14 + 18 + 22);
-  }
-
-  auto superiorThan8AfterMultipliedBy2 = superiorThan8(multiplyBy2(odds));
-  for (auto [i, v] : ltl::enumerate(superiorThan8AfterMultipliedBy2)) {
-    std::cout << i << ":" << v << std::endl;
-  }
-}
-
-void test_sorted_iterator() {
-  std::vector<int> v1 = {25,  -65, 39,  41,   21, -98, 64, -74,
-                         -42, 98,  125, -145, 68, 75,  14, 32};
-
-  std::vector<int> v2;
-  std::set<int> set;
-  std::deque<int> deque;
-
-  ltl::copy(v1, ltl::sorted_inserter(v2));
-  ltl::copy(v1, ltl::sorted_inserter(set));
-  ltl::copy(v1, ltl::sorted_inserter(deque));
-
-  ltl::sort(v1);
-
-  assert(ltl::equal(v1, v2));
-  assert(ltl::equal(v1, set));
-  assert(ltl::equal(v1, deque));
 }
 
 void test_find_range() {
@@ -469,15 +399,6 @@ void test_find_range() {
   }
 }
 
-std::vector<std::string> getStrings() { return {"lol0", "lol1", "lol2"}; }
-
-void test_zip() {
-  const std::vector<int> indices = {0, 1, 2};
-  for (auto &&[index, string] : ltl::zip(indices, getStrings())) {
-    std::cout << index << ": " << string << std::endl;
-  }
-}
-
 int main() {
   bool_test();
   type_test();
@@ -493,9 +414,6 @@ int main() {
   test_strong_type();
 
   test_range();
-  test_smart_iterator();
-  test_sorted_iterator();
   test_find_range();
-  test_zip();
   return 0;
 }
