@@ -360,6 +360,9 @@ void test_range() {
   auto &oddsRef = ltl::sort(odds);
   assert(&oddsRef == &odds);
   assert(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
+
+  auto v = ltl::sort(std::vector{5, 4, 6, 9, 8, 7});
+  assert(ltl::equal(v, std::vector{4, 5, 6, 7, 8, 9}));
 }
 
 void test_find_range() {
@@ -399,6 +402,22 @@ void test_find_range() {
   }
 }
 
+template <typename T> auto f(T) -> ltl::requires_void<ltl::FloatingPoint<T>> {
+  std::cout << "Floating point" << std::endl;
+}
+
+template <typename T> auto f(T) -> ltl::requires_void<ltl::Integral<T>> {
+  std::cout << "Integral" << std::endl;
+}
+
+void test_concept() {
+  f(5);
+  f(5.0);
+  f(5.0f);
+  f(5u);
+  f(5ull);
+}
+
 int main() {
   bool_test();
   type_test();
@@ -415,5 +434,8 @@ int main() {
 
   test_range();
   test_find_range();
+
+  test_concept();
+
   return 0;
 }
