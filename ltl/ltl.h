@@ -17,6 +17,8 @@
 #define if_constexpr(c) if constexpr (decltype(c){})
 #define else_if_constexpr(c) else if constexpr (decltype(c){})
 
+#define requires_f(...) ::ltl::requires_t<bool, __VA_ARGS__> = true
+
 namespace ltl {
 /////////////////////// FWD
 #define FWD(x) ::std::forward<decltype(x)>(x)
@@ -598,14 +600,15 @@ IS_TYPE(is_tuple_t, isTuple)
 
 /////////////////////// Arguments
 template <typename F, typename Tuple>
-constexpr auto apply(Tuple &&tuple, F &&f) noexcept(noexcept(FWD(tuple)(FWD(f))))
-    -> requires_t<decltype(FWD(tuple)(FWD(f))), IsTuple<Tuple>> {
+constexpr decltype(auto)
+apply(Tuple &&tuple, F &&f,
+      requires_f(IsTuple<Tuple>)) noexcept(noexcept(FWD(tuple)(FWD(f)))) {
   typed_static_assert(is_tuple_t(tuple));
   return FWD(tuple)(FWD(f));
 }
 
 template <typename F, typename Tuple>
-auto for_each(Tuple &&tuple, F &&f) -> requires_t<F &&, IsTuple<Tuple>> {
+F for_each(Tuple &&tuple, F &&f, requires_f(IsTuple<Tuple>)) {
   typed_static_assert(is_tuple_t(tuple));
 
   auto retrieveAllArgs = [&f](auto &&... xs) { (FWD(f)(FWD(xs)), ...); };
