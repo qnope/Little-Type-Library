@@ -5,6 +5,13 @@ set(SOURCES "main.cpp")
 
 set(HEADERS
     ltl/ltl.h
+    ltl/Tuple.h
+    ltl/StrongType.h
+    ltl/algos.h
+    ltl/stream.h
+    ltl/operator.h
+    ltl/concept.h
+    ltl/range.h
     lpl/lpl.h)
 
 if(MSVC)

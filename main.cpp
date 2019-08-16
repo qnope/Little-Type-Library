@@ -6,10 +6,15 @@
 #include <string>
 #include <vector>
 
+#include "ltl/StrongType.h"
+#include "ltl/Tuple.h"
+#include "ltl/algos.h"
 #include "ltl/ltl.h"
+#include "ltl/operator.h"
+#include "ltl/range.h"
+#include "ltl/stream.h"
 
 void bool_test() {
-  using namespace ltl;
   static_assert(false_v == false_v);
   static_assert(false_v != true_v);
   static_assert(true_v != false_v);
@@ -58,8 +63,8 @@ void number_test() {
   static_assert((8_n | 7_n) == 15_n);
   static_assert((8_n ^ 15_n) == 7_n);
 
-  static_assert(true_v + 1_n == 2_n);
-  static_assert(false_v + 1_n == 1_n);
+  // static_assert(true_v + 1_n == 2_n);
+  // static_assert(false_v + 1_n == 1_n);
 
   static_assert(ltl::max(5_n, 3_n, 8_n, 4_n) == 8_n);
   static_assert(ltl::min(4_n, -8_n, 8_n, 4_n) == -8_n);
@@ -96,9 +101,9 @@ void constexpr_tuple_test() {
                 ltl::type_list_v<int, double, char>);
 
   static_assert(
-        ltl::type_list_v<float, int, double, double, char,
-   double>.pop_front().pop_back().pop_back().pop_back().push_back(ltl::type_v<char>) ==
-        ltl::type_list_v<int, double, char>);
+                ltl::type_list_v<float, int, double, double, char,
+                double>.pop_front().pop_back().pop_back().pop_back().push_back(ltl::type_v<char>) ==
+                ltl::type_list_v<int, double, char>);
 
   constexpr auto number_list = ltl::number_list_v<2, 3, 4>;
 
@@ -125,6 +130,33 @@ void tuple_test() {
   tuple[2_n] = 25.3;
   for_each(tuple.extract(1_n, 2_n), ltl::overloader{[](int v) { assert(v == 25); },
                                                     [](double v) { assert(v == 25.3); }});
+  auto [a, b, c, d] = tuple;
+  auto &[a2, b2, c2, d2] = tuple;
+  const auto [a3, b3, c3, d3] = tuple;
+  const auto [a4, b4, c4, d4] = std::as_const(tuple);
+  const auto &[a5, b5, c5, d5] = tuple;
+  const auto &[a6, b6, c6, d6] = std::as_const(tuple);
+  auto [a7, b7, c7, d7] = std::move(tuple);
+  auto &&[a8, b8, c8, d8] = std::move(tuple);
+  assert(&a2 == &tuple[0_n]);
+  assert(&b2 == &tuple[1_n]);
+  assert(&c2 == &tuple[2_n]);
+  assert(&d2 == &tuple[3_n]);
+
+  assert(&a5 == &tuple[0_n]);
+  assert(&b5 == &tuple[1_n]);
+  assert(&c5 == &tuple[2_n]);
+  assert(&d5 == &tuple[3_n]);
+
+  assert(&a6 == &tuple[0_n]);
+  assert(&b6 == &tuple[1_n]);
+  assert(&c6 == &tuple[2_n]);
+  assert(&d6 == &tuple[3_n]);
+
+  assert(&a8 == &tuple[0_n]);
+  assert(&b8 == &tuple[1_n]);
+  assert(&c8 == &tuple[2_n]);
+  assert(&d8 == &tuple[3_n]);
 }
 
 void tuple_test_algo() {
@@ -260,10 +292,13 @@ void test_trait() {
   static_assert(ltl::is_integral(ltl::type_v<int>));
   static_assert(ltl::is_floating_point(ltl::type_v<double>));
   static_assert(ltl::is_array(ltl::type_v<float[]>));
+  static_assert(ltl::is_floating_point(5.0));
+  static_assert(!ltl::is_floating_point(5));
+  static_assert(ltl::is_integral(5));
+  static_assert(!ltl::is_integral(5.0));
   static_assert(ltl::is_class(ltl::type_v<Default>));
   static_assert(ltl::is_lvalue_reference(ltl::type_v<int &>));
   static_assert(ltl::is_rvalue_reference(ltl::type_v<int &&>));
-  static_assert(ltl::is_reference(ltl::type_v<int &>));
   static_assert(ltl::is_const(ltl::type_v<const int>));
   static_assert(ltl::is_trivially_destructible(ltl::type_v<Default>));
   static_assert(ltl::extent(ltl::type_v<float[5][3]>, 1_n) == 3_n);
@@ -273,6 +308,53 @@ void test_trait() {
   static_assert(ltl::is_iterable(ltl::type_v<std::vector<int>>));
   static_assert(!ltl::is_iterable(ltl::type_v<int>));
   static_assert(ltl::is_iterable(ltl::type_v<std::array<int, 1>>));
+
+  {
+    int lvalue;
+    const int clvalue = 0;
+    int carray[5]{};
+    std::array<int, 5> array{};
+    std::vector<double> array2{};
+    std::optional<int> opt;
+    static_assert(!ltl::is_rvalue_reference(lvalue));
+    static_assert(ltl::is_rvalue_reference(std::move(lvalue)));
+    static_assert(ltl::is_rvalue_reference(5));
+    static_assert(ltl::is_const(clvalue));
+    static_assert(ltl::is_array(carray));
+    static_assert(ltl::is_optional(opt));
+    static_assert(ltl::is_iterable(carray));
+    static_assert(!ltl::is_iterable(opt));
+    static_assert(!ltl::is_optional(carray));
+    static_assert(ltl::is_iterable(array));
+    static_assert(ltl::is_iterable(array2));
+  }
+
+  {
+    static_assert(ltl::is_type(5)(8));
+    static_assert(ltl::is_type(ltl::type_v<int>)(8));
+    static_assert(ltl::is_type(8)(ltl::type_v<int>));
+    static_assert(ltl::is_type(ltl::type_v<int>)(ltl::type_v<int>));
+
+    static_assert(!ltl::is_type(8)(12.0));
+    static_assert(!ltl::is_type(ltl::type_v<int>)(ltl::type_v<long>));
+
+    struct Base {};
+    struct Derived : Base {};
+    struct NotDerived {};
+    Base b;
+    Derived d;
+    NotDerived nd;
+
+    static_assert(ltl::is_derived_from(b)(d));
+    static_assert(ltl::is_derived_from(b)(nd) == false_v);
+    static_assert(ltl::is_derived_from(ltl::type_v<Base>)(d));
+    static_assert(ltl::is_derived_from(b)(ltl::type_v<Derived>));
+    static_assert(ltl::is_derived_from(ltl::type_v<Base>)(ltl::type_v<Derived>));
+
+    static_assert(!ltl::is_derived_from(ltl::type_v<Base>)(nd));
+    static_assert(!ltl::is_derived_from(b)(ltl::type_v<NotDerived>));
+    static_assert(!ltl::is_derived_from(ltl::type_v<Base>)(ltl::type_v<NotDerived>));
+  }
 }
 
 using Float =
@@ -284,6 +366,7 @@ using Meter = ltl::strong_type_t<float, struct DistanceTag, ltl::EqualityCompara
                                  ltl::Subtractable, ltl::OStreamable>;
 
 using Km = ltl::multiple_of<Meter, std::ratio<1000>>;
+using Dm = ltl::multiple_of<Km, std::ratio<1, 100>>;
 
 constexpr float pi = 3.1415926535f;
 
@@ -315,6 +398,7 @@ void test_strong_type() {
 
   constexpr Km oneKilometer{1.0f};
   constexpr Meter oneKilometerInMeter{oneKilometer};
+  Dm oneKilometerInDecimeter{oneKilometerInMeter};
   static_assert(oneKilometer == Meter{1000.0f});
   static_assert(oneKilometer != Meter{1200.0f});
   static_assert(oneKilometerInMeter < Meter{1200.0f});
@@ -328,7 +412,11 @@ void test_strong_type() {
   static_assert(ltl::type_v<ltl::multiple_of<Km, std::ratio<1, 1000>>> ==
                 ltl::type_v<ltl::multiple_of<Meter, std::ratio<1000, 1000>>>);
 
-  std::cout << oneKilometer << "km = " << oneKilometerInMeter << "m" << std::endl;
+  std::cout << oneKilometer << "km = " << oneKilometerInMeter
+            << "m = " << oneKilometerInDecimeter << "dm" << std::endl;
+
+  oneKilometerInDecimeter += Meter{30.0f} + Km{1.0f};
+  std::cout << "1km + 30m + 1km = " << oneKilometerInDecimeter << "dm" << std::endl;
 
   constexpr radians rad{pi};
   constexpr degrees deg(rad);
@@ -379,8 +467,8 @@ void test_find_range() {
   }
 
   {
-    auto notFind = ltl::find_by_value(v, 25);
-    auto find = ltl::find_by_value(v, 2);
+    auto notFind = ltl::find_value(v, 25);
+    auto find = ltl::find_value(v, 2);
     assert(!notFind);
     assert(find);
     assert(*find == 2);
@@ -402,11 +490,11 @@ void test_find_range() {
   }
 }
 
-template <typename T> auto f(T) -> ltl::requires_void<ltl::FloatingPoint<T>> {
+template <typename T> auto f(T) -> ltl::requires_void<ltl::IsFloatingPoint<T>> {
   std::cout << "Floating point" << std::endl;
 }
 
-template <typename T> auto f(T) -> ltl::requires_void<ltl::Integral<T>> {
+template <typename T> auto f(T) -> ltl::requires_void<ltl::IsIntegral<T>> {
   std::cout << "Integral" << std::endl;
 }
 
@@ -416,6 +504,45 @@ void test_concept() {
   f(5.0f);
   f(5u);
   f(5ull);
+}
+
+void test_optional() {
+  std::cout << std::endl << "test_optional" << std::endl;
+  std::optional<int> a(5), b;
+  ltl::cout << a << "\n" << b << "\n";
+
+  auto times_3 = _((x), x * 3);
+  auto plus_1 = _((x), x + 1);
+  auto identity = [](auto x) -> std::optional<int> { return x; };
+  ltl::cout << (a | times_3) << "\n";
+  ltl::cout << (b | times_3) << "\n";
+
+  ltl::cout << (a | times_3 | plus_1) << "\n";
+  ltl::cout << (b | times_3 | plus_1) << "\n";
+  ltl::cout << (a >> identity) << "\n";
+}
+
+void test_range_view() {
+  using namespace ltl;
+  std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  auto array_view1 = Range{array};
+  auto array_view2 = Range{array.begin(), array.end()};
+  assert(!array_view1.empty());
+  assert(array_view2.size() == array_view1.size() && array.size() == array_view1.size());
+  assert(&array.front() == &array_view1.front() && &array.back() == &array_view2.back());
+}
+
+void test_filter() {
+  using namespace ltl;
+  std::cout << "Filter test: " << std::endl;
+  std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+  auto isOdd = _((x), x % 2);
+  auto isEven = _((x), x % 2 == 0);
+  auto superiorThan = [](auto x) { return [x](auto y) { return y > x; }; };
+  ltl::cout << "Odds: " << (array | filter(isOdd)) << "\n";
+  ltl::cout << "Even: " << (array | filter(isEven)) << "\n";
+  ltl::cout << "Odds superior than 5: "
+            << (array | filter(isOdd) | filter(superiorThan(5))) << "\n";
 }
 
 int main() {
@@ -436,6 +563,10 @@ int main() {
   test_find_range();
 
   test_concept();
+  test_optional();
+
+  test_range_view();
+  test_filter();
 
   return 0;
 }
