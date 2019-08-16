@@ -26,9 +26,12 @@ namespace ltl {
 template <typename> constexpr bool always_false = false;
 
 /////////////////////// decay_reference_wrapper
-template <typename T> struct decay_reference_wrapper { using type = std::decay_t<T>; };
+template <typename T> struct decay_reference_wrapper {
+  using type = std::decay_t<T>;
+};
 
-template <typename T> struct decay_reference_wrapper<std::reference_wrapper<T>> {
+template <typename T>
+struct decay_reference_wrapper<std::reference_wrapper<T>> {
   using type = T &;
 };
 
@@ -46,7 +49,9 @@ template <typename... Fs> struct overloader : Fs... {
 template <typename T, template <typename> typename crtpType> struct crtp {
   T &underlying() { return static_cast<T &>(*this); }
 
-  constexpr const T &underlying() const { return static_cast<const T &>(*this); }
+  constexpr const T &underlying() const {
+    return static_cast<const T &>(*this);
+  }
 };
 
 ///////////////////// bool
@@ -65,17 +70,20 @@ constexpr ltl::true_t true_v;
 namespace ltl {
 template <bool v> constexpr bool_t<v> bool_v{};
 
-#define OP(op)                                                                           \
-  template <bool v1, bool v2>                                                            \
-  [[nodiscard]] constexpr bool_t<v1 op v2> operator op(bool_t<v1>, bool_t<v2>) {         \
-    return {};                                                                           \
+#define OP(op)                                                                 \
+  template <bool v1, bool v2>                                                  \
+  [[nodiscard]] constexpr bool_t<v1 op v2> operator op(bool_t<v1>,             \
+                                                       bool_t<v2>) {           \
+    return {};                                                                 \
   }
 
 LPL_MAP(OP, ==, !=, &&, ||)
 
 #undef OP
 
-template <bool v>[[nodiscard]] constexpr bool_t<!v> operator!(bool_t<v>) { return {}; }
+template <bool v>[[nodiscard]] constexpr bool_t<!v> operator!(bool_t<v>) {
+  return {};
+}
 
 ///////////////////////// type
 template <typename T> struct type_t {
@@ -90,7 +98,8 @@ template <typename T1, typename T2>
   return {};
 }
 
-template <typename T>[[nodiscard]] constexpr true_t operator==(type_t<T>, type_t<T>) {
+template <typename T>
+[[nodiscard]] constexpr true_t operator==(type_t<T>, type_t<T>) {
   return {};
 }
 
@@ -99,7 +108,8 @@ template <typename T1, typename T2>
   return {};
 }
 
-template <typename T>[[nodiscard]] constexpr false_t operator!=(type_t<T>, type_t<T>) {
+template <typename T>
+[[nodiscard]] constexpr false_t operator!=(type_t<T>, type_t<T>) {
   return {};
 }
 
@@ -118,26 +128,29 @@ template <char... _digits>[[nodiscard]] constexpr int digits_to_int() {
 }
 } // namespace detail
 
-#define OP(op)                                                                           \
-  template <int N1, int N2>                                                              \
-  [[nodiscard]] constexpr number_t<(N1 op N2)> operator op(number_t<N1>, number_t<N2>) { \
-    return {};                                                                           \
+#define OP(op)                                                                 \
+  template <int N1, int N2>                                                    \
+  [[nodiscard]] constexpr number_t<(N1 op N2)> operator op(number_t<N1>,       \
+                                                           number_t<N2>) {     \
+    return {};                                                                 \
   }
 LPL_MAP(OP, +, -, *, /, %, &, |, ^, <<, >>)
 #undef OP
 
-#define OP(op)                                                                           \
-  template <int N1, int N2>                                                              \
-  [[nodiscard]] constexpr bool_t<(N1 op N2)> operator op(number_t<N1>, number_t<N2>) {   \
-    return {};                                                                           \
+#define OP(op)                                                                 \
+  template <int N1, int N2>                                                    \
+  [[nodiscard]] constexpr bool_t<(N1 op N2)> operator op(number_t<N1>,         \
+                                                         number_t<N2>) {       \
+    return {};                                                                 \
   }
 
 LPL_MAP(OP, ==, !=, <, <=, >, >=)
 #undef OP
 
-#define OP(op)                                                                           \
-  template <int N>[[nodiscard]] constexpr number_t<(op N)> operator op(number_t<N>) {    \
-    return {};                                                                           \
+#define OP(op)                                                                 \
+  template <int N>                                                             \
+  [[nodiscard]] constexpr number_t<(op N)> operator op(number_t<N>) {          \
+    return {};                                                                 \
   }
 LPL_MAP(OP, ~, +, -)
 #undef OP
@@ -154,15 +167,23 @@ namespace ltl {
 
 ///////////////////// Conditionnal
 template <typename T>[[nodiscard]] constexpr false_t is_type_t(T) { return {}; }
-template <typename T>[[nodiscard]] constexpr true_t is_type_t(type_t<T>) { return {}; }
+template <typename T>[[nodiscard]] constexpr true_t is_type_t(type_t<T>) {
+  return {};
+}
 template <typename T> using IsType = decltype(is_type_t(std::declval<T>()));
 
-template <typename T>[[nodiscard]] constexpr false_t is_number_t(T) { return {}; }
-template <int N>[[nodiscard]] constexpr true_t is_number_t(number_t<N>) { return {}; }
+template <typename T>[[nodiscard]] constexpr false_t is_number_t(T) {
+  return {};
+}
+template <int N>[[nodiscard]] constexpr true_t is_number_t(number_t<N>) {
+  return {};
+}
 template <typename T> using IsNumber = decltype(is_number_t(std::declval<T>()));
 
 template <typename T>[[nodiscard]] constexpr false_t is_bool_t(T) { return {}; }
-template <bool B>[[nodiscard]] constexpr true_t is_bool_t(bool_t<B>) { return {}; }
+template <bool B>[[nodiscard]] constexpr true_t is_bool_t(bool_t<B>) {
+  return {};
+}
 template <typename T> using IsBool = decltype(is_bool_t(std::declval<T>()));
 
 template <typename T>[[nodiscard]] constexpr auto max(T a) { return a; }
@@ -181,24 +202,24 @@ template <typename T1, typename T2, typename... Ts>
 }
 
 /////////////////////////// Traits
-#define TRAIT(name)                                                                      \
-  template <typename... Ts>                                                              \
-      [[nodiscard]] constexpr bool_t<std::LPL_CAT(name, _v) < Ts...>>                    \
-      LPL_CAT(name, _Impl)(type_t<Ts>...) {                                              \
-    return {};                                                                           \
-  }                                                                                      \
-  template <typename... Ts>                                                              \
-  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(Ts && ...) {                         \
-    return LPL_CAT(name, _Impl)(type_v<std::decay_t<Ts>>...);                            \
-  }                                                                                      \
-  constexpr auto name = [](auto &&... xs) constexpr {                                    \
-    return LPL_CAT(name, _Impl)(FWD(xs)...);                                             \
+#define TRAIT(name)                                                            \
+  template <typename... Ts>                                                    \
+      [[nodiscard]] constexpr bool_t<std::LPL_CAT(name, _v) < Ts...>>          \
+      LPL_CAT(name, _Impl)(type_t<Ts>...) {                                    \
+    return {};                                                                 \
+  }                                                                            \
+  template <typename... Ts>                                                    \
+  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(Ts && ...) {               \
+    return LPL_CAT(name, _Impl)(type_v<std::decay_t<Ts>>...);                  \
+  }                                                                            \
+  constexpr auto name = [](auto &&... xs) constexpr {                          \
+    return LPL_CAT(name, _Impl)(FWD(xs)...);                                   \
   };
 
 // Primary type categories
-LPL_MAP(TRAIT, is_void, is_null_pointer, is_integral, is_floating_point, is_enum,
-        is_union, is_class, is_function, is_pointer, is_member_object_pointer,
-        is_member_function_pointer)
+LPL_MAP(TRAIT, is_void, is_null_pointer, is_integral, is_floating_point,
+        is_enum, is_union, is_class, is_function, is_pointer,
+        is_member_object_pointer, is_member_function_pointer)
 
 // Composite type categories
 LPL_MAP(TRAIT, is_fundamental, is_arithmetic, is_scalar, is_object, is_compound,
@@ -206,8 +227,8 @@ LPL_MAP(TRAIT, is_fundamental, is_arithmetic, is_scalar, is_object, is_compound,
 
 // Type properties
 LPL_MAP(TRAIT, is_trivial, is_trivially_copyable, is_standard_layout,
-        /*has_unique_object_representations,*/ is_empty, is_polymorphic, is_abstract,
-        is_final, is_aggregate, is_signed, is_unsigned)
+        /*has_unique_object_representations,*/ is_empty, is_polymorphic,
+        is_abstract, is_final, is_aggregate, is_signed, is_unsigned)
 
 // Supported operations
 LPL_MAP(TRAIT, is_default_constructible, is_trivially_default_constructible,
@@ -217,46 +238,55 @@ LPL_MAP(TRAIT, is_default_constructible, is_trivially_default_constructible,
         is_nothrow_move_constructible)
 
 LPL_MAP(TRAIT, is_copy_assignable, is_trivially_copy_assignable,
-        is_nothrow_copy_assignable, is_move_assignable, is_trivially_move_assignable,
-        is_nothrow_move_assignable)
+        is_nothrow_copy_assignable, is_move_assignable,
+        is_trivially_move_assignable, is_nothrow_move_assignable)
 
 LPL_MAP(TRAIT, is_assignable, is_trivially_assignable, is_nothrow_assignable,
         is_swappable_with, is_nothrow_swappable_with)
 
-LPL_MAP(TRAIT, is_destructible, is_trivially_destructible, is_nothrow_destructible,
-        has_virtual_destructor, is_swappable, is_nothrow_swappable)
+LPL_MAP(TRAIT, is_destructible, is_trivially_destructible,
+        is_nothrow_destructible, has_virtual_destructor, is_swappable,
+        is_nothrow_swappable)
 
-LPL_MAP(TRAIT, is_constructible, is_trivially_constructible, is_nothrow_constructible)
+LPL_MAP(TRAIT, is_constructible, is_trivially_constructible,
+        is_nothrow_constructible)
 
 // Type relationships
 LPL_MAP(TRAIT, is_same, is_base_of, is_convertible)
 
-LPL_MAP(TRAIT, is_invocable, is_invocable_r, is_nothrow_invocable, is_nothrow_invocable_r)
+LPL_MAP(TRAIT, is_invocable, is_invocable_r, is_nothrow_invocable,
+        is_nothrow_invocable_r)
 
 #undef TRAIT_DECAY
 #undef TRAIT
 
-#define TRAIT_REFERENCE(name)                                                            \
-  template <typename T>                                                                  \
-      [[nodiscard]] constexpr bool_t<std::LPL_CAT(name, _v) < T>>                        \
-      LPL_CAT(name, _Impl)(type_t<T>) {                                                  \
-    return {};                                                                           \
-  }                                                                                      \
-  template <typename T>[[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(T &&) {         \
-    return LPL_CAT(name, _Impl)(type_v<T &&>);                                           \
-  }                                                                                      \
-  constexpr auto name = [](auto &&x) constexpr { return LPL_CAT(name, _Impl)(FWD(x)); };
+#define TRAIT_REFERENCE(name)                                                  \
+  template <typename T>                                                        \
+      [[nodiscard]] constexpr bool_t<std::LPL_CAT(name, _v) < T>>              \
+      LPL_CAT(name, _Impl)(type_t<T>) {                                        \
+    return {};                                                                 \
+  }                                                                            \
+  template <typename T>                                                        \
+  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(T &&) {                    \
+    return LPL_CAT(name, _Impl)(type_v<T &&>);                                 \
+  }                                                                            \
+  constexpr auto name = [](auto &&x) constexpr {                               \
+    return LPL_CAT(name, _Impl)(FWD(x));                                       \
+  };
 
-#define TRAIT_CVNESS(name)                                                               \
-  template <typename T>                                                                  \
-      [[nodiscard]] constexpr bool_t<std::LPL_CAT(name, _v) < T>>                        \
-      LPL_CAT(name, _Impl)(type_t<T>) {                                                  \
-    return {};                                                                           \
-  }                                                                                      \
-  template <typename T>[[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(T &&) {         \
-    return LPL_CAT(name, _Impl)(type_v<std::remove_reference_t<T>>);                     \
-  }                                                                                      \
-  constexpr auto name = [](auto &&x) constexpr { return LPL_CAT(name, _Impl)(FWD(x)); };
+#define TRAIT_CVNESS(name)                                                     \
+  template <typename T>                                                        \
+      [[nodiscard]] constexpr bool_t<std::LPL_CAT(name, _v) < T>>              \
+      LPL_CAT(name, _Impl)(type_t<T>) {                                        \
+    return {};                                                                 \
+  }                                                                            \
+  template <typename T>                                                        \
+  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(T &&) {                    \
+    return LPL_CAT(name, _Impl)(type_v<std::remove_reference_t<T>>);           \
+  }                                                                            \
+  constexpr auto name = [](auto &&x) constexpr {                               \
+    return LPL_CAT(name, _Impl)(FWD(x));                                       \
+  };
 
 // Reference / cv-ness
 LPL_MAP(TRAIT_REFERENCE, is_lvalue_reference, is_rvalue_reference)
@@ -265,10 +295,11 @@ LPL_MAP(TRAIT_CVNESS, is_const, is_volatile, is_array)
 #undef TRAIT_REFERENCE
 #undef TRAIT_CVNESS
 
-#define TRAIT(name)                                                                      \
-  template <typename T>                                                                  \
-      [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T>> name(type_t<T>) {    \
-    return {};                                                                           \
+#define TRAIT(name)                                                            \
+  template <typename T>                                                        \
+      [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T>>            \
+      name(type_t<T>) {                                                        \
+    return {};                                                                 \
   }
 
 // Property queries
@@ -282,19 +313,23 @@ LPL_MAP(TRAIT, alignment_of, rank)
 
 #undef TRAIT
 
-#define TRAIT(name)                                                                      \
-  template <typename T>                                                                  \
-      [[nodiscard]] constexpr type_t<std::LPL_CAT(name, _t) < T>>                        \
-      LPL_CAT(name, _Impl)(type_t<T>) {                                                  \
-    return {};                                                                           \
-  }                                                                                      \
-  template <typename T>[[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(T &&) {         \
-    return LPL_CAT(name, _Impl)(type_v<T>);                                              \
-  }                                                                                      \
-  constexpr auto name = [](auto &&x) constexpr { return LPL_CAT(name, _Impl)(FWD(x)); };
+#define TRAIT(name)                                                            \
+  template <typename T>                                                        \
+      [[nodiscard]] constexpr type_t<std::LPL_CAT(name, _t) < T>>              \
+      LPL_CAT(name, _Impl)(type_t<T>) {                                        \
+    return {};                                                                 \
+  }                                                                            \
+  template <typename T>                                                        \
+  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(T &&) {                    \
+    return LPL_CAT(name, _Impl)(type_v<T>);                                    \
+  }                                                                            \
+  constexpr auto name = [](auto &&x) constexpr {                               \
+    return LPL_CAT(name, _Impl)(FWD(x));                                       \
+  };
 
 // const-volatibility specifiers
-LPL_MAP(TRAIT, remove_cv, remove_const, remove_volatile, add_cv, add_const, add_volatile)
+LPL_MAP(TRAIT, remove_cv, remove_const, remove_volatile, add_cv, add_const,
+        add_volatile)
 
 // references
 LPL_MAP(TRAIT, remove_reference, add_lvalue_reference, add_rvalue_reference)
@@ -311,21 +346,23 @@ LPL_MAP(TRAIT, remove_extent, remove_all_extents)
 TRAIT(decay)
 #undef TRAIT
 
-#define LTL_MAKE_IS_KIND(type, name, conceptName)                                        \
-  template <typename T> struct LPL_CAT(name, ImplStruct) : false_t {};                   \
-  template <typename... Ts> struct LPL_CAT(name, ImplStruct)<type<Ts...>> : true_t {};   \
-  template <typename T>                                                                  \
-  constexpr LPL_CAT(name, ImplStruct)<T> LPL_CAT(name, Impl)(type_t<T>) {                \
-    return {};                                                                           \
-  }                                                                                      \
-  template <typename T>                                                                  \
-  constexpr LPL_CAT(name, ImplStruct)<std::decay_t<T>> LPL_CAT(name, Impl)(T &&) {       \
-    return {};                                                                           \
-  }                                                                                      \
-  constexpr auto name = [](auto &&x) constexpr noexcept {                                \
-    return LPL_CAT(name, Impl)(FWD(x));                                                  \
-  };                                                                                     \
-  template <typename T>                                                                  \
+#define LTL_MAKE_IS_KIND(type, name, conceptName)                              \
+  template <typename T> struct LPL_CAT(name, ImplStruct) : false_t {};         \
+  template <typename... Ts>                                                    \
+  struct LPL_CAT(name, ImplStruct)<type<Ts...>> : true_t {};                   \
+  template <typename T>                                                        \
+  constexpr LPL_CAT(name, ImplStruct)<T> LPL_CAT(name, Impl)(type_t<T>) {      \
+    return {};                                                                 \
+  }                                                                            \
+  template <typename T>                                                        \
+  constexpr LPL_CAT(name, ImplStruct)<std::decay_t<T>> LPL_CAT(name,           \
+                                                               Impl)(T &&) {   \
+    return {};                                                                 \
+  }                                                                            \
+  constexpr auto name = [](auto &&x) constexpr noexcept {                      \
+    return LPL_CAT(name, Impl)(FWD(x));                                        \
+  };                                                                           \
+  template <typename T>                                                        \
   constexpr auto conceptName = LPL_CAT(name, ImplStruct)<std::decay_t<T>> {}
 
 ///////////////////////// is_valid
@@ -340,13 +377,14 @@ template <typename F> constexpr auto is_valid(F f) {
 
 #define LTL_WRITE_AUTO_WITH_COMMA_IMPL(x) , auto &&x
 
-#define LTL_WRITE_AUTO_IMPL(x, ...)                                                      \
+#define LTL_WRITE_AUTO_IMPL(x, ...)                                            \
   (auto &&x LPL_MAP(LTL_WRITE_AUTO_WITH_COMMA_IMPL, __VA_ARGS__))
 
 #define LTL_ENSURE_NOT_EMPTY(...) (__VA_ARGS__, ())
-#define IS_VALID(variables, ...)                                                         \
-  ltl::is_valid([] LPL_IDENTITY(LTL_WRITE_AUTO_IMPL LTL_ENSURE_NOT_EMPTY variables)      \
-                    -> decltype(__VA_ARGS__, void()) {})
+#define IS_VALID(variables, ...)                                               \
+  ltl::is_valid(                                                               \
+      [] LPL_IDENTITY(LTL_WRITE_AUTO_IMPL LTL_ENSURE_NOT_EMPTY variables)      \
+          -> decltype(__VA_ARGS__, void()) {})
 
 template <typename T>[[nodiscard]] constexpr auto is_iterableImpl(type_t<T>) {
   constexpr auto trait = IS_VALID((x), std::begin(FWD(x)), std::end(FWD(x)));
@@ -358,18 +396,20 @@ template <typename T>[[nodiscard]] constexpr auto is_iterableImpl(T &&) {
 }
 
 constexpr auto is_iterable = [](auto &&x) constexpr {
-  return decltype(is_iterableImpl(FWD(x))){};
+  return is_iterableImpl(FWD(x));
 };
 
 template <typename T> constexpr auto is_type(type_t<T> type) {
   return ltl::overloader{
       [type](auto x) constexpr
-          ->std::enable_if_t<IsType<decltype(x)>::value, decltype(type == x)>{(void)type;
+          ->std::enable_if_t<IsType<decltype(x)>::value, decltype(type == x)>{
+              (void)type;
   return {};
 }
 , [type](auto &&x) constexpr
   -> std::enable_if_t<!IsType<std::decay_t<decltype(FWD(x))>>::value,
-                      decltype(type == type_v<std::decay_t<decltype(FWD(x))>>)> {
+                      decltype(type ==
+                               type_v<std::decay_t<decltype(FWD(x))>>)> {
   (void)type;
   return {};
 }
@@ -381,16 +421,13 @@ template <typename T> constexpr auto is_type(T &&) {
 }
 
 template <typename T> constexpr auto is_derived_from(type_t<T> type) {
-  return ltl::overloader{
-      [type](auto x) constexpr
-          ->std::enable_if_t<IsType<decltype(x)>::value, decltype(is_base_of(type, x))>{
-              (void)type;
+  return ltl::overloader{[type](auto x) constexpr->std::enable_if_t<
+      IsType<decltype(x)>::value, decltype(is_base_of(type, x))>{(void)type;
   return {};
 }
-, [type](auto &&x) constexpr
-  -> std::enable_if_t<!IsType<std::decay_t<decltype(FWD(x))>>::value,
-                      decltype(is_base_of(type,
-                                          type_v<std::decay_t<decltype(FWD(x))>>))> {
+, [type](auto &&x) constexpr -> std::enable_if_t<
+      !IsType<std::decay_t<decltype(FWD(x))>>::value,
+      decltype(is_base_of(type, type_v<std::decay_t<decltype(FWD(x))>>))> {
   (void)type;
   return {};
 }

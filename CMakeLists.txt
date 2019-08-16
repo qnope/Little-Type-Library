@@ -15,7 +15,7 @@ set(HEADERS
     lpl/lpl.h)
 
 if(MSVC)
-	add_compile_options(/experimental:preprocessor /permissive-)
+        add_compile_options(/experimental:preprocessor /permissive-)
 endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
