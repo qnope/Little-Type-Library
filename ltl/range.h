@@ -91,7 +91,7 @@ template <typename F> struct NullableFunction {
 };
 
 template <typename DerivedIt, typename It, typename Function>
-class BaseIterator {
+class BaseIterator : public crtp<DerivedIt, BaseIterator> {
   static constexpr auto hasAdvanceUntilNext =
       IS_VALID((x), x.advanceUntilNext(IncrementTag{}),
                x.advanceUntilNext(DecrementTag{}));
@@ -105,22 +105,22 @@ public:
                Function &&function) noexcept
       : m_it{std::move(it)}, m_sentinelBegin{std::move(sentinelBegin)},
         m_sentinelEnd{std::move(sentinelEnd)}, m_function{std::move(function)} {
-    DerivedIt &derived = static_cast<DerivedIt &>(*this);
+    DerivedIt &derived = this->underlying();
     if_constexpr(hasAdvanceUntilNext(derived)) {
       derived.advanceUntilNext(IncrementTag{});
     }
   }
 
   bool operator==(const DerivedIt &it) const noexcept {
-    return static_cast<const DerivedIt &>(*this).m_it == it.m_it;
+    return this->underlying().m_it == it.m_it;
   }
 
   bool operator!=(const DerivedIt &it) const noexcept {
-    return static_cast<const DerivedIt &>(*this).m_it != it.m_it;
+    return this->underlying().m_it != it.m_it;
   }
 
   DerivedIt &operator++() noexcept {
-    DerivedIt &it = static_cast<DerivedIt &>(*this);
+    DerivedIt &it = this->underlying();
     assert(it.m_it != it.m_sentinelEnd);
     ++it.m_it;
     if_constexpr(hasAdvanceUntilNext(it)) {
@@ -130,7 +130,7 @@ public:
   }
 
   DerivedIt &operator--() noexcept {
-    DerivedIt &it = static_cast<DerivedIt &>(*this);
+    DerivedIt &it = this->underlying();
     assert(it.m_it != it.m_sentinelBegin);
     --it.m_it;
     if_constexpr(hasAdvanceUntilNext(it)) {
@@ -140,18 +140,18 @@ public:
   }
 
   decltype(auto) operator*() noexcept {
-    DerivedIt &it = static_cast<DerivedIt &>(*this);
+    DerivedIt &it = this->underlying();
     assert(it.m_it != it.m_sentinelEnd);
     return *it.m_it;
   }
 
   auto operator-> () noexcept {
-    DerivedIt &it = static_cast<DerivedIt &>(*this);
+    DerivedIt &it = this->underlying();
     return AsPointer<decltype(*it)>{*it};
   }
 
   DerivedIt &operator+=(long long int n) noexcept {
-    DerivedIt &it = static_cast<DerivedIt &>(*this);
+    DerivedIt &it = this->underlying();
     if (n > 0) {
       while (n--)
         ++it;
@@ -165,7 +165,7 @@ public:
   }
 
   DerivedIt &operator-=(long long int n) noexcept {
-    DerivedIt &it = static_cast<DerivedIt &>(*this);
+    DerivedIt &it = this->underlying();
     if (n > 0) {
       while (n--)
         --it;
@@ -299,7 +299,8 @@ template <typename R, typename F> constexpr auto get_iterator_type() {
   else if constexpr (IsMapType<F>)
     return type_v<MapIterator<it, f>>;
   else
-    return type_v<void>;
+    compile_time_error(
+        "You must use a valid type that is useful for smart iterators");
 }
 
 template <typename R, typename F>

@@ -46,7 +46,7 @@ template <typename... Fs> struct overloader : Fs... {
 };
 
 ////////////////////// crtp
-template <typename T, template <typename> typename crtpType> struct crtp {
+template <typename T, template <typename...> typename crtpType> struct crtp {
   T &underlying() { return static_cast<T &>(*this); }
 
   constexpr const T &underlying() const {
