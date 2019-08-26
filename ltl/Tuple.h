@@ -5,8 +5,7 @@
 namespace ltl {
 namespace detail {
 template <typename... Ts> struct tuple_applied {
-  template <bool isNotEmpty = (sizeof...(Ts) > 0),
-            typename = std::enable_if_t<isNotEmpty>>
+  template <bool isNotEmpty = (sizeof...(Ts) > 0), requires_f(isNotEmpty)>
   constexpr tuple_applied() : m_tuple{Ts{}...} {}
 
   constexpr tuple_applied(Ts &&... ts) : m_tuple{FWD(ts)...} {}
@@ -33,7 +32,7 @@ public:
   constexpr static auto length = number_v<sizeof...(Ts)>;
   constexpr static auto isEmpty = length == 0_n;
 
-  template <bool isNotEmpty = !isEmpty, typename = std::enable_if_t<isNotEmpty>>
+  template <bool isNotEmpty = !isEmpty, requires_f(isNotEmpty)>
   explicit constexpr tuple_t() : m_storage{} {}
 
   explicit constexpr tuple_t(Ts... ts) : m_storage{FWD(ts)...} {}
@@ -244,45 +243,11 @@ template <int... Ns> constexpr number_list_t<Ns...> number_list_v{};
 template <bool... Bs> constexpr bool_list_t<Bs...> bool_list_v{};
 
 // Conditional functions
-template <typename T>[[nodiscard]] constexpr false_t is_tuple_t(T) {
-  return {};
-}
-template <typename... Ts>
-[[nodiscard]] constexpr true_t is_tuple_t(const tuple_t<Ts...> &) {
-  return {};
-}
-template <typename T>
-constexpr auto IsTuple = decltype(is_tuple_t(std::declval<T>())){};
+LTL_MAKE_IS_KIND(tuple_t, is_tuple_t, IsTuple, typename);
+LTL_MAKE_IS_KIND(type_list_t, is_type_list_t, IsTypeList, typename);
 
-template <typename T>[[nodiscard]] constexpr false_t is_type_list_t(T) {
-  return {};
-}
-template <typename... Ts>
-[[nodiscard]] constexpr true_t is_type_list_t(type_list_t<Ts...>) {
-  return {};
-}
-template <typename T>
-constexpr auto IsTypeList = decltype(is_type_list_t(std::declval<T>())){};
-
-template <typename T>[[nodiscard]] constexpr false_t is_number_list_t(T) {
-  return {};
-}
-template <int... Ns>
-[[nodiscard]] constexpr true_t is_number_list_t(number_list_t<Ns...>) {
-  return {};
-}
-template <typename T>
-constexpr auto IsNumberList = decltype(is_number_list_t(std::declval<T>())){};
-
-template <typename T>[[nodiscard]] constexpr false_t is_bool_list_t(T) {
-  return {};
-}
-template <bool... Bs>
-[[nodiscard]] constexpr true_t is_bool_list_t(bool_list_t<Bs...>) {
-  return {};
-}
-template <typename T>
-constexpr auto IsBoolList = decltype(is_bool_list_t(std::declval<T>())){};
+LTL_MAKE_IS_KIND(number_list_t, is_number_list_t, IsNumberList, int);
+LTL_MAKE_IS_KIND(bool_list_t, is_bool_list_t, IsBoolList, bool);
 
 /////////////////////// Arguments
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>

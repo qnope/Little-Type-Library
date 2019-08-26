@@ -119,4 +119,6 @@ LPL_MAP(ALGO_MONO_ITERATOR, iota, accumulate, inner_product,
 
 #undef ALGO_MONO_ITERATOR
 #undef ALGO_DOUBLE_ITERATOR
+#undef ALGO_FIND_RANGE
+#undef ALGO_FIND_VALUE
 } // namespace ltl

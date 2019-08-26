@@ -339,30 +339,22 @@ void test_trait() {
   }
 
   {
-    static_assert(ltl::is_type(5)(8));
     static_assert(ltl::is_type(ltl::type_v<int>)(8));
-    static_assert(ltl::is_type(8)(ltl::type_v<int>));
     static_assert(ltl::is_type(ltl::type_v<int>)(ltl::type_v<int>));
 
-    static_assert(!ltl::is_type(8)(12.0));
     static_assert(!ltl::is_type(ltl::type_v<int>)(ltl::type_v<long>));
 
     struct Base {};
     struct Derived : Base {};
     struct NotDerived {};
-    Base b;
     Derived d;
     NotDerived nd;
 
-    static_assert(ltl::is_derived_from(b)(d));
-    static_assert(ltl::is_derived_from(b)(nd) == false_v);
     static_assert(ltl::is_derived_from(ltl::type_v<Base>)(d));
-    static_assert(ltl::is_derived_from(b)(ltl::type_v<Derived>));
     static_assert(
         ltl::is_derived_from(ltl::type_v<Base>)(ltl::type_v<Derived>));
 
     static_assert(!ltl::is_derived_from(ltl::type_v<Base>)(nd));
-    static_assert(!ltl::is_derived_from(b)(ltl::type_v<NotDerived>));
     static_assert(
         !ltl::is_derived_from(ltl::type_v<Base>)(ltl::type_v<NotDerived>));
   }

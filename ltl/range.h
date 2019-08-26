@@ -43,7 +43,7 @@ private:
 
 template <typename R> Range(R &r)->Range<decltype(std::begin(r))>;
 
-LTL_MAKE_IS_KIND(Range, is_range, IsRange);
+LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
 
 template <typename T> struct AsPointer {
   AsPointer(T &&v) noexcept : v{std::move(v)} {}
@@ -266,8 +266,9 @@ struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
 
 #undef DECLARE_EVERYTHING_BUT_REFERENCE
 
-LTL_MAKE_IS_KIND(FilterIterator, is_filter_iterator, IsFilterIterator);
-LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator);
+LTL_MAKE_IS_KIND(FilterIterator, is_filter_iterator, IsFilterIterator,
+                 typename);
+LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator, typename);
 template <typename T>
 constexpr auto IsSmartIterator = IsFilterIterator<T> || IsMapIterator<T>;
 
@@ -283,8 +284,8 @@ template <typename F> auto map(F &&f) {
   return MapType<std::decay_t<F>>{FWD(f)};
 }
 
-LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType);
-LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType);
+LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType, typename);
+LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, typename);
 
 template <typename T>
 constexpr auto IsUsefulForSmartIterator = IsFilterType<T> || IsMapType<T>;
@@ -300,7 +301,7 @@ template <typename R, typename F> constexpr auto get_iterator_type() {
     return type_v<MapIterator<it, f>>;
   else
     compile_time_error(
-        "You must use a valid type that is useful for smart iterators");
+        "You must use a valid type that is useful for smart iterators", F);
 }
 
 template <typename R, typename F>

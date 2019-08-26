@@ -17,7 +17,7 @@
 #define if_constexpr(c) if constexpr (decltype(c){})
 #define else_if_constexpr(c) else if constexpr (decltype(c){})
 
-#define compile_time_error(msg) static_assert(::ltl::always_false<void>, msg);
+#define compile_time_error(msg, T) static_assert(::ltl::always_false<T>, msg);
 
 namespace ltl {
 /////////////////////// FWD
@@ -165,27 +165,6 @@ namespace ltl {
 [[nodiscard]] constexpr auto bool_to_number(false_t) { return 0_n; }
 [[nodiscard]] constexpr auto bool_to_number(true_t) { return 1_n; }
 
-///////////////////// Conditionnal
-template <typename T>[[nodiscard]] constexpr false_t is_type_t(T) { return {}; }
-template <typename T>[[nodiscard]] constexpr true_t is_type_t(type_t<T>) {
-  return {};
-}
-template <typename T> using IsType = decltype(is_type_t(std::declval<T>()));
-
-template <typename T>[[nodiscard]] constexpr false_t is_number_t(T) {
-  return {};
-}
-template <int N>[[nodiscard]] constexpr true_t is_number_t(number_t<N>) {
-  return {};
-}
-template <typename T> using IsNumber = decltype(is_number_t(std::declval<T>()));
-
-template <typename T>[[nodiscard]] constexpr false_t is_bool_t(T) { return {}; }
-template <bool B>[[nodiscard]] constexpr true_t is_bool_t(bool_t<B>) {
-  return {};
-}
-template <typename T> using IsBool = decltype(is_bool_t(std::declval<T>()));
-
 template <typename T>[[nodiscard]] constexpr auto max(T a) { return a; }
 
 template <typename T1, typename T2, typename... Ts>
@@ -257,7 +236,6 @@ LPL_MAP(TRAIT, is_same, is_base_of, is_convertible)
 LPL_MAP(TRAIT, is_invocable, is_invocable_r, is_nothrow_invocable,
         is_nothrow_invocable_r)
 
-#undef TRAIT_DECAY
 #undef TRAIT
 
 #define TRAIT_REFERENCE(name)                                                  \
@@ -346,25 +324,6 @@ LPL_MAP(TRAIT, remove_extent, remove_all_extents)
 TRAIT(decay)
 #undef TRAIT
 
-#define LTL_MAKE_IS_KIND(type, name, conceptName)                              \
-  template <typename T> struct LPL_CAT(name, ImplStruct) : false_t {};         \
-  template <typename... Ts>                                                    \
-  struct LPL_CAT(name, ImplStruct)<type<Ts...>> : true_t {};                   \
-  template <typename T>                                                        \
-  constexpr LPL_CAT(name, ImplStruct)<T> LPL_CAT(name, Impl)(type_t<T>) {      \
-    return {};                                                                 \
-  }                                                                            \
-  template <typename T>                                                        \
-  constexpr LPL_CAT(name, ImplStruct)<std::decay_t<T>> LPL_CAT(name,           \
-                                                               Impl)(T &&) {   \
-    return {};                                                                 \
-  }                                                                            \
-  constexpr auto name = [](auto &&x) constexpr noexcept {                      \
-    return LPL_CAT(name, Impl)(FWD(x));                                        \
-  };                                                                           \
-  template <typename T>                                                        \
-  constexpr auto conceptName = LPL_CAT(name, ImplStruct)<std::decay_t<T>> {}
-
 ///////////////////////// is_valid
 
 template <typename F> constexpr auto is_valid(F f) {
@@ -399,35 +358,56 @@ constexpr auto is_iterable = [](auto &&x) constexpr {
   return is_iterableImpl(FWD(x));
 };
 
+#define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                \
+  template <typename T> struct LPL_CAT(name, ImplStruct) : false_t {};         \
+  template <templateType... Ts>                                                \
+  struct LPL_CAT(name, ImplStruct)<type<Ts...>> : true_t {};                   \
+  template <typename T>                                                        \
+      constexpr bool_t<LPL_CAT(name, ImplStruct) < T>::value >                 \
+      LPL_CAT(name, Impl)(type_t<T>) {                                         \
+    return {};                                                                 \
+  }                                                                            \
+  template <typename T>                                                        \
+      constexpr bool_t<LPL_CAT(name, ImplStruct) < std::decay_t<T>>::value >   \
+      LPL_CAT(name, Impl)(T &&) {                                              \
+    return {};                                                                 \
+  }                                                                            \
+  constexpr auto name = [](auto &&x) constexpr noexcept {                      \
+    return LPL_CAT(name, Impl)(FWD(x));                                        \
+  };                                                                           \
+  template <typename T>                                                        \
+  constexpr auto conceptName =                                                 \
+      bool_v<LPL_CAT(name, ImplStruct) < std::decay_t<T>>::value >
+
+LTL_MAKE_IS_KIND(type_t, is_type_t, IsType, typename);
+LTL_MAKE_IS_KIND(number_t, is_number_t, IsNumber, int);
+LTL_MAKE_IS_KIND(bool_t, is_bool_t, IsBool, bool);
+
 template <typename T> constexpr auto is_type(type_t<T> type) {
   return ltl::overloader{
-      [type](auto x) constexpr
-          ->std::enable_if_t<IsType<decltype(x)>::value, decltype(type == x)>{
+      [type](auto &&x) constexpr
+          ->std::enable_if_t<IsType<decltype(x)>, decltype(type == FWD(x))>{
               (void)type;
   return {};
 }
 , [type](auto &&x) constexpr
-  -> std::enable_if_t<!IsType<std::decay_t<decltype(FWD(x))>>::value,
-                      decltype(type ==
-                               type_v<std::decay_t<decltype(FWD(x))>>)> {
+  -> std::enable_if_t<!IsType<std::decay_t<decltype(x)>>,
+                      decltype(type == type_v<std::decay_t<decltype(x)>>)> {
   (void)type;
   return {};
 }
 }; // namespace ltl
 }
 
-template <typename T> constexpr auto is_type(T &&) {
-  return is_type(ltl::type_v<std::decay_t<T>>);
-}
-
 template <typename T> constexpr auto is_derived_from(type_t<T> type) {
-  return ltl::overloader{[type](auto x) constexpr->std::enable_if_t<
-      IsType<decltype(x)>::value, decltype(is_base_of(type, x))>{(void)type;
+  return ltl::overloader{[type](auto &&x) constexpr->std::enable_if_t<
+      IsType<decltype(x)>, decltype(is_base_of(type, x))>{(void)type;
   return {};
 }
-, [type](auto &&x) constexpr -> std::enable_if_t<
-      !IsType<std::decay_t<decltype(FWD(x))>>::value,
-      decltype(is_base_of(type, type_v<std::decay_t<decltype(FWD(x))>>))> {
+, [type](auto &&x) constexpr
+  -> std::enable_if_t<!IsType<std::decay_t<decltype(x)>>,
+                      decltype(is_base_of(type,
+                                          type_v<std::decay_t<decltype(x)>>))> {
   (void)type;
   return {};
 }
@@ -435,10 +415,6 @@ template <typename T> constexpr auto is_derived_from(type_t<T> type) {
 ;
 }
 
-template <typename T> constexpr auto is_derived_from(T &&) {
-  return is_derived_from(type_v<std::decay_t<T>>);
-}
-
-LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional);
+LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, typename);
 
 } // namespace ltl
