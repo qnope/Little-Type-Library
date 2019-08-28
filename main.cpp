@@ -531,7 +531,7 @@ void test_optional() {
 
 void test_range_view() {
   using namespace ltl;
-  constexpr std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  const std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   auto array_view1 = Range{array};
   auto array_view2 = Range{array.begin(), array.end()};
   assert(!array_view1.empty());
@@ -544,7 +544,7 @@ void test_range_view() {
 void test_filter() {
   using namespace ltl;
   std::cout << "Filter test: " << std::endl;
-  std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  const std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
   auto isOdd = _((x), x % 2);
   auto isEven = _((x), x % 2 == 0);
   auto superiorThan = [](auto x) { return [x](auto y) { return y > x; }; };
@@ -588,7 +588,7 @@ void test_map() {
 void test_to() {
   using namespace ltl;
   using namespace std::literals;
-  std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  const std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
   std::array strs = {"2"s, "6"s, "10"s, "14"s, "18"s, "22"s};
   auto oddTimes2 = (array | (filter(_((x), x % 2)) | map(_((x), x * 2))));
   ltl::cout << "odd times 2: " << oddTimes2 << "\n";
@@ -605,6 +605,30 @@ void test_to() {
                       type_v<decltype(oddTimes2Deque)>);
   typed_static_assert(type_v<std::list<std::string>> ==
                       type_v<decltype(oddTimes2List)>);
+}
+
+void test_integer_list() {
+  std::cout << "10 values from 5: ";
+  for (auto e : ltl::valueRange(5) | ltl::take_n(10))
+    std::cout << e << " ";
+  std::cout << std::endl;
+}
+
+void test_zip() {
+  using namespace std::literals;
+  const std::array strings = {"1"s, "2"s, "3"s, "4"s, "5"s};
+  std::array integers = {1, 2, 3, 4, 5};
+
+  std::cout << "test: zip\n";
+  for (auto [i, s] : ltl::zip(integers, strings)) {
+    std::cout << i << "," << s << std::endl;
+  }
+
+  std::cout << "test: enumerate\n";
+  for (auto [i, s] : ltl::enumerate(strings)) {
+    std::cout << i << "," << s << std::endl;
+    assert(std::addressof(s) == std::addressof(strings[i]));
+  }
 }
 
 int main() {
@@ -631,6 +655,9 @@ int main() {
   test_filter();
   test_map();
   test_to();
+
+  test_integer_list();
+  test_zip();
 
   return 0;
 }

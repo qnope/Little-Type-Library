@@ -6,6 +6,7 @@
 #include "operator.h"
 
 #include <deque>
+#include <limits>
 #include <list>
 #include <memory>
 #include <vector>
@@ -25,6 +26,11 @@ public:
 
   auto begin() const { return m_it; }
   auto end() const { return m_end; }
+
+  decltype(auto) operator[](std::size_t idx) {
+    assert(idx < size());
+    return *(m_it + idx);
+  }
 
   decltype(auto) front() const noexcept {
     assert(!empty());
@@ -61,6 +67,7 @@ template <typename T> struct AsPointer<T &> {
 
 struct IncrementTag {};
 struct DecrementTag {};
+struct Nothing {};
 
 template <typename F> struct NullableFunction {
   struct DestructorPtr {
@@ -251,6 +258,44 @@ private:
   }
 };
 
+template <typename It>
+class TakerIterator : public BaseIterator<TakerIterator<It>, It, Nothing> {
+  friend BaseIterator<TakerIterator, It, Nothing>;
+
+public:
+  using reference = typename std::iterator_traits<It>::reference;
+  DECLARE_EVERYTHING_BUT_REFERENCE
+
+  TakerIterator() = default;
+
+  TakerIterator(It &&begin, It &&sentinelBegin, It &&sentinelEnd, std::size_t n)
+      : m_n{n} {
+    this->m_it = std::move(begin);
+    this->m_sentinelBegin = std::move(sentinelBegin);
+    this->m_sentinelEnd = std::move(sentinelEnd);
+    advanceUntilNext(IncrementTag{});
+  }
+
+  TakerIterator(It &&begin)
+      : BaseIterator<TakerIterator<It>, It, Nothing>{std::move(begin)} {}
+
+private:
+  template <typename Tag> void advanceUntilNext(Tag) noexcept {
+    if_constexpr(type_v<Tag> == type_v<IncrementTag>) {
+      if (m_n == 0) {
+        this->m_it = this->m_sentinelEnd;
+      } else
+        --m_n;
+    }
+
+    else {
+      ++m_n;
+    }
+  }
+
+  std::size_t m_n{0};
+};
+
 template <typename It, typename Function>
 struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
   using reference =
@@ -264,17 +309,142 @@ struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
   pointer operator->() { return this->m_function(*this->m_it); }
 };
 
+template <typename ValueType>
+struct ValueIterator
+    : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing> {
+  using reference = ValueType;
+  DECLARE_EVERYTHING_BUT_REFERENCE
+
+  ValueIterator() noexcept {
+    this->m_sentinelBegin = std::numeric_limits<ValueType>::lowest();
+    this->m_sentinelEnd = std::numeric_limits<ValueType>::max();
+    this->m_it = this->m_sentinelBegin;
+    m_step = 1;
+  }
+
+  ValueIterator(ValueType value, ValueType step = 1) noexcept {
+    this->m_sentinelBegin = std::numeric_limits<ValueType>::lowest();
+    this->m_sentinelEnd = std::numeric_limits<ValueType>::max();
+    this->m_it = value;
+    m_step = step;
+  }
+
+  ValueIterator &operator++() noexcept {
+    assert(this->m_it != this->m_sentinelEnd);
+    this->m_it += m_step;
+    return *this;
+  }
+
+  ValueIterator &operator--() noexcept {
+    assert(this->m_it != this->m_sentinelBegin);
+    this->m_it -= m_step;
+    return *this;
+  }
+
+  ValueType operator*() noexcept { return this->m_it; }
+
+  ValueType m_step;
+};
+
+template <typename... Iterators>
+struct ZipIterator
+    : BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>, Nothing> {
+  using reference =
+      tuple_t<typename std::iterator_traits<Iterators>::reference...>;
+
+  using BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>,
+                     Nothing>::BaseIterator;
+
+  DECLARE_EVERYTHING_BUT_REFERENCE
+
+  ZipIterator &operator++() {
+    assert(this->m_it != this->m_sentinelEnd);
+    TO_VARIADIC(this->m_it, xs, (++xs, ...));
+    return *this;
+  }
+
+  ZipIterator &operator--() {
+    assert(this->m_it != this->m_sentinelBegin);
+    TO_VARIADIC(this->m_it, xs, (--xs, ...));
+    return *this;
+  }
+
+  reference operator*() {
+    return TO_VARIADIC(this->m_it, xs, return reference{*xs...});
+  }
+};
+
 #undef DECLARE_EVERYTHING_BUT_REFERENCE
+
+template <typename... Containers> auto zip(Containers &&... containers) {
+  static_assert(sizeof...(Containers) > 0);
+  typed_static_assert_msg((true_v && ... && is_iterable(containers)),
+                          "Zip operations must be used with containers");
+
+  assert(FROM_VARIADIC(FWD(containers))([](auto &&c1, auto &&... cs) {
+    return (true && ... && (FWD(c1).size() == FWD(cs).size()));
+  }));
+
+  return Range{ZipIterator<decltype(std::begin(FWD(containers)))...>{
+                   tuple_t{std::begin(FWD(containers))...},
+                   tuple_t{std::begin(FWD(containers))...},
+                   tuple_t{std::end(FWD(containers))...}, Nothing{}},
+               ZipIterator<decltype(std::begin(FWD(containers)))...>{
+                   tuple_t{std::end(FWD(containers))...}}};
+}
+
+template <typename ValueType> auto valueRange() {
+  return Range{ValueIterator{std::numeric_limits<ValueType>::lowest()},
+               ValueIterator{std::numeric_limits<ValueType>::max()}};
+}
+
+template <typename ValueType> auto valueRange(ValueType start) {
+  return Range{ValueIterator{start},
+               ValueIterator{std::numeric_limits<ValueType>::max()}};
+}
+
+template <typename ValueType> auto valueRange(ValueType start, ValueType end) {
+  return Range{ValueIterator{start}, ValueIterator{end}};
+}
+
+template <typename ValueType> auto steppedValueRange(ValueType step) {
+  auto begin = ValueIterator{std::numeric_limits<ValueType>::lowest(), step};
+  auto end = ValueIterator{std::numeric_limits<ValueType>::max(), step};
+  return Range{begin, end};
+}
+
+template <typename ValueType>
+auto steppedValueRange(ValueType start, ValueType step) {
+  auto begin = ValueIterator{start, step};
+  auto end = ValueIterator{std::numeric_limits<ValueType>::max(), step};
+  return Range{begin, end};
+}
+
+template <typename ValueType>
+auto steppedValueRange(ValueType start, ValueType end, ValueType step) {
+  auto begin = ValueIterator{start, step};
+  auto _end = ValueIterator{end, step};
+  return Range{begin, _end};
+}
+
+template <typename Container> auto enumerate(Container &&container) {
+  return zip(valueRange<std::size_t>(0, container.size()), FWD(container));
+}
 
 LTL_MAKE_IS_KIND(FilterIterator, is_filter_iterator, IsFilterIterator,
                  typename);
 LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator, typename);
+LTL_MAKE_IS_KIND(TakerIterator, is_taker_iterator, IsTakerIterator, typename);
 template <typename T>
-constexpr auto IsSmartIterator = IsFilterIterator<T> || IsMapIterator<T>;
+constexpr auto IsSmartIterator =
+    IsFilterIterator<T> || IsMapIterator<T> || IsTakerIterator<T>;
 
 // Helper Types
 template <typename F> struct FilterType { F f; };
 template <typename F> struct MapType { F f; };
+struct TakerType {
+  std::size_t f;
+};
 
 template <typename F> auto filter(F &&f) {
   return FilterType<std::decay_t<F>>{FWD(f)};
@@ -284,11 +454,14 @@ template <typename F> auto map(F &&f) {
   return MapType<std::decay_t<F>>{FWD(f)};
 }
 
+auto take_n(std::size_t n) { return TakerType{n}; }
+
 LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType, typename);
 LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, typename);
 
 template <typename T>
-constexpr auto IsUsefulForSmartIterator = IsFilterType<T> || IsMapType<T>;
+constexpr auto IsUsefulForSmartIterator = IsFilterType<T> || IsMapType<T> ||
+                                          (type_v<T> == type_v<TakerType>);
 
 // Pipe operator
 namespace detail {
@@ -299,6 +472,8 @@ template <typename R, typename F> constexpr auto get_iterator_type() {
     return type_v<FilterIterator<it, f>>;
   else if constexpr (IsMapType<F>)
     return type_v<MapIterator<it, f>>;
+  else if constexpr (type_v<F> == type_v<TakerType>)
+    return type_v<TakerIterator<it>>;
   else
     compile_time_error(
         "You must use a valid type that is useful for smart iterators", F);

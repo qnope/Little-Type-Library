@@ -357,5 +357,9 @@ struct tuple_element<I, const ::ltl::tuple_t<Ts...>> {
   using type =
       decltype(std::declval<const ::ltl::tuple_t<Ts...>>().template get<I>());
 };
-
 } // namespace std
+
+#define FROM_VARIADIC(args)                                                    \
+  ::ltl::tuple_t<decltype(args)...> { args... }
+
+#define TO_VARIADIC(tuple, var, expr) tuple([](auto &&... var) { expr; });
