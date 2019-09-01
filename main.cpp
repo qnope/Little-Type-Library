@@ -446,6 +446,7 @@ void test_range() {
   assert(ltl::count_if(odds, isSuperiorTo(4)) == 4);
   assert(ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
   assert(ltl::accumulate(odds, 0) == 3 + 5 + 7 + 9 + 11);
+  assert(ltl::accumulate(std::move(odds), 0) == 3 + 5 + 7 + 9 + 11);
 
   std::array<int, 5> reverseOdds = {11, 9, 7, 5, 3};
   assert(!ltl::equal(reverseOdds, odds));
@@ -617,11 +618,12 @@ void test_integer_list() {
 void test_zip() {
   using namespace std::literals;
   const std::array strings = {"1"s, "2"s, "3"s, "4"s, "5"s};
+  const std::array strings2 = {"One"s, "Two"s, "Three"s, "Four"s, "Five"s};
   std::array integers = {1, 2, 3, 4, 5};
 
   std::cout << "test: zip\n";
-  for (auto [i, s] : ltl::zip(integers, strings)) {
-    std::cout << i << "," << s << std::endl;
+  for (auto [i, s, s2] : ltl::zip(integers, strings, strings2)) {
+    std::cout << i << "," << s << " " << s2 << std::endl;
   }
 
   std::cout << "test: enumerate\n";

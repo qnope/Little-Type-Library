@@ -1,5 +1,6 @@
 #pragma once
 
+#include "StrongType.h"
 #include "Tuple.h"
 #include "concept.h"
 #include "ltl.h"
@@ -98,11 +99,14 @@ template <typename F> struct NullableFunction {
 };
 
 template <typename DerivedIt, typename It, typename Function>
-class BaseIterator : public crtp<DerivedIt, BaseIterator> {
+class BaseIterator
+    : public PostIncrementable<BaseIterator<DerivedIt, It, Function>>,
+      public PostDecrementable<BaseIterator<DerivedIt, It, Function>> {
   static constexpr auto hasAdvanceUntilNext =
       IS_VALID((x), x.advanceUntilNext(IncrementTag{}),
                x.advanceUntilNext(DecrementTag{}));
 
+  ENABLE_CRTP(DerivedIt)
 public:
   BaseIterator() = default;
 
@@ -112,22 +116,22 @@ public:
                Function &&function) noexcept
       : m_it{std::move(it)}, m_sentinelBegin{std::move(sentinelBegin)},
         m_sentinelEnd{std::move(sentinelEnd)}, m_function{std::move(function)} {
-    DerivedIt &derived = this->underlying();
+    DerivedIt &derived = underlying();
     if_constexpr(hasAdvanceUntilNext(derived)) {
       derived.advanceUntilNext(IncrementTag{});
     }
   }
 
   bool operator==(const DerivedIt &it) const noexcept {
-    return this->underlying().m_it == it.m_it;
+    return underlying().m_it == it.m_it;
   }
 
   bool operator!=(const DerivedIt &it) const noexcept {
-    return this->underlying().m_it != it.m_it;
+    return underlying().m_it != it.m_it;
   }
 
   DerivedIt &operator++() noexcept {
-    DerivedIt &it = this->underlying();
+    DerivedIt &it = underlying();
     assert(it.m_it != it.m_sentinelEnd);
     ++it.m_it;
     if_constexpr(hasAdvanceUntilNext(it)) {
@@ -137,7 +141,7 @@ public:
   }
 
   DerivedIt &operator--() noexcept {
-    DerivedIt &it = this->underlying();
+    DerivedIt &it = underlying();
     assert(it.m_it != it.m_sentinelBegin);
     --it.m_it;
     if_constexpr(hasAdvanceUntilNext(it)) {
@@ -147,18 +151,18 @@ public:
   }
 
   decltype(auto) operator*() noexcept {
-    DerivedIt &it = this->underlying();
+    DerivedIt &it = underlying();
     assert(it.m_it != it.m_sentinelEnd);
     return *it.m_it;
   }
 
   auto operator-> () noexcept {
-    DerivedIt &it = this->underlying();
+    DerivedIt &it = underlying();
     return AsPointer<decltype(*it)>{*it};
   }
 
   DerivedIt &operator+=(long long int n) noexcept {
-    DerivedIt &it = this->underlying();
+    DerivedIt &it = underlying();
     if (n > 0) {
       while (n--)
         ++it;
@@ -172,7 +176,7 @@ public:
   }
 
   DerivedIt &operator-=(long long int n) noexcept {
-    DerivedIt &it = this->underlying();
+    DerivedIt &it = underlying();
     if (n > 0) {
       while (n--)
         --it;

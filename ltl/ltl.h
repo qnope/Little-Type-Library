@@ -46,13 +46,19 @@ template <typename... Fs> struct overloader : Fs... {
 };
 
 ////////////////////// crtp
+/*
 template <typename T, template <typename...> typename crtpType> struct crtp {
   T &underlying() { return static_cast<T &>(*this); }
 
   constexpr const T &underlying() const {
     return static_cast<const T &>(*this);
   }
-};
+};*/
+#define ENABLE_CRTP(DerivedType)                                               \
+  DerivedType &underlying() { return static_cast<DerivedType &>(*this); }      \
+  constexpr const DerivedType &underlying() const {                            \
+    return static_cast<const DerivedType &>(*this);                            \
+  }
 
 ///////////////////// bool
 template <bool v> struct bool_t {

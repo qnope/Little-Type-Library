@@ -121,4 +121,14 @@ LPL_MAP(ALGO_MONO_ITERATOR, iota, accumulate, inner_product,
 #undef ALGO_DOUBLE_ITERATOR
 #undef ALGO_FIND_RANGE
 #undef ALGO_FIND_VALUE
+
+template <typename C, typename Function, requires_f(IsIterable<C>)>
+auto computeMean(const C &c, Function &&function)
+    -> std::optional<decltype(*std::begin(c) / c.size())> {
+  const auto size = c.size();
+  if (size == 0)
+    return std::nullopt;
+  const auto total = accumulate(c, FWD(function));
+  return total / c.size();
+}
 } // namespace ltl

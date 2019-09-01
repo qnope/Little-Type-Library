@@ -3,30 +3,6 @@
 #include "ltl.h"
 
 namespace ltl {
-namespace detail {
-template <typename... Ts> struct tuple_applied {
-  template <bool isNotEmpty = (sizeof...(Ts) > 0), requires_f(isNotEmpty)>
-  constexpr tuple_applied() : m_tuple{Ts{}...} {}
-
-  constexpr tuple_applied(Ts &&... ts) : m_tuple{FWD(ts)...} {}
-
-  template <typename F> constexpr decltype(auto) operator()(F &&f) & {
-    return std::apply(FWD(f), m_tuple);
-  }
-
-  template <typename F> constexpr decltype(auto) operator()(F &&f) const & {
-    return std::apply(FWD(f), m_tuple);
-  }
-
-  template <typename F> constexpr decltype(auto) operator()(F &&f) && {
-    return std::apply(FWD(f), std::move(m_tuple));
-  }
-
-  std::tuple<Ts...> m_tuple;
-};
-
-} // namespace detail
-
 template <typename... Ts> class tuple_t {
 public:
   constexpr static auto length = number_v<sizeof...(Ts)>;
@@ -40,36 +16,36 @@ public:
   template <typename F>
       constexpr decltype(auto) operator()(F &&f) &
       noexcept(noexcept(std::declval<F>()(std::declval<Ts &>()...))) {
-    return m_storage(FWD(f));
+    return std::apply(FWD(f), m_storage);
   }
 
   template <typename F>
   constexpr decltype(auto) operator()(F &&f) const &noexcept(
       noexcept(std::declval<F>()(std::declval<const Ts &>()...))) {
-    return m_storage(FWD(f));
+    return std::apply(FWD(f), m_storage);
   }
 
   template <typename F>
       constexpr decltype(auto) operator()(F &&f) &&
       noexcept(noexcept(std::declval<F>()(std::declval<Ts>()...))) {
-    return std::move(m_storage)(FWD(f));
+    return std::apply(FWD(f), std::move(m_storage));
   }
 
   template <int N>[[nodiscard]] constexpr auto &get(number_t<N> n) & noexcept {
     typed_static_assert(n < length);
-    return std::get<N>(m_storage.m_tuple);
+    return std::get<N>(m_storage);
   }
 
   template <int N>
   [[nodiscard]] constexpr const auto &get(number_t<N> n) const &noexcept {
     typed_static_assert(n < length);
-    return std::get<N>(m_storage.m_tuple);
+    return std::get<N>(m_storage);
   }
 
   template <int N>
       [[nodiscard]] constexpr auto &&get(number_t<N> n) && noexcept {
     typed_static_assert(n < length);
-    return std::get<N>(std::move(m_storage.m_tuple));
+    return std::get<N>(std::move(m_storage));
   }
 
   template <int N>[[nodiscard]] constexpr auto &get() & noexcept {
@@ -126,12 +102,12 @@ public:
 
   [[nodiscard]] constexpr bool operator==(const tuple_t<Ts...> &t) const
       noexcept {
-    return t.m_storage.m_tuple == m_storage.m_tuple;
+    return t.m_storage == m_storage;
   }
 
   [[nodiscard]] constexpr bool operator!=(const tuple_t<Ts...> &t) const
       noexcept {
-    return t.m_storage.m_tuple != m_storage.m_tuple;
+    return t.m_storage != m_storage;
   }
 
   template <typename T>
@@ -139,7 +115,7 @@ public:
     auto fwdAll = [&newValue](const auto &... xs) {
       return tuple_t<Ts..., decay_reference_wrapper_t<T>>{xs..., FWD(newValue)};
     };
-    return m_storage(fwdAll);
+    return std::apply(fwdAll, m_storage);
   }
 
   template <typename T>[[nodiscard]] constexpr auto push_back(T &&newValue) && {
@@ -147,7 +123,7 @@ public:
       return tuple_t<Ts..., decay_reference_wrapper_t<T>>{FWD(xs)...,
                                                           FWD(newValue)};
     };
-    return std::move(m_storage)(fwdAll);
+    return std::apply(fwdAll, std::move(m_storage));
   }
 
   template <typename T>
@@ -155,7 +131,7 @@ public:
     auto fwdAll = [&newValue](const auto &... xs) {
       return tuple_t<decay_reference_wrapper_t<T>, Ts...>{FWD(newValue), xs...};
     };
-    return m_storage(fwdAll);
+    return std::apply(fwdAll, m_storage);
   }
 
   template <typename T>
@@ -164,7 +140,7 @@ public:
       return tuple_t<decay_reference_wrapper_t<T>, Ts...>{FWD(newValue),
                                                           FWD(xs)...};
     };
-    return std::move(m_storage)(fwdAll);
+    return std::apply(fwdAll, std::move(m_storage));
   }
 
   [[nodiscard]] constexpr auto pop_back() const & {
@@ -225,7 +201,7 @@ private:
   }
 
 private:
-  detail::tuple_applied<Ts...> m_storage;
+  std::tuple<Ts...> m_storage;
 };
 
 template <typename... Ts>
