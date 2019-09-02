@@ -444,7 +444,7 @@ void test_range() {
   assert(ltl::count(odds, 5) == 1);
   assert(ltl::count(odds, 1) == 0);
   assert(ltl::count_if(odds, isSuperiorTo(4)) == 4);
-  assert(ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
+  assert(*ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
   assert(ltl::accumulate(odds, 0) == 3 + 5 + 7 + 9 + 11);
   assert(ltl::accumulate(std::move(odds), 0) == 3 + 5 + 7 + 9 + 11);
 
@@ -462,36 +462,45 @@ void test_range() {
 }
 
 void test_find_range() {
-  const std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  const std::array v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
   {
-    auto notFind = ltl::find(v, 25);
     auto find = ltl::find(v, 2);
+    auto notFind = ltl::find(v, 25);
 
-    assert(!notFind);
     assert(find);
-    assert(*find == v.begin() + 2);
+    assert(!notFind);
     assert(**find == 2);
+    assert(*find == v.begin() + 2);
   }
 
   {
-    auto notFind = ltl::find_value(v, 25);
     auto find = ltl::find_value(v, 2);
-    assert(!notFind);
+    auto notFind = ltl::find_value(v, 25);
+
     assert(find);
+    assert(!notFind);
     assert(*find == 2);
   }
 
   {
-    const std::vector<int> toFind = {3, 4, 5, 6};
-    const std::vector<int> toNotFind = {3, 4, 5, 7};
+    auto find = ltl::find_ptr(v, 9);
+    auto notFind = ltl::find_ptr(v, 11);
 
-    auto notFind = ltl::find_end(v, toNotFind);
+    assert(find == &v[9]);
+    assert(notFind == nullptr);
+  }
+
+  {
+    const std::array toFind = {3, 4, 5, 6};
+    const std::array toNotFind = {3, 4, 5, 7};
+
     auto find = ltl::find_end(v, toFind);
+    auto notFind = ltl::find_end(v, toNotFind);
     auto findOneOf = ltl::find_first_of(v, toFind);
 
-    assert(!notFind);
     assert(find);
+    assert(!notFind);
     assert(findOneOf);
     assert(*find == v.begin() + 3);
     assert(*findOneOf == v.begin() + 3);

@@ -20,31 +20,36 @@ namespace ltl {
 
 // Version for finds
 #define ALGO_FIND_VALUE(name)                                                  \
-  template <typename C, typename... As>                                        \
-  auto name(C &&c, As &&... as)                                                \
-      ->requires_t<std::optional<decltype(c.begin())>, IsIterable<C>> {        \
-    auto it = std::name(std::begin(c), std::end(c), FWD(as)...);               \
-    if (it == std::end(c))                                                     \
+  template <typename C, typename... As, requires_f(IsIterable<C>)>             \
+  auto name(C &&c, As &&... as)->std::optional<decltype(std::begin(FWD(c)))> { \
+    auto it = std::name(std::begin(FWD(c)), std::end(FWD(c)), FWD(as)...);     \
+    if (it == std::end(FWD(c)))                                                \
       return std::nullopt;                                                     \
     return it;                                                                 \
   }                                                                            \
-  template <typename C, typename... As>                                        \
+  template <typename C, typename... As, requires_f(IsIterable<C>)>             \
   auto LPL_CAT(name, _value)(C && c, As && ... as)                             \
-      ->requires_t<std::optional<std::decay_t<decltype(*FWD(c).begin())>>,     \
-                   IsIterable<C>> {                                            \
+      ->std::optional<std::decay_t<decltype(*std::begin(FWD(c)))>> {           \
     if (auto opt = name(FWD(c), FWD(as)...))                                   \
       return **opt;                                                            \
     return std::nullopt;                                                       \
+  }                                                                            \
+  template <typename C, typename... As, requires_f(IsIterable<C>)>             \
+  auto LPL_CAT(name, _ptr)(C && c, As && ... as)                               \
+      ->decltype(std::addressof(*std::begin(FWD(c)))) {                        \
+    if (auto it = name(FWD(c), FWD(as)...))                                    \
+      return std::addressof(**it);                                             \
+    return nullptr;                                                            \
   }
 
 #define ALGO_FIND_RANGE(name)                                                  \
-  template <typename C1, typename C2, typename... As>                          \
+  template <typename C1, typename C2, typename... As,                          \
+            requires_f(IsIterable<C1> &&IsIterable<C2>)>                       \
   auto name(C1 &&c1, C2 &&c2, As &&... as)                                     \
-      ->requires_t<std::optional<decltype(c1.begin())>,                        \
-                   IsIterable<C1> && IsIterable<C2>> {                         \
-    auto it = std::name(std::begin(c1), std::end(c1), std::begin(c2),          \
-                        std::end(c2), FWD(as)...);                             \
-    if (it == std::end(c1))                                                    \
+      ->std::optional<decltype(std::begin(FWD(c1)))> {                         \
+    auto it = std::name(std::begin(FWD(c1)), std::end(FWD(c1)),                \
+                        std::begin(FWD(c2)), std::end(FWD(c2)), FWD(as)...);   \
+    if (it == std::end(FWD(c1)))                                               \
       return std::nullopt;                                                     \
     return it;                                                                 \
   }
