@@ -4,54 +4,54 @@
 
 namespace ltl {
 #define ALGO_MONO_ITERATOR(name)                                               \
-  template <typename C, typename... As, requires_f(IsIterable<C>)>             \
-  auto name(C &&c, As &&... as) {                                              \
-    typed_static_assert(is_iterable(FWD(c)));                                  \
+  template <typename C, typename... As> auto name(C &&c, As &&... as) {        \
+    typed_static_assert_msg(is_iterable(FWD(c)), "C must be iterable");        \
     return std::name(std::begin(FWD(c)), std::end(FWD(c)), FWD(as)...);        \
   }
 
 #define ALGO_DOUBLE_ITERATOR(name)                                             \
-  template <typename C1, typename C2, typename... As,                          \
-            requires_f(IsIterable<C1> &&IsIterable<C2>)>                       \
+  template <typename C1, typename C2, typename... As>                          \
   auto name(C1 &&c1, C2 &&c2, As &&... as) {                                   \
+    typed_static_assert_msg(is_iterable(FWD(c1)) && is_iterable(FWD(c2)),      \
+                            "C1 and C2 must be iterable");                     \
     return std::name(std::begin(FWD(c1)), std::end(FWD(c1)),                   \
                      std::begin(FWD(c2)), std::end(FWD(c2)), FWD(as)...);      \
   }
 
 // Version for finds
 #define ALGO_FIND_VALUE(name)                                                  \
-  template <typename C, typename... As, requires_f(IsIterable<C>)>             \
-  auto name(C &&c, As &&... as)->std::optional<decltype(std::begin(FWD(c)))> { \
+  template <typename C, typename... As> auto name(C &&c, As &&... as) {        \
+    typed_static_assert_msg(is_iterable(FWD(c)), "C must be iterable");        \
     auto it = std::name(std::begin(FWD(c)), std::end(FWD(c)), FWD(as)...);     \
     if (it == std::end(FWD(c)))                                                \
-      return std::nullopt;                                                     \
-    return it;                                                                 \
+      return decltype(std::make_optional(it)){};                               \
+    return std::make_optional(it);                                             \
   }                                                                            \
-  template <typename C, typename... As, requires_f(IsIterable<C>)>             \
-  auto LPL_CAT(name, _value)(C && c, As && ... as)                             \
-      ->std::optional<std::decay_t<decltype(*std::begin(FWD(c)))>> {           \
-    if (auto opt = name(FWD(c), FWD(as)...))                                   \
-      return **opt;                                                            \
-    return std::nullopt;                                                       \
+  template <typename C, typename... As>                                        \
+  auto LPL_CAT(name, _value)(C && c, As && ... as) {                           \
+    auto opt = name(FWD(c), FWD(as)...);                                       \
+    if (!opt)                                                                  \
+      return decltype(std::make_optional(**opt)){};                            \
+    return std::make_optional(**opt);                                          \
   }                                                                            \
-  template <typename C, typename... As, requires_f(IsIterable<C>)>             \
-  auto LPL_CAT(name, _ptr)(C && c, As && ... as)                               \
-      ->decltype(std::addressof(*std::begin(FWD(c)))) {                        \
-    if (auto it = name(FWD(c), FWD(as)...))                                    \
-      return std::addressof(**it);                                             \
-    return nullptr;                                                            \
+  template <typename C, typename... As>                                        \
+  auto LPL_CAT(name, _ptr)(C && c, As && ... as) {                             \
+    auto opt = name(FWD(c), FWD(as)...);                                       \
+    if (!opt)                                                                  \
+      return decltype(std::addressof(**opt)){};                                \
+    return std::addressof(**opt);                                              \
   }
 
 #define ALGO_FIND_RANGE(name)                                                  \
-  template <typename C1, typename C2, typename... As,                          \
-            requires_f(IsIterable<C1> &&IsIterable<C2>)>                       \
-  auto name(C1 &&c1, C2 &&c2, As &&... as)                                     \
-      ->std::optional<decltype(std::begin(FWD(c1)))> {                         \
+  template <typename C1, typename C2, typename... As>                          \
+  auto name(C1 &&c1, C2 &&c2, As &&... as) {                                   \
+    typed_static_assert_msg(is_iterable(FWD(c1)) && is_iterable(FWD(c2)),      \
+                            "C1 and C2 must be iterable");                     \
     auto it = std::name(std::begin(FWD(c1)), std::end(FWD(c1)),                \
                         std::begin(FWD(c2)), std::end(FWD(c2)), FWD(as)...);   \
     if (it == std::end(FWD(c1)))                                               \
-      return std::nullopt;                                                     \
-    return it;                                                                 \
+      return decltype(std::make_optional(it)){};                               \
+    return std::make_optional(it);                                             \
   }
 
 // Version for finds
@@ -80,14 +80,16 @@ LPL_MAP(ALGO_MONO_ITERATOR, is_partitioned, partition, partition_copy,
 LPL_MAP(ALGO_MONO_ITERATOR, is_sorted, is_sorted_until)
 
 // Sorting
-template <typename C, typename... P, requires_f(IsIterable<C> && !IsConst<C>)>
-C sort(C &&c, P &&... p) {
+template <typename C, typename... P> C sort(C &&c, P &&... p) {
+  typed_static_assert_msg(is_iterable(FWD(c)) && !is_const(FWD(c)),
+                          "C must not be const and must be iterable");
   std::sort(std::begin(c), std::end(c), FWD(p)...);
   return FWD(c);
 }
 
-template <typename C, typename... P, requires_f(IsIterable<C> && !IsConst<C>)>
-C stable_sort(C &&c, P &&... p) {
+template <typename C, typename... P> C stable_sort(C &&c, P &&... p) {
+  typed_static_assert_msg(is_iterable(FWD(c)) && !is_const(FWD(c)),
+                          "C must not be const and must be iterable");
   std::stable_sort(std::begin(c), std::end(c), FWD(p)...);
   return FWD(c);
 }

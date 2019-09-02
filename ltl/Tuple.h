@@ -226,15 +226,14 @@ LTL_MAKE_IS_KIND(number_list_t, is_number_list_t, IsNumberList, int);
 LTL_MAKE_IS_KIND(bool_list_t, is_bool_list_t, IsBoolList, bool);
 
 /////////////////////// Arguments
-template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
+template <typename F, typename Tuple>
 constexpr decltype(auto) apply(Tuple &&tuple,
                                F &&f) noexcept(noexcept(FWD(tuple)(FWD(f)))) {
   typed_static_assert(is_tuple_t(tuple));
   return FWD(tuple)(FWD(f));
 }
 
-template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
-F for_each(Tuple &&tuple, F &&f) {
+template <typename F, typename Tuple> F for_each(Tuple &&tuple, F &&f) {
   typed_static_assert(is_tuple_t(tuple));
 
   auto retrieveAllArgs = [&f](auto &&... xs) { (FWD(f)(FWD(xs)), ...); };
