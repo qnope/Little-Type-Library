@@ -10,9 +10,9 @@ struct Ostream_Wrapper {
 };
 
 template <typename T> Ostream_Wrapper &operator<<(Ostream_Wrapper &s, T &&t) {
-  if_constexpr(ltl::decay(FWD(t)) == ltl::type_v<char *> ||
-               ltl::decay(FWD(t)) == ltl::type_v<const char *> ||
-               ltl::decay(FWD(t)) == ltl::type_v<std::string>) {
+  if_constexpr(decay_from(t) == ltl::type_v<char *> ||
+               decay_from(t) == ltl::type_v<const char *> ||
+               decay_from(t) == ltl::type_v<std::string>) {
     s.stream << FWD(t);
   }
   else_if_constexpr(is_iterable(FWD(t))) {

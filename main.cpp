@@ -4,6 +4,7 @@
 #include <iostream>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "ltl/StrongType.h"
@@ -39,8 +40,7 @@ void type_test() {
   static_assert(ltl::type_v<int> == ltl::type_v<int>);
   static_assert(ltl::type_v<int> != ltl::type_v<double>);
   static_assert(!(ltl::type_v<int> == ltl::type_v<double>));
-  static_assert(ltl::type_v<decltype(true_v == true_v)> ==
-                ltl::type_v<ltl::true_t>);
+  static_assert(type_from(true_v == true_v) == ltl::type_v<ltl::true_t>);
 }
 
 void number_test() {
@@ -71,8 +71,7 @@ void number_test() {
 void constexpr_tuple_test() {
   constexpr ltl::tuple_t tuple{5, 3.0};
 
-  static_assert(ltl::type_v<std::decay_t<decltype(tuple)>> ==
-                ltl::type_v<ltl::tuple_t<int, double>>);
+  static_assert(decay_from(tuple) == ltl::type_v<ltl::tuple_t<int, double>>);
   static_assert(apply(tuple, [](auto a, auto b) { return a + b; }) == 8.0);
 
   static_assert(tuple.get(0_n) == 5 && tuple.get(1_n) == 3.0);
@@ -230,49 +229,39 @@ void push_pop_test() {
 
 void tuple_reference_test() {
   int a{0};
-  using base = decltype(ltl::tuple_t{a, std::ref(a), 0});
+  auto base = ltl::tuple_t{a, std::ref(a), 0};
+  auto pushedBackRef = base.push_back(std::ref(a));
+  auto pushedBack = base.push_back(a);
+  auto pushedFrontRef = base.push_front(std::ref(a));
+  auto pushedFront = base.push_front(a);
+  auto popBack = base.pop_back();
+  auto popFront = base.pop_front();
 
-  using pushedBackRef = decltype(std::declval<base>().push_back(std::ref(a)));
-  using pushedBack = decltype(std::declval<base>().push_back(a));
-  using pushedFrontRef = decltype(std::declval<base>().push_front(std::ref(a)));
-  using pushedFront = decltype(std::declval<base>().push_front(a));
+  static_assert(type_from(base) == ltl::type_v<ltl::tuple_t<int, int &, int>>);
 
-  using popBack = decltype(std::declval<base>().pop_back());
-  using popFront = decltype(std::declval<base>().pop_front());
-
-  static_assert(ltl::type_v<base> ==
-                ltl::type_v<ltl::tuple_t<int, int &, int>>);
-
-  static_assert(ltl::type_v<pushedBackRef> ==
+  static_assert(type_from(pushedBackRef) ==
                 ltl::type_v<ltl::tuple_t<int, int &, int, int &>>);
-  static_assert(ltl::type_v<pushedBack> ==
+  static_assert(type_from(pushedBack) ==
                 ltl::type_v<ltl::tuple_t<int, int &, int, int>>);
-  static_assert(ltl::type_v<pushedFrontRef> ==
+  static_assert(type_from(pushedFrontRef) ==
                 ltl::type_v<ltl::tuple_t<int &, int, int &, int>>);
-  static_assert(ltl::type_v<pushedFront> ==
+  static_assert(type_from(pushedFront) ==
                 ltl::type_v<ltl::tuple_t<int, int, int &, int>>);
 
-  static_assert(ltl::type_v<popBack> == ltl::type_v<ltl::tuple_t<int, int &>>);
-  static_assert(ltl::type_v<popFront> == ltl::type_v<ltl::tuple_t<int &, int>>);
+  static_assert(type_from(popBack) == ltl::type_v<ltl::tuple_t<int, int &>>);
+  static_assert(type_from(popFront) == ltl::type_v<ltl::tuple_t<int &, int>>);
 
-  ltl::tuple_t testOpBracket{a, std::ref(a), 0};
-  using TestOpBracket = decltype(testOpBracket);
+  ltl::tuple_t testBracket{a, std::ref(a), 0};
 
-  static_assert(ltl::type_v<TestOpBracket> ==
+  static_assert(type_from(testBracket) ==
                 ltl::type_v<ltl::tuple_t<int, int &, int>>);
-  static_assert(ltl::type_v<decltype(testOpBracket[1_n])> ==
-                ltl::type_v<int &>);
-  static_assert(ltl::type_v<decltype(testOpBracket[0_n])> ==
-                ltl::type_v<int &>);
-  static_assert(ltl::type_v<decltype(testOpBracket[2_n])> ==
-                ltl::type_v<int &>);
+  static_assert(type_from(testBracket[1_n]) == ltl::type_v<int &>);
+  static_assert(type_from(testBracket[0_n]) == ltl::type_v<int &>);
+  static_assert(type_from(testBracket[2_n]) == ltl::type_v<int &>);
 
-  static_assert(ltl::type_v<decltype(std::declval<TestOpBracket>()[1_n])> ==
-                ltl::type_v<int &>);
-  static_assert(ltl::type_v<decltype(std::declval<TestOpBracket>()[0_n])> ==
-                ltl::type_v<int &&>);
-  static_assert(ltl::type_v<decltype(std::declval<TestOpBracket>()[2_n])> ==
-                ltl::type_v<int &&>);
+  static_assert(type_from(std::move(testBracket)[1_n]) == ltl::type_v<int &>);
+  static_assert(type_from(std::move(testBracket)[0_n]) == ltl::type_v<int &&>);
+  static_assert(type_from(std::move(testBracket)[2_n]) == ltl::type_v<int &&>);
 }
 
 void test_is_valid() {
@@ -297,7 +286,7 @@ void test_trait() {
   static_assert(!ltl::is_default_constructible(ltl::type_v<NonDefault>));
   static_assert(ltl::is_void(ltl::type_v<void>));
   static_assert(!ltl::is_void(ltl::type_v<int>));
-  static_assert(ltl::is_null_pointer(ltl::type_v<decltype(nullptr)>));
+  static_assert(ltl::is_null_pointer(type_from(nullptr)));
   static_assert(ltl::is_integral(ltl::type_v<int>));
   static_assert(ltl::is_floating_point(ltl::type_v<double>));
   static_assert(ltl::is_array(ltl::type_v<float[]>));
@@ -411,7 +400,7 @@ void test_strong_type() {
   static_assert(oneKilometer < Meter{1200.0f});
   static_assert(oneKilometer + oneKilometerInMeter == Meter{2000.0f});
   static_assert(Meter{1200.0f} == Km{1.2f});
-  static_assert(ltl::type_v<decltype(oneKilometer + oneKilometerInMeter)> ==
+  static_assert(type_from(oneKilometer + oneKilometerInMeter) ==
                 ltl::type_v<Km>);
 
   // ratio<1000, 1000> is not the same type as ratio<1>, but it is equivalent
@@ -433,7 +422,10 @@ void test_strong_type() {
 }
 
 void test_range() {
+  using namespace std::literals;
   std::array<int, 5> odds = {3, 5, 7, 9, 11};
+  std::unordered_map<std::string, int> unordered_map = {{"one"s, 1},
+                                                        {"two"s, 2}};
   auto areEvens = [](auto x) { return (x & 1) == 0; };
   auto areOdds = [](auto x) { return (x & 1) != 0; };
   auto isSuperiorTo = [](auto n) { return [n](auto x) { return x > n; }; };
@@ -447,6 +439,16 @@ void test_range() {
   assert(*ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
   assert(ltl::accumulate(odds, 0) == 3 + 5 + 7 + 9 + 11);
   assert(ltl::accumulate(std::move(odds), 0) == 3 + 5 + 7 + 9 + 11);
+  assert(ltl::computeMean(std::move(odds)) == (3 + 5 + 7 + 9 + 11) / 5);
+  assert(ltl::computeMean(std::vector<int>{}) == std::nullopt);
+  assert(ltl::contains(odds, 9));
+  assert(!ltl::contains(odds, 10));
+  assert(ltl::contains_map(unordered_map, "one"));
+  assert(ltl::contains_map(unordered_map, "three") == false);
+  assert(!ltl::find_map_value(unordered_map, "three"));
+  assert(*ltl::find_map_value(unordered_map, "one") == 1);
+  assert(ltl::find_map_ptr(unordered_map, "one") == &unordered_map["one"]);
+  assert(ltl::find_map_ptr(unordered_map, "three") == nullptr);
 
   std::array<int, 5> reverseOdds = {11, 9, 7, 5, 3};
   assert(!ltl::equal(reverseOdds, odds));
@@ -559,6 +561,7 @@ void test_filter() {
   auto isEven = _((x), x % 2 == 0);
   auto superiorThan = [](auto x) { return [x](auto y) { return y > x; }; };
   ltl::cout << "Odds: " << (array | filter(isOdd)) << "\n";
+
   ltl::cout << "Even: " << (array | filter(isEven)) << "\n";
   ltl::cout << "Odds superior than 5: "
             << (array | filter(isOdd) | filter(superiorThan(5))) << "\n";
@@ -610,11 +613,11 @@ void test_to() {
   assert(ltl::equal(oddTimes2List, strs));
   assert(ltl::equal(oddTimes2Vector, strs));
   typed_static_assert(type_v<std::vector<std::string>> ==
-                      type_v<decltype(oddTimes2Vector)>);
+                      type_from(oddTimes2Vector));
   typed_static_assert(type_v<std::deque<std::string>> ==
-                      type_v<decltype(oddTimes2Deque)>);
+                      type_from(oddTimes2Deque));
   typed_static_assert(type_v<std::list<std::string>> ==
-                      type_v<decltype(oddTimes2List)>);
+                      type_from(oddTimes2List));
 }
 
 void test_integer_list() {

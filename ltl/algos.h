@@ -129,13 +129,45 @@ LPL_MAP(ALGO_MONO_ITERATOR, iota, accumulate, inner_product,
 #undef ALGO_FIND_RANGE
 #undef ALGO_FIND_VALUE
 
-template <typename C, typename Function, requires_f(IsIterable<C>)>
-auto computeMean(const C &c, Function &&function)
-    -> std::optional<decltype(*std::begin(c) / c.size())> {
+template <typename C> auto computeMean(const C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
   const auto size = c.size();
-  if (size == 0)
-    return std::nullopt;
-  const auto total = accumulate(c, FWD(function));
-  return total / c.size();
+
+  if (size == 0) {
+    return std::optional<decltype(
+        std::accumulate(std::next(std::begin(c)), std::end(c), *std::begin(c)) /
+        size)>{};
+  }
+
+  const auto total =
+      std::accumulate(std::next(std::begin(c)), std::end(c), *std::begin(c));
+  return std::make_optional(total / size);
 }
+
+template <typename C, typename V> auto contains(const C &c, V &&v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+
+  return static_cast<bool>(find_ptr(c, FWD(v)));
+}
+
+template <typename C, typename K> auto contains_map(const C &c, K &&k) {
+  return c.find(FWD(k)) != c.end();
+}
+
+template <typename C, typename K> auto find_map_value(C &&c, K &&k) {
+  auto it = FWD(c).find(FWD(k));
+  if (it == FWD(c).end()) {
+    return std::optional<decltype(it->second)>{};
+  }
+  return std::make_optional(it->second);
+}
+
+template <typename C, typename K> auto find_map_ptr(C &c, K &&k) {
+  auto it = FWD(c).find(FWD(k));
+  if (it == FWD(c).end()) {
+    return decltype(std::addressof(it->second)){nullptr};
+  }
+  return std::addressof(it->second);
+}
+
 } // namespace ltl

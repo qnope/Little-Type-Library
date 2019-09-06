@@ -37,7 +37,7 @@ public:
   }
 
   template <int N>
-  [[nodiscard]] constexpr const auto &get(number_t<N> n) const &noexcept {
+  [[nodiscard]] constexpr auto &get(number_t<N> n) const &noexcept {
     typed_static_assert(n < length);
     return std::get<N>(m_storage);
   }
@@ -52,7 +52,7 @@ public:
     return get(number_v<N>);
   }
 
-  template <int N>[[nodiscard]] constexpr const auto &get() const &noexcept {
+  template <int N>[[nodiscard]] constexpr auto &get() const &noexcept {
     return get(number_v<N>);
   }
 
@@ -66,8 +66,7 @@ public:
   }
 
   template <int N>
-  [[nodiscard]] constexpr const auto &
-  operator[](number_t<N> n) const &noexcept {
+  [[nodiscard]] constexpr auto &operator[](number_t<N> n) const &noexcept {
     return get(n);
   }
 
@@ -112,7 +111,7 @@ public:
 
   template <typename T>
   [[nodiscard]] constexpr auto push_back(T &&newValue) const & {
-    auto fwdAll = [&newValue](const auto &... xs) {
+    auto fwdAll = [&newValue](auto &... xs) {
       return tuple_t<Ts..., decay_reference_wrapper_t<T>>{xs..., FWD(newValue)};
     };
     return std::apply(fwdAll, m_storage);
@@ -128,7 +127,7 @@ public:
 
   template <typename T>
   [[nodiscard]] constexpr auto push_front(T &&newValue) const & {
-    auto fwdAll = [&newValue](const auto &... xs) {
+    auto fwdAll = [&newValue](auto &... xs) {
       return tuple_t<decay_reference_wrapper_t<T>, Ts...>{FWD(newValue), xs...};
     };
     return std::apply(fwdAll, m_storage);
@@ -144,9 +143,7 @@ public:
   }
 
   [[nodiscard]] constexpr auto pop_back() const & {
-    auto extracter = [this](auto... numbers) {
-      return this->extract(numbers...);
-    };
+    auto extracter = [this](auto... numbers) { return extract(numbers...); };
     constexpr auto numbers = build_index_sequence(length - 1_n);
     return numbers(extracter);
   }

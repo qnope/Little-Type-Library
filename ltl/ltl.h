@@ -12,6 +12,9 @@
 
 #define decltype_t(t) typename std::decay_t<decltype(t)>::type
 
+#define type_from(x) ::ltl::type_v<decltype(x)>
+#define decay_from(x) ::ltl::type_v<std::decay_t<decltype(x)>>
+
 #define typed_static_assert(f) static_assert(decltype(f){})
 #define typed_static_assert_msg(f, msg) static_assert(decltype(f){}, msg)
 #define if_constexpr(c) if constexpr (decltype(c){})
@@ -19,10 +22,9 @@
 
 #define compile_time_error(msg, T) static_assert(::ltl::always_false<T>, msg);
 
-namespace ltl {
-/////////////////////// FWD
 #define FWD(x) ::std::forward<decltype(x)>(x)
 
+namespace ltl {
 template <typename> constexpr bool always_false = false;
 
 /////////////////////// decay_reference_wrapper
@@ -194,8 +196,8 @@ template <typename T1, typename T2, typename... Ts>
     return {};                                                                 \
   }                                                                            \
   template <typename... Ts>                                                    \
-  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(Ts && ...) {               \
-    return LPL_CAT(name, _Impl)(type_v<std::decay_t<Ts>>...);                  \
+  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(Ts && ... ts) {            \
+    return LPL_CAT(name, _Impl)(decay_from(ts)...);                            \
   }                                                                            \
   constexpr auto name = [](auto &&... xs) constexpr {                          \
     return LPL_CAT(name, _Impl)(FWD(xs)...);                                   \
@@ -251,8 +253,8 @@ LPL_MAP(TRAIT, is_invocable, is_invocable_r, is_nothrow_invocable,
     return {};                                                                 \
   }                                                                            \
   template <typename T>                                                        \
-  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(T &&) {                    \
-    return LPL_CAT(name, _Impl)(type_v<T &&>);                                 \
+  [[nodiscard]] constexpr auto LPL_CAT(name, _Impl)(T && x) {                  \
+    return LPL_CAT(name, _Impl)(type_from(x));                                 \
   }                                                                            \
   constexpr auto name = [](auto &&x) constexpr {                               \
     return LPL_CAT(name, _Impl)(FWD(x));                                       \
@@ -356,8 +358,8 @@ template <typename T>[[nodiscard]] constexpr auto is_iterableImpl(type_t<T>) {
   return decltype(trait(std::declval<T>())){};
 }
 
-template <typename T>[[nodiscard]] constexpr auto is_iterableImpl(T &&) {
-  return is_iterableImpl(type_v<T>);
+template <typename T>[[nodiscard]] constexpr auto is_iterableImpl(T &&x) {
+  return is_iterableImpl(type_from(x));
 }
 
 constexpr auto is_iterable = [](auto &&x) constexpr {
@@ -398,7 +400,7 @@ template <typename T> constexpr auto is_type(type_t<T> type) {
 }
 , [type](auto &&x) constexpr
   -> std::enable_if_t<!IsType<std::decay_t<decltype(x)>>,
-                      decltype(type == type_v<std::decay_t<decltype(x)>>)> {
+                      decltype(type == decay_from(x))> {
   (void)type;
   return {};
 }
@@ -412,8 +414,7 @@ template <typename T> constexpr auto is_derived_from(type_t<T> type) {
 }
 , [type](auto &&x) constexpr
   -> std::enable_if_t<!IsType<std::decay_t<decltype(x)>>,
-                      decltype(is_base_of(type,
-                                          type_v<std::decay_t<decltype(x)>>))> {
+                      decltype(is_base_of(type, decay_from(x)))> {
   (void)type;
   return {};
 }
