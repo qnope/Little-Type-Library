@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ltl/DefaultView.h"
 #include "ltl/StrongType.h"
 #include "ltl/Tuple.h"
 #include "ltl/algos.h"
@@ -619,20 +620,47 @@ void test_zip() {
   const std::array strings2 = {"One"s, "Two"s, "Three"s, "Four"s, "Five"s};
   std::array integers = {1, 2, 3, 4, 5};
 
-  auto index = std::size_t{0};
-
-  for (auto [i, s, s2] : ltl::zip(integers, strings, strings2)) {
-    assert(&i == &integers[index]);
-    assert(&s == &strings[index]);
-    assert(&s2 == &strings2[index]);
-    ++index;
-  }
-
-  index = 0;
+  std::size_t index = 0;
   for (auto [i, s] : ltl::enumerate(strings)) {
     assert(i == index);
     assert(&s == &strings[i]);
     ++index;
+  }
+
+  for (auto [index, t] :
+       ltl::enumerate(ltl::zip(integers, strings, strings2))) {
+    auto [i, s, s2] = t;
+    assert(&i == &integers[index]);
+    assert(&s == &strings[index]);
+    assert(&s2 == &strings2[index]);
+  }
+}
+
+void test_default_view() {
+  using namespace std::literals;
+  std::array<std::optional<int>, 5> array{};
+  array[1] = 8;
+  array[4] = 14;
+
+  std::array<std::size_t, 2> indices{1, 4};
+  for (auto [i, e] :
+       ltl::enumerate(array | ltl::remove_null() | ltl::dereference())) {
+    assert(&e == std::addressof(*array[indices[i]]));
+  }
+
+  std::array<ltl::tuple_t<int, double, std::string>, 3> tuples{
+      ltl::tuple_t{8, 80.0, "80"s}, ltl::tuple_t{1, 1.0, "1"s},
+      ltl::tuple_t{3, 3.0, "3"s}};
+
+  for (auto [i, d] : ltl::enumerate(tuples | ltl::get(1_n))) {
+    assert(&d == &tuples[i][1_n]);
+  }
+
+  for (auto [index, t] : ltl::enumerate(tuples | ltl::get(2_n, 0_n))) {
+    auto [s, i] = t;
+    assert(&s == &tuples[index][2_n]);
+    assert(&i == &tuples[index][0_n]);
+    i++;
   }
 }
 
@@ -663,6 +691,8 @@ int main() {
 
   test_integer_list();
   test_zip();
+
+  test_default_view();
 
   return 0;
 }

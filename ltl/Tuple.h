@@ -1,6 +1,7 @@
 #pragma once
 #include "concept.h"
 #include "ltl.h"
+#include <tuple>
 
 namespace ltl {
 template <typename... Ts> class tuple_t {
@@ -317,6 +318,12 @@ struct tuple_element<I, const ::ltl::tuple_t<Ts...>> {
   using type =
       decltype(std::declval<const ::ltl::tuple_t<Ts...>>().template get<I>());
 };
+
+template <std::size_t N, typename Tuple, requires_f(::ltl::IsTuple<Tuple>)>
+decltype(auto) get(Tuple &&tuple) {
+  return FWD(tuple)[number_v<N>];
+}
+
 } // namespace std
 
 #define FROM_VARIADIC(args)                                                    \

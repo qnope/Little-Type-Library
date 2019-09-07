@@ -12,6 +12,7 @@ set(HEADERS
     ltl/operator.h
     ltl/concept.h
     ltl/range.h
+    ltl/DefaultView.h
     lpl/lpl.h)
 
 if(MSVC)
