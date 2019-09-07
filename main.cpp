@@ -85,19 +85,9 @@ void constexpr_tuple_test() {
   static_assert(tuple == ltl::tuple_t<int, double>{5, 3.0});
   static_assert(tuple != ltl::tuple_t<int, double>{5, 3.1});
 
-  static_assert(tuple != ltl::type_list_v<int, double>);
-  static_assert(tuple != ltl::number_list_v<5, 3>);
-  static_assert(tuple != ltl::bool_list_v<false, true>);
-
-  static_assert(ltl::type_list_v<int, double, char> !=
-                ltl::type_list_v<int, double>);
-
   static_assert(
       ltl::type_list_v<int, double, char> ==
       ltl::type_list_v<double>.push_back(ltl::type_v<char>).push_front(ltl::type_v<int>));
-
-  static_assert(ltl::type_list_v<int, double, double, char, double> !=
-                ltl::type_list_v<int, double, char>);
 
   static_assert(
                 ltl::type_list_v<float, int, double, double, char,
@@ -407,12 +397,12 @@ void test_strong_type() {
   static_assert(ltl::type_v<ltl::multiple_of<Km, std::ratio<1, 1000>>> ==
                 ltl::type_v<ltl::multiple_of<Meter, std::ratio<1000, 1000>>>);
 
-  std::cout << oneKilometer << "km = " << oneKilometerInMeter
-            << "m = " << oneKilometerInDecimeter << "dm" << std::endl;
-
+  static_assert(oneKilometer.get() * 1000 == oneKilometerInMeter.get());
+  assert(oneKilometer.get() * 100 == oneKilometerInDecimeter.get());
   oneKilometerInDecimeter += Meter{30.0f} + Km{1.0f};
-  std::cout << "1km + 30m + 1km = " << oneKilometerInDecimeter << "dm"
-            << std::endl;
+  assert(oneKilometerInDecimeter == Meter{2030.0f} &&
+         oneKilometerInDecimeter == Km{2.03f} &&
+         oneKilometerInDecimeter == Dm{203.0f});
 
   constexpr radians rad{pi};
   constexpr degrees deg(rad);
@@ -421,7 +411,7 @@ void test_strong_type() {
   static_assert(deg.get() == rad.get() * 180.0f / pi);
 }
 
-void test_range() {
+void test_algos() {
   using namespace std::literals;
   std::array<int, 5> odds = {3, 5, 7, 9, 11};
   std::unordered_map<std::string, int> unordered_map = {{"one"s, 1},
@@ -509,36 +499,31 @@ void test_find_range() {
   }
 }
 
-template <typename T, requires_f(ltl::IsFloatingPoint<T>)> void f(T) {
-  std::cout << "Floating point" << std::endl;
+template <typename T, requires_f(ltl::IsFloatingPoint<T>)> auto f(T) {
+  return 0;
 }
 
-template <typename T, requires_f(ltl::IsIntegral<T>)> void f(T) {
-  std::cout << "Integral" << std::endl;
-}
+template <typename T, requires_f(ltl::IsIntegral<T>)> auto f(T) { return 1; }
 
 void test_concept() {
-  f(5);
-  f(5.0);
-  f(5.0f);
-  f(5u);
-  f(5ull);
+  assert(f(5) == 1);
+  assert(f(5.0) == 0);
+  assert(f(5.0f) == 0);
+  assert(f(5u) == 1);
+  assert(f(5ull) == 1);
 }
 
 void test_optional() {
-  std::cout << std::endl << "test_optional" << std::endl;
   std::optional<int> a(5), b;
-  ltl::cout << a << "\n" << b << "\n";
-
   auto times_3 = _((x), x * 3);
   auto plus_1 = _((x), x + 1);
   auto identity = [](auto x) -> std::optional<int> { return x; };
-  ltl::cout << (a | times_3) << "\n";
-  ltl::cout << (b | times_3) << "\n";
+  assert((a | times_3) == 15);
+  assert((b | times_3) == std::nullopt);
 
-  ltl::cout << (a | times_3 | plus_1) << "\n";
-  ltl::cout << (b | times_3 | plus_1) << "\n";
-  ltl::cout << (a >> identity) << "\n";
+  assert((a | times_3 | plus_1) == 16);
+  assert((b | times_3 | plus_1) == std::nullopt);
+  assert((a >> identity) == 5);
 }
 
 void test_range_view() {
@@ -555,16 +540,17 @@ void test_range_view() {
 
 void test_filter() {
   using namespace ltl;
-  std::cout << "Filter test: " << std::endl;
   const std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  const std::array oddsArray = {1, 3, 5, 7, 9, 11};
+  const std::array evenArray = {0, 2, 4, 6, 8, 10, 12};
+  const std::array oddsSuperiorThan5Array = {7, 9, 11};
   auto isOdd = _((x), x % 2);
   auto isEven = _((x), x % 2 == 0);
   auto superiorThan = [](auto x) { return [x](auto y) { return y > x; }; };
-  ltl::cout << "Odds: " << (array | filter(isOdd)) << "\n";
-
-  ltl::cout << "Even: " << (array | filter(isEven)) << "\n";
-  ltl::cout << "Odds superior than 5: "
-            << (array | filter(isOdd) | filter(superiorThan(5))) << "\n";
+  assert(ltl::equal(array | filter(isOdd), oddsArray));
+  assert(ltl::equal(array | filter(isEven), evenArray));
+  assert(ltl::equal(array | filter(isOdd) | filter(superiorThan(5)),
+                    oddsSuperiorThan5Array));
 
   auto odds = array | filter(isOdd);
   auto evens = array | filter(isEven);
@@ -583,28 +569,29 @@ void test_filter() {
 
 void test_map() {
   using namespace ltl;
+  std::array times2Array = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24};
+  std::array times8Array = {0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96};
+  std::array oddTimes2 = {2, 6, 10, 14, 18, 22};
 
-  std::cout << "Map test: " << std::endl;
   std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 
   auto times = [](auto x) { return [x](auto y) { return y * x; }; };
-  ltl::cout << "times 2: " << (array | map(times(2))) << "\n";
-  ltl::cout << "times 8: " << (array | map(times(8))) << "\n";
-  ltl::cout << "times 8: "
-            << (array | (map(times(2)) | map(times(2)) | map(times(2))))
-            << "\n";
-
-  ltl::cout << "odd times 2: "
-            << (array | (filter(_((x), x % 2)) | map(times(2)))) << "\n";
+  assert(ltl::equal(array | map(times(2)), times2Array));
+  assert(ltl::equal(array | map(times(8)), times8Array));
+  assert(ltl::equal(array | (map(times(2)) | map(times(2)) | map(times(2))),
+                    times8Array));
+  assert(
+      ltl::equal(array | (filter(_((x), x % 2)) | map(times(2))), oddTimes2));
 }
 
 void test_to() {
   using namespace ltl;
   using namespace std::literals;
   const std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  std::array oddTimes2Array = {2, 6, 10, 14, 18, 22};
   std::array strs = {"2"s, "6"s, "10"s, "14"s, "18"s, "22"s};
   auto oddTimes2 = (array | (filter(_((x), x % 2)) | map(_((x), x * 2))));
-  ltl::cout << "odd times 2: " << oddTimes2 << "\n";
+  assert(ltl::equal(oddTimes2, oddTimes2Array));
 
   auto oddTimes2List = oddTimes2 | map(_((x), std::to_string(x))) | to_list;
   auto oddTimes2Deque = oddTimes2 | map(_((x), std::to_string(x))) | to_deque;
@@ -621,27 +608,31 @@ void test_to() {
 }
 
 void test_integer_list() {
-  std::cout << "10 values from 5: ";
-  for (auto e : ltl::valueRange(5) | ltl::take_n(10))
-    std::cout << e << " ";
-  std::cout << std::endl;
+  std::array values = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+  assert(ltl::equal(ltl::valueRange(5) | ltl::take_n(10), values));
 }
 
 void test_zip() {
   using namespace std::literals;
+  using ltl::tuple_t;
   const std::array strings = {"1"s, "2"s, "3"s, "4"s, "5"s};
   const std::array strings2 = {"One"s, "Two"s, "Three"s, "Four"s, "Five"s};
   std::array integers = {1, 2, 3, 4, 5};
 
-  std::cout << "test: zip\n";
+  auto index = std::size_t{0};
+
   for (auto [i, s, s2] : ltl::zip(integers, strings, strings2)) {
-    std::cout << i << "," << s << " " << s2 << std::endl;
+    assert(&i == &integers[index]);
+    assert(&s == &strings[index]);
+    assert(&s2 == &strings2[index]);
+    ++index;
   }
 
-  std::cout << "test: enumerate\n";
+  index = 0;
   for (auto [i, s] : ltl::enumerate(strings)) {
-    std::cout << i << "," << s << std::endl;
-    assert(std::addressof(s) == std::addressof(strings[i]));
+    assert(i == index);
+    assert(&s == &strings[i]);
+    ++index;
   }
 }
 
@@ -659,7 +650,7 @@ int main() {
   test_trait();
   test_strong_type();
 
-  test_range();
+  test_algos();
   test_find_range();
 
   test_concept();

@@ -87,27 +87,15 @@ public:
     return tuple_t<decltype_t(types[ns])...>{std::move(*this).get(ns)...};
   }
 
-  template <typename... _Ts>
-  [[nodiscard]] constexpr auto operator==(const tuple_t<_Ts...> &) const
-      noexcept {
-    return false;
+#define OP(op)                                                                 \
+  [[nodiscard]] constexpr bool operator op(const tuple_t<Ts...> &t)            \
+      const noexcept {                                                         \
+    return t.m_storage op m_storage;                                           \
   }
 
-  template <typename... _Ts>
-  [[nodiscard]] constexpr auto operator!=(const tuple_t<_Ts...> &) const
-      noexcept {
-    return true;
-  }
+  LPL_MAP(OP, ==, !=, <=, <, >, >=)
 
-  [[nodiscard]] constexpr bool operator==(const tuple_t<Ts...> &t) const
-      noexcept {
-    return t.m_storage == m_storage;
-  }
-
-  [[nodiscard]] constexpr bool operator!=(const tuple_t<Ts...> &t) const
-      noexcept {
-    return t.m_storage != m_storage;
-  }
+#undef OP
 
   template <typename T>
   [[nodiscard]] constexpr auto push_back(T &&newValue) const & {
