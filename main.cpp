@@ -298,6 +298,13 @@ void test_trait() {
   static_assert(ltl::is_iterable(ltl::type_v<std::vector<int>>));
   static_assert(!ltl::is_iterable(ltl::type_v<int>));
   static_assert(ltl::is_iterable(ltl::type_v<std::array<int, 1>>));
+  typed_static_assert(
+      ltl::copy_cv_reference<double>(ltl::type_v<const int &>) ==
+      ltl::type_v<const double &>);
+  typed_static_assert(ltl::copy_cv_reference<double>(ltl::type_v<int &>) ==
+                      ltl::type_v<double &>);
+  typed_static_assert(ltl::copy_cv_reference<double>(ltl::type_v<int &&>) ==
+                      ltl::type_v<double &&>);
 
   {
     int lvalue;
@@ -672,6 +679,18 @@ void test_variant_utils() {
   variant = 5.0;
   ltl::match(
       variant, [](double) { assert(true); }, [](int) { assert(false); });
+
+  auto result = ltl::match_result(
+      variant, [](int x) { return static_cast<double>(x); },
+      [](double x) { return static_cast<int>(x); });
+
+  static_assert(type_from(result) == ltl::type_v<std::variant<double, int>>);
+  static_assert(type_from(result) != ltl::type_v<std::variant<int, double>>);
+  ltl::match(
+      result, [](int x) { assert(true); }, [](double x) { assert(false); });
+  result = 5.0;
+  ltl::match(
+      result, [](double x) { assert(true); }, [](int x) { assert(false); });
 }
 
 int main() {

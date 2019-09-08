@@ -300,6 +300,19 @@ template <typename... Ts, typename P>
 constexpr auto none_of_type(const tuple_t<Ts...> &tuple, P &&p) {
   return !any_of_type(tuple, FWD(p));
 }
+
+template <template <typename...> typename T, typename List>
+struct build_from_type_listImpl;
+
+template <template <typename...> typename T, typename... Ts>
+struct build_from_type_listImpl<T, type_list_t<Ts...>> {
+  using type = T<Ts...>;
+};
+
+template <template <typename...> typename T, typename Ts>
+using build_from_type_list =
+    typename build_from_type_listImpl<T, std::decay_t<Ts>>::type;
+
 } // namespace ltl
 
 namespace std {
@@ -330,3 +343,5 @@ decltype(auto) get(Tuple &&tuple) {
   ::ltl::tuple_t<decltype(args)...> { args... }
 
 #define TO_VARIADIC(tuple, var, expr) tuple([](auto &&... var) { expr; });
+#define TO_VARIADIC_RETURN(tuple, var, expr)                                   \
+  tuple([](auto &&... var) { return expr; });

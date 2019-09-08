@@ -421,6 +421,28 @@ template <typename T> constexpr auto is_derived_from(type_t<T> type) {
 ;
 }
 
+template <typename... Ts> constexpr auto invoke_result(type_t<Ts>...) noexcept {
+  return type_v<::std::invoke_result_t<Ts...>>;
+}
+
 LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, typename);
+
+template <typename ResultType, typename T>
+constexpr auto copy_cv_reference(type_t<T> type) {
+  if_constexpr(is_lvalue_reference(type)) {
+    if_constexpr(is_const(remove_reference(type))) {
+      return type_v<const ResultType &>;
+    }
+    else {
+      return type_v<ResultType &>;
+    }
+  }
+
+  else_if_constexpr(is_rvalue_reference(type)) { return type_v<ResultType &&>; }
+
+  else {
+    return type_v<ResultType>;
+  }
+}
 
 } // namespace ltl
