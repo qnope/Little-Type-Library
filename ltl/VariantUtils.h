@@ -25,9 +25,10 @@ template <typename V, typename... Fs> auto match_result(V &&v, Fs &&... fs) {
   constexpr auto qualified_types = types([variant_type](auto... t) {
     return tuple_t{copy_cv_reference<decltype_t(t)>(variant_type)...};
   });
-  auto function = overloader{FWD(fs)...};
-  constexpr auto result_types = qualified_types([&function](auto... t) {
-    return ltl::tuple_t{invoke_result(type_from(function), t)...};
+  overloader function{FWD(fs)...};
+  constexpr auto functionType = type_from(function);
+  constexpr auto result_types = qualified_types([functionType](auto... t) {
+    return ltl::tuple_t{invoke_result(functionType, t)...};
   });
   using result_type =
       build_from_type_list<std::variant, decltype(result_types)>;

@@ -421,8 +421,9 @@ template <typename T> constexpr auto is_derived_from(type_t<T> type) {
 ;
 }
 
-template <typename... Ts> constexpr auto invoke_result(type_t<Ts>...) noexcept {
-  return type_v<::std::invoke_result_t<Ts...>>;
+template <typename F, typename... Ts>
+constexpr auto invoke_result(type_t<F>, type_t<Ts>...) noexcept {
+  return type_v<::std::invoke_result_t<F, Ts...>>;
 }
 
 LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, typename);
