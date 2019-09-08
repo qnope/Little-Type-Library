@@ -13,7 +13,9 @@ set(HEADERS
     ltl/concept.h
     ltl/range.h
     ltl/DefaultView.h
-    lpl/lpl.h)
+    ltl/VariantUtils
+    lpl/lpl.h
+    )
 
 if(MSVC)
         add_compile_options(/experimental:preprocessor /permissive-)

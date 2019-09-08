@@ -10,6 +10,7 @@
 #include "ltl/DefaultView.h"
 #include "ltl/StrongType.h"
 #include "ltl/Tuple.h"
+#include "ltl/VariantUtils.h"
 #include "ltl/algos.h"
 #include "ltl/ltl.h"
 #include "ltl/operator.h"
@@ -664,6 +665,15 @@ void test_default_view() {
   }
 }
 
+void test_variant_utils() {
+  std::variant<int, double> variant = 5;
+  ltl::match(
+      variant, [](int) { assert(true); }, [](double) { assert(false); });
+  variant = 5.0;
+  ltl::match(
+      variant, [](double) { assert(true); }, [](int) { assert(false); });
+}
+
 int main() {
   bool_test();
   type_test();
@@ -693,6 +703,7 @@ int main() {
   test_zip();
 
   test_default_view();
+  test_variant_utils();
 
   return 0;
 }
