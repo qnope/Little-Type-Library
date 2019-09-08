@@ -130,10 +130,25 @@ void tuple_test() {
   const auto &[a6, b6, c6, d6] = std::as_const(tuple);
   auto [a7, b7, c7, d7] = std::move(tuple);
   auto &&[a8, b8, c8, d8] = std::move(tuple);
+  assert(a == tuple[0_n]);
+  assert(b == tuple[1_n]);
+  assert(c == tuple[2_n]);
+  assert(d == tuple[3_n]);
+
   assert(&a2 == &tuple[0_n]);
   assert(&b2 == &tuple[1_n]);
   assert(&c2 == &tuple[2_n]);
   assert(&d2 == &tuple[3_n]);
+
+  assert(a3 == a);
+  assert(b3 == b);
+  assert(c3 == c);
+  assert(d3 == d);
+
+  assert(a4 == a);
+  assert(b4 == b);
+  assert(c4 == c);
+  assert(d4 == d);
 
   assert(&a5 == &tuple[0_n]);
   assert(&b5 == &tuple[1_n]);
@@ -144,6 +159,11 @@ void tuple_test() {
   assert(&b6 == &tuple[1_n]);
   assert(&c6 == &tuple[2_n]);
   assert(&d6 == &tuple[3_n]);
+
+  assert(a7 == a);
+  assert(b7 == b);
+  assert(c7 == c);
+  assert(d7 == d);
 
   assert(&a8 == &tuple[0_n]);
   assert(&b8 == &tuple[1_n]);
@@ -687,10 +707,10 @@ void test_variant_utils() {
   static_assert(type_from(result) == ltl::type_v<std::variant<double, int>>);
   static_assert(type_from(result) != ltl::type_v<std::variant<int, double>>);
   ltl::match(
-      result, [](int x) { assert(true); }, [](double x) { assert(false); });
+      result, [](int) { assert(true); }, [](double) { assert(false); });
   result = 5.0;
   ltl::match(
-      result, [](double x) { assert(true); }, [](int x) { assert(false); });
+      result, [](double) { assert(true); }, [](int) { assert(false); });
 }
 
 int main() {
