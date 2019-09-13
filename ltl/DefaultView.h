@@ -4,11 +4,11 @@
 
 namespace ltl {
 
-auto dereference() noexcept {
+inline auto dereference() noexcept {
   return map([](auto &&x) noexcept -> decltype(auto) { return *FWD(x); });
 }
 
-auto remove_null() noexcept {
+inline auto remove_null() noexcept {
   return filter([](auto &&x) noexcept { return static_cast<bool>(FWD(x)); });
 }
 
@@ -28,7 +28,7 @@ template <int... Ns> auto get(number_t<Ns>...) {
   });
 }
 
-auto keys() { return get(0_n); }
-auto values() { return get(1_n); }
+inline auto keys() { return get(0_n); }
+inline auto values() { return get(1_n); }
 
 } // namespace ltl
