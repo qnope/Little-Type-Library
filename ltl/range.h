@@ -28,7 +28,7 @@ public:
   auto begin() const { return m_it; }
   auto end() const { return m_end; }
 
-  decltype(auto) operator[](std::size_t idx) {
+  decltype(auto) operator[](std::size_t idx) const {
     assert(idx < size());
     return *(m_it + idx);
   }
@@ -76,7 +76,7 @@ template <typename F> struct NullableFunction {
   };
 
   NullableFunction() = default;
-  NullableFunction(F &&f) : m_ptr{new (&m_memory) F{std::move(f)}} {}
+  NullableFunction(F f) : m_ptr{new (&m_memory) F{std::move(f)}} {}
   NullableFunction(const NullableFunction &f) {
     if (f.m_ptr)
       m_ptr.reset(new (&m_memory) F{std::move(*f.m_ptr)});
@@ -89,7 +89,7 @@ template <typename F> struct NullableFunction {
     return *this;
   }
 
-  template <typename... Args> decltype(auto) operator()(Args &&... args) {
+  template <typename... Args> decltype(auto) operator()(Args &&... args) const {
     assert(m_ptr);
     return (*m_ptr)(FWD(args)...);
   }
@@ -112,8 +112,8 @@ public:
 
   BaseIterator(It it) : m_it{it}, m_sentinelBegin{it}, m_sentinelEnd{it} {}
 
-  BaseIterator(It &&it, It &&sentinelBegin, It &&sentinelEnd,
-               Function &&function) noexcept
+  BaseIterator(It it, It sentinelBegin, It sentinelEnd,
+               Function function) noexcept
       : m_it{std::move(it)}, m_sentinelBegin{std::move(sentinelBegin)},
         m_sentinelEnd{std::move(sentinelEnd)}, m_function{std::move(function)} {
     DerivedIt &derived = underlying();
@@ -150,14 +150,14 @@ public:
     return it;
   }
 
-  decltype(auto) operator*() noexcept {
-    DerivedIt &it = underlying();
+  decltype(auto) operator*() const noexcept {
+    const DerivedIt &it = underlying();
     assert(it.m_it != it.m_sentinelEnd);
     return *it.m_it;
   }
 
-  auto operator-> () noexcept {
-    DerivedIt &it = underlying();
+  auto operator-> () const noexcept {
+    const DerivedIt &it = underlying();
     return AsPointer<decltype(*it)>{*it};
   }
 
@@ -272,15 +272,16 @@ public:
 
   TakerIterator() = default;
 
-  TakerIterator(It &&begin, It &&sentinelBegin, It &&sentinelEnd, std::size_t n)
-      : m_n{n} {
-    this->m_it = std::move(begin);
-    this->m_sentinelBegin = std::move(sentinelBegin);
-    this->m_sentinelEnd = std::move(sentinelEnd);
+  TakerIterator(It begin, It sentinelBegin, It sentinelEnd, std::size_t n)
+      : BaseIterator<TakerIterator<It>, It, Nothing>{std::move(begin),
+                                                     std::move(sentinelBegin),
+                                                     std::move(sentinelEnd),
+                                                     Nothing{}},
+        m_n{n} {
     advanceUntilNext(IncrementTag{});
   }
 
-  TakerIterator(It &&begin)
+  TakerIterator(It begin)
       : BaseIterator<TakerIterator<It>, It, Nothing>{std::move(begin)} {}
 
 private:
@@ -309,8 +310,8 @@ struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
 
   using BaseIterator<MapIterator<It, Function>, It, Function>::BaseIterator;
 
-  reference operator*() { return this->m_function(*this->m_it); }
-  pointer operator->() { return this->m_function(*this->m_it); }
+  reference operator*() const { return this->m_function(*this->m_it); }
+  pointer operator->() const { return this->m_function(*this->m_it); }
 };
 
 template <typename ValueType>
@@ -345,7 +346,7 @@ struct ValueIterator
     return *this;
   }
 
-  ValueType operator*() noexcept { return this->m_it; }
+  ValueType operator*() const noexcept { return this->m_it; }
 
   ValueType m_step;
 };
@@ -373,7 +374,7 @@ struct ZipIterator
     return *this;
   }
 
-  reference operator*() {
+  reference operator*() const {
     return TO_VARIADIC(this->m_it, xs, return reference{*xs...});
   }
 };
@@ -381,9 +382,11 @@ struct ZipIterator
 #undef DECLARE_EVERYTHING_BUT_REFERENCE
 
 template <typename... Containers> auto zip(Containers &&... containers) {
-  static_assert(sizeof...(Containers) > 0);
-  typed_static_assert_msg((true_v && ... && is_iterable(containers)),
-                          "Zip operations must be used with containers");
+  constexpr auto types = type_list_v<Containers...>;
+  typed_static_assert(!types.isEmpty);
+  // because clang is shit...
+  // typed_static_assert_msg(all_of_type(types, is_iterable),
+  //                        "Zip operations must be used with containers");
 
   assert(FROM_VARIADIC(FWD(containers))([](auto &&c1, auto &&... cs) {
     return (true && ... && (FWD(c1).size() == FWD(cs).size()));
@@ -447,7 +450,7 @@ constexpr auto IsSmartIterator =
 template <typename F> struct FilterType { F f; };
 template <typename F> struct MapType { F f; };
 struct TakerType {
-  std::size_t f;
+  std::size_t n;
 };
 
 template <typename F> auto filter(F &&f) {
@@ -467,38 +470,25 @@ template <typename T>
 constexpr auto IsUsefulForSmartIterator = IsFilterType<T> || IsMapType<T> ||
                                           (type_v<T> == type_v<TakerType>);
 
-// Pipe operator
-namespace detail {
-template <typename R, typename F> constexpr auto get_iterator_type() {
-  using it = decltype(std::begin(std::declval<R>()));
-  using f = decltype(std::declval<F>().f);
-  if constexpr (IsFilterType<F>)
-    return type_v<FilterIterator<it, f>>;
-  else if constexpr (IsMapType<F>)
-    return type_v<MapIterator<it, f>>;
-  else if constexpr (type_v<F> == type_v<TakerType>)
-    return type_v<TakerIterator<it>>;
-  else
-    compile_time_error(
-        "You must use a valid type that is useful for smart iterators", F);
-}
-
-template <typename R, typename F>
-using iterator_type = decltype_t((get_iterator_type<R, F>()));
-} // namespace detail
-
-template <typename R, typename F,
-          requires_f(IsIterable<R> &&IsUsefulForSmartIterator<F>)>
-auto operator|(R &&r, F f) {
-  if_constexpr(!is_range(FWD(r))) {
-    typed_static_assert_msg(
-        !is_rvalue_reference(FWD(r)),
-        "An owning container cannot be passed through rvalue_reference");
+#define OP(Type, Iterator)                                                     \
+  template <typename R, typename F, requires_f(IsIterable<R>)>                 \
+  auto operator|(R &&r, Type<F> f) {                                           \
+    auto begin = std::begin(FWD(r));                                           \
+    auto end = std::end(FWD(r));                                               \
+    return Range{                                                              \
+        Iterator<decltype(begin), F>{begin, begin, end, std::move(f.f)},       \
+        Iterator<decltype(begin), F>{end}};                                    \
   }
-  using it = detail::iterator_type<R, F>;
-  return Range{it{std::begin(FWD(r)), std::begin(FWD(r)), std::end(FWD(r)),
-                  std::move(f.f)},
-               it{std::end(FWD(r))}};
+
+OP(FilterType, FilterIterator)
+OP(MapType, MapIterator)
+
+template <typename R, requires_f(IsIterable<R>)>
+auto operator|(R &&r, TakerType taker) {
+  auto begin = std::begin(FWD(r));
+  auto end = std::end(FWD(r));
+  return Range{TakerIterator<decltype(begin)>{begin, begin, end, taker.n},
+               TakerIterator<decltype(begin)>{end}};
 }
 
 // Chaining functions
@@ -515,11 +505,19 @@ auto operator|(Tuple &&tuple, F &&f) {
   return FWD(tuple).push_back(FWD(f));
 }
 
+// because clang is shit
+template <typename R> auto piper(R r) { return r; }
+
+template <typename R, typename T, typename... Ts>
+auto piper(R &&r, T &&t, Ts &&... ts) {
+  return piper(FWD(r) | FWD(t), FWD(ts)...);
+}
+
 template <typename R, typename Tuple,
           requires_f(IsIterable<R> &&IsTuple<Tuple>)>
 auto operator|(R &&r, Tuple &&chainFunctions) {
-  return FWD(chainFunctions)(
-      [&r](auto &&... xs) { return (FWD(r) | ... | (FWD(xs))); });
+  return chainFunctions(
+      [&r](auto &&... xs) { return piper(FWD(r), FWD(xs)...); });
 }
 // To vector, deque, list
 struct to_vector_t {};

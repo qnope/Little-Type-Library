@@ -93,8 +93,8 @@ void constexpr_tuple_test() {
 
   static_assert(
                 ltl::type_list_v<float, int, double, double, char,
-                double>.pop_front().pop_back().pop_back().pop_back().push_back(ltl::type_v<char>) ==
-                ltl::type_list_v<int, double, char>);
+                double>.pop_front().pop_back().pop_back().pop_back().push_back(ltl::type_v<char>)
+== ltl::type_list_v<int, double, char>);
 
   constexpr auto number_list = ltl::number_list_v<2, 3, 4>;
 
