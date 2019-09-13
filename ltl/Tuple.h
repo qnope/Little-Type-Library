@@ -10,9 +10,9 @@ public:
   constexpr static auto isEmpty = length == 0_n;
 
   template <bool isNotEmpty = !isEmpty, requires_f(isNotEmpty)>
-  explicit constexpr tuple_t() : m_storage{} {}
+  constexpr tuple_t() : m_storage{} {}
 
-  explicit constexpr tuple_t(Ts... ts) : m_storage{FWD(ts)...} {}
+  constexpr tuple_t(Ts... ts) : m_storage{FWD(ts)...} {}
 
   template <typename F>
       constexpr decltype(auto) operator()(F &&f) &
