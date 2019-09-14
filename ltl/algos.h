@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Tuple.h"
 #include "concept.h"
 
 namespace ltl {
@@ -168,6 +169,33 @@ template <typename C, typename K> auto find_map_ptr(C &c, K &&k) {
     return decltype(std::addressof(it->second)){nullptr};
   }
   return std::addressof(it->second);
+}
+
+template <typename C, typename... P>
+auto min_element_value(const C &c, P &&... p) {
+  if (c.size() == 0) {
+    return std::decay_t<decltype(*c.begin())>{};
+  }
+  return *min_element(c, FWD(p)...);
+}
+
+template <typename C, typename... P>
+auto max_element_value(const C &c, P &&... p) {
+  if (c.size() == 0) {
+    return std::decay_t<decltype(*c.begin())>{};
+  }
+  return *max_element(c, FWD(p)...);
+}
+
+template <typename C, typename... P>
+auto minmax_element_value(const C &c, P &&... p) {
+  using underlying = std::decay_t<decltype(*c.begin())>;
+  using T = ltl::tuple_t<underlying, underlying>;
+  if (c.size() == 0) {
+    return T{};
+  }
+  auto [min, max] = minmax_element(c, FWD(p)...);
+  return T{*min, *max};
 }
 
 } // namespace ltl

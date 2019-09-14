@@ -488,6 +488,12 @@ void test_algos() {
 
   auto v = ltl::sort(std::vector{5, 4, 6, 9, 8, 7});
   assert(ltl::equal(v, std::vector{4, 5, 6, 7, 8, 9}));
+
+  assert(3 == ltl::min_element_value(odds));
+  assert(11 == ltl::max_element_value(odds));
+  assert((ltl::tuple_t{3, 11} == ltl::minmax_element_value(odds)));
+  assert(0 == ltl::min_element_value(std::vector<int>{}));
+  assert(0 == ltl::max_element_value(std::vector<int>{}));
 }
 
 void test_find_range() {
