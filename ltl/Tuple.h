@@ -5,6 +5,8 @@
 
 namespace ltl {
 template <typename... Ts> class tuple_t {
+  template <typename...> friend class tuple_t;
+
 public:
   constexpr static auto length = number_v<sizeof...(Ts)>;
   constexpr static auto isEmpty = length == 0_n;
@@ -13,6 +15,11 @@ public:
   constexpr tuple_t() : m_storage{} {}
 
   constexpr tuple_t(Ts... ts) : m_storage{FWD(ts)...} {}
+
+  template <typename... _Ts> tuple_t &operator=(const tuple_t<_Ts...> &t) {
+    m_storage = t.m_storage;
+    return *this;
+  }
 
   template <typename F>
       constexpr decltype(auto) operator()(F &&f) &
@@ -89,7 +96,8 @@ public:
   }
 
 #define OP(op)                                                                 \
-  [[nodiscard]] constexpr bool operator op(const tuple_t<Ts...> &t)            \
+  template <typename... _Ts>                                                   \
+  [[nodiscard]] constexpr bool operator op(const tuple_t<_Ts...> &t)           \
       const noexcept {                                                         \
     return t.m_storage op m_storage;                                           \
   }
@@ -312,6 +320,10 @@ struct build_from_type_listImpl<T, type_list_t<Ts...>> {
 template <template <typename...> typename T, typename Ts>
 using build_from_type_list =
     typename build_from_type_listImpl<T, std::decay_t<Ts>>::type;
+
+template <typename... Ts> auto tie(Ts &... ts) {
+  return tuple_t<Ts &...>{ts...};
+}
 
 } // namespace ltl
 

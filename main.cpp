@@ -169,6 +169,14 @@ void tuple_test() {
   assert(&b8 == &tuple[1_n]);
   assert(&c8 == &tuple[2_n]);
   assert(&d8 == &tuple[3_n]);
+
+  int ta, tb, td;
+  double tc;
+  ltl::tie(ta, tb, tc, td) = tuple;
+  assert(ta == tuple[0_n]);
+  assert(tb == tuple[1_n]);
+  assert(tc == tuple[2_n]);
+  assert(td == tuple[3_n]);
 }
 
 void tuple_test_algo() {
