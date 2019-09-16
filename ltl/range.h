@@ -461,7 +461,7 @@ template <typename F> auto map(F &&f) {
   return MapType<std::decay_t<F>>{FWD(f)};
 }
 
-auto take_n(std::size_t n) { return TakerType{n}; }
+inline auto take_n(std::size_t n) { return TakerType{n}; }
 
 LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType, typename);
 LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, typename);
