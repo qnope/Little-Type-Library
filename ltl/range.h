@@ -50,6 +50,10 @@ private:
 
 template <typename R> Range(R &r)->Range<decltype(std::begin(r))>;
 
+template <typename It> auto begin(const Range<It> &r) { return r.begin(); }
+
+template <typename It> auto end(const Range<It> &r) { return r.end(); }
+
 LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
 
 template <typename T> struct AsPointer {

@@ -7,7 +7,7 @@ namespace ltl {
 #define ALGO_MONO_ITERATOR(name)                                               \
   template <typename C, typename... As> auto name(C &&c, As &&... as) {        \
     typed_static_assert_msg(is_iterable(FWD(c)), "C must be iterable");        \
-    return std::name(std::begin(FWD(c)), std::end(FWD(c)), FWD(as)...);        \
+    return std::name(begin(FWD(c)), end(FWD(c)), FWD(as)...);                  \
   }
 
 #define ALGO_DOUBLE_ITERATOR(name)                                             \
@@ -15,16 +15,16 @@ namespace ltl {
   auto name(C1 &&c1, C2 &&c2, As &&... as) {                                   \
     typed_static_assert_msg(is_iterable(FWD(c1)) && is_iterable(FWD(c2)),      \
                             "C1 and C2 must be iterable");                     \
-    return std::name(std::begin(FWD(c1)), std::end(FWD(c1)),                   \
-                     std::begin(FWD(c2)), std::end(FWD(c2)), FWD(as)...);      \
+    return std::name(begin(FWD(c1)), end(FWD(c1)), begin(FWD(c2)),             \
+                     end(FWD(c2)), FWD(as)...);                                \
   }
 
 // Version for finds
 #define ALGO_FIND_VALUE(name)                                                  \
   template <typename C, typename... As> auto name(C &&c, As &&... as) {        \
     typed_static_assert_msg(is_iterable(FWD(c)), "C must be iterable");        \
-    auto it = std::name(std::begin(FWD(c)), std::end(FWD(c)), FWD(as)...);     \
-    if (it == std::end(FWD(c)))                                                \
+    auto it = std::name(begin(FWD(c)), end(FWD(c)), FWD(as)...);               \
+    if (it == end(FWD(c)))                                                     \
       return decltype(std::make_optional(it)){};                               \
     return std::make_optional(it);                                             \
   }                                                                            \
@@ -48,8 +48,8 @@ namespace ltl {
   auto name(C1 &&c1, C2 &&c2, As &&... as) {                                   \
     typed_static_assert_msg(is_iterable(FWD(c1)) && is_iterable(FWD(c2)),      \
                             "C1 and C2 must be iterable");                     \
-    auto it = std::name(std::begin(FWD(c1)), std::end(FWD(c1)),                \
-                        std::begin(FWD(c2)), std::end(FWD(c2)), FWD(as)...);   \
+    auto it = std::name(begin(FWD(c1)), end(FWD(c1)), begin(FWD(c2)),          \
+                        end(FWD(c2)), FWD(as)...);                             \
     if (it == std::end(FWD(c1)))                                               \
       return decltype(std::make_optional(it)){};                               \
     return std::make_optional(it);                                             \
@@ -84,14 +84,14 @@ LPL_MAP(ALGO_MONO_ITERATOR, is_sorted, is_sorted_until)
 template <typename C, typename... P> C sort(C &&c, P &&... p) {
   typed_static_assert_msg(is_iterable(FWD(c)) && !is_const(FWD(c)),
                           "C must not be const and must be iterable");
-  std::sort(std::begin(c), std::end(c), FWD(p)...);
+  std::sort(begin(c), end(c), FWD(p)...);
   return FWD(c);
 }
 
 template <typename C, typename... P> C stable_sort(C &&c, P &&... p) {
   typed_static_assert_msg(is_iterable(FWD(c)) && !is_const(FWD(c)),
                           "C must not be const and must be iterable");
-  std::stable_sort(std::begin(c), std::end(c), FWD(p)...);
+  std::stable_sort(begin(c), end(c), FWD(p)...);
   return FWD(c);
 }
 
@@ -136,12 +136,10 @@ template <typename C> auto computeMean(const C &c) {
 
   if (size == 0) {
     return std::optional<decltype(
-        std::accumulate(std::next(std::begin(c)), std::end(c), *std::begin(c)) /
-        size)>{};
+        std::accumulate(std::next(begin(c)), end(c), *begin(c)) / size)>{};
   }
 
-  const auto total =
-      std::accumulate(std::next(std::begin(c)), std::end(c), *std::begin(c));
+  const auto total = std::accumulate(std::next(begin(c)), end(c), *begin(c));
   return std::make_optional(total / size);
 }
 
@@ -174,7 +172,7 @@ template <typename C, typename K> auto find_map_ptr(C &c, K &&k) {
 template <typename C, typename... P>
 auto min_element_value(const C &c, P &&... p) {
   if (c.size() == 0) {
-    return std::decay_t<decltype(*c.begin())>{};
+    return std::decay_t<decltype(*begin(c))>{};
   }
   return *min_element(c, FWD(p)...);
 }
@@ -182,14 +180,14 @@ auto min_element_value(const C &c, P &&... p) {
 template <typename C, typename... P>
 auto max_element_value(const C &c, P &&... p) {
   if (c.size() == 0) {
-    return std::decay_t<decltype(*c.begin())>{};
+    return std::decay_t<decltype(*begin(c))>{};
   }
   return *max_element(c, FWD(p)...);
 }
 
 template <typename C, typename... P>
 auto minmax_element_value(const C &c, P &&... p) {
-  using underlying = std::decay_t<decltype(*c.begin())>;
+  using underlying = std::decay_t<decltype(*begin(c))>;
   using T = ltl::tuple_t<underlying, underlying>;
   if (c.size() == 0) {
     return T{};
