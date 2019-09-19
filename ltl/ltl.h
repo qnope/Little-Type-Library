@@ -1,13 +1,8 @@
 #pragma once
 #include "../lpl/lpl.h"
 
-#include <algorithm>
 #include <cassert>
-#include <functional>
-#include <iterator>
-#include <numeric>
 #include <optional>
-#include <ratio>
 
 #define decltype_t(t) typename std::decay_t<decltype(t)>::type
 
@@ -46,15 +41,6 @@ template <typename... Fs> struct overloader : Fs... {
   using Fs::operator()...;
 };
 
-////////////////////// crtp
-/*
-template <typename T, template <typename...> typename crtpType> struct crtp {
-  T &underlying() { return static_cast<T &>(*this); }
-
-  constexpr const T &underlying() const {
-    return static_cast<const T &>(*this);
-  }
-};*/
 #define ENABLE_CRTP(DerivedType)                                               \
   DerivedType &underlying() { return static_cast<DerivedType &>(*this); }      \
   constexpr const DerivedType &underlying() const {                            \

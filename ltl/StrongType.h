@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ratio>
+
 #include "concept.h"
 #include "ltl.h"
 
