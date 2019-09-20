@@ -18,7 +18,7 @@ set(HEADERS
     )
 
 if(MSVC)
-        add_compile_options(/experimental:preprocessor /permissive-)
+        add_compile_options(/experimental:preprocessor /permissive- /d2cgsummary)
 endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
