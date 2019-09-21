@@ -1,7 +1,9 @@
 #pragma once
-#include "concept.h"
+
+#include "crtp.h"
 #include "ltl.h"
-#include <tuple>
+
+#include <utility>
 
 namespace ltl {
 namespace detail {
@@ -9,11 +11,10 @@ template <std::size_t I, typename T> struct Value {
   constexpr Value() noexcept = default;
   constexpr Value(T &&t) noexcept : m_value{FWD(t)} {}
   constexpr Value(const Value &v) noexcept : m_value{v.m_value} {}
-  constexpr Value(Value &&v) noexcept : m_value{std::move(v.m_value)} {}
+  constexpr Value(Value &&v) noexcept : m_value{FWD(v.m_value)} {}
 
-  template <typename _T,
-            typename = std::enable_if_t<ltl::type_v<std::decay_t<_T>> !=
-                                        ltl::type_v<Value>>>
+  template <typename _T, typename = std::enable_if_t<ltl::type_v<std::decay_t<_T>> !=
+                                                     ltl::type_v<Value>>>
   constexpr Value(_T &&t) noexcept : m_value{FWD(t)} {}
 
   constexpr Value &operator=(Value v) noexcept {
@@ -21,37 +22,18 @@ template <std::size_t I, typename T> struct Value {
     return *this;
   }
 
-  template <typename _T,
-            typename = std::enable_if_t<ltl::type_v<std::decay_t<_T>> !=
-                                        ltl::type_v<Value>>>
+  template <typename _T, typename = std::enable_if_t<ltl::type_v<std::decay_t<_T>> !=
+                                                     ltl::type_v<Value>>>
   constexpr Value &operator=(_T &&t) noexcept {
     m_value = FWD(t);
     return *this;
   }
 
-  constexpr auto &&operator[](ltl::number_t<I>) && noexcept {
-    return std::move(m_value);
-  }
+  constexpr auto &&operator[](ltl::number_t<I>) && noexcept { return FWD(m_value); }
 
-  constexpr auto &operator[](ltl::number_t<I>) const &noexcept {
-    return m_value;
-  }
+  constexpr auto &operator[](ltl::number_t<I>) const &noexcept { return m_value; }
 
   constexpr auto &operator[](ltl::number_t<I>) & noexcept { return m_value; }
-  /*
-#define OP(op) \
-template <typename _T, typename = std::enable_if_t<ltl::type_v<_T> != \
-                   ltl::type_v<Value>>> \
-constexpr bool operator op()(const _T &t) noexcept { \
-return m_value op t; \
-} \
-                                             \
-template <std::size_t _I, typename _T> \
-constexpr bool operator op(const Value<_I, _T> &v) noexcept { \
-return m_value op v.m_value; \
-}
-LPL_MAP(OP, ==, !=, <, <=, >, >=)
-#undef OP*/
 
   T m_value{};
 };
@@ -59,7 +41,9 @@ LPL_MAP(OP, ==, !=, <, <=, >, >=)
 template <typename...> class tuple_t;
 
 template <std::size_t... Is, typename... Ts>
-class tuple_t<std::index_sequence<Is...>, Ts...> : public Value<Is, Ts>... {
+class tuple_t<std::index_sequence<Is...>, Ts...>
+    : public Value<Is, Ts>...,
+      public Comparable<tuple_t<std::index_sequence<Is...>, Ts...>> {
 public:
 #ifndef _MSC_VER
   using Value<Is, Ts>::operator[]...; // does not compile with msvc, but gcc
@@ -73,10 +57,10 @@ public:
 
   constexpr tuple_t(Ts... ts) : Value<Is, Ts>{FWD(ts)}... {}
 
-  /*template <typename... _Ts> tuple_t &operator=(const tuple_t<_Ts...> &t) {
-m_storage = t.m_storage;
-return *this;
-}*/
+  template <typename... _Ts> tuple_t &operator=(const tuple_t<_Ts...> &t) {
+    (((*this)[number_v<Is>] = t[number_v<Is>]), ...);
+    return *this;
+  }
 
   template <typename F>
       constexpr decltype(auto) operator()(F &&f) &
@@ -101,14 +85,12 @@ return *this;
     return (*this)[n];
   }
 
-  template <int N>
-  [[nodiscard]] constexpr auto &get(number_t<N> n) const &noexcept {
+  template <int N>[[nodiscard]] constexpr auto &get(number_t<N> n) const &noexcept {
     typed_static_assert(n < length);
     return (*this)[n];
   }
 
-  template <int N>
-      [[nodiscard]] constexpr auto &&get(number_t<N> n) && noexcept {
+  template <int N>[[nodiscard]] constexpr auto &&get(number_t<N> n) && noexcept {
     typed_static_assert(n < length);
     return std::move((*this)[n]);
   }
@@ -125,121 +107,29 @@ return *this;
     return std::move(*this).get(number_v<N>);
   }
 
-  /*template <int... Is>
-[[nodiscard]] constexpr auto extract(number_t<Is>... ns) const &noexcept {
-constexpr tuple_t<type_t<Ts>...> types{};
-return tuple_t<decltype_t(types[ns])...>{get(ns)...};
-}
-
-template <int... Is>
-[[nodiscard]] constexpr auto extract(number_t<Is>... ns) && noexcept {
-constexpr tuple_t<type_t<Ts>...> types{};
-return tuple_t<decltype_t(types[ns])...>{std::move(*this).get(ns)...};
-}
-*/
-
   template <typename... _Ts>
-  [[nodiscard]] constexpr bool operator==(const tuple_t<_Ts...> &t) const
-      noexcept {
-    return (true && ... && ((*this)[number_v<Is>] == t[number_v<Is>]));
+  constexpr bool operator==(const tuple_t<_Ts...> &t) const noexcept {
+    return (((*this)[number_v<Is>] == t[number_v<Is>]) && ... && true);
   }
 
   template <typename... _Ts>
-  [[nodiscard]] constexpr bool operator!=(const tuple_t<_Ts...> &t) const
-      noexcept {
-    return !(*this == t);
+  constexpr bool operator<(const tuple_t<_Ts...> &t) const noexcept {
+    bool resultComparison = false;
+    auto tester = [&resultComparison](const auto &a, const auto &b) {
+      if (a > b) {
+        resultComparison = false;
+        return false;
+      }
+
+      else if (a < b) {
+        resultComparison = true;
+        return false;
+      }
+      return true;
+    };
+    ((tester((*this)[number_v<Is>], t[number_v<Is>])) && ...);
+    return resultComparison;
   }
-
-  /*
-    template <typename T>
-    [[nodiscard]] constexpr auto push_back(T &&newValue) const & {
-      auto fwdAll = [&newValue](auto &... xs) {
-        return tuple_t<Ts..., decay_reference_wrapper_t<T>>{xs...,
-  FWD(newValue)};
-      };
-      return std::apply(fwdAll, m_storage);
-    }
-
-    template <typename T>[[nodiscard]] constexpr auto push_back(T &&newValue) &&
-  { auto fwdAll = [&newValue](Ts &&... xs) { return tuple_t<Ts...,
-  decay_reference_wrapper_t<T>>{FWD(xs)..., FWD(newValue)};
-      };
-      return std::apply(fwdAll, std::move(m_storage));
-    }
-
-    template <typename T>
-    [[nodiscard]] constexpr auto push_front(T &&newValue) const & {
-      auto fwdAll = [&newValue](auto &... xs) {
-        return tuple_t<decay_reference_wrapper_t<T>, Ts...>{FWD(newValue),
-  xs...};
-      };
-      return std::apply(fwdAll, m_storage);
-    }
-
-    template <typename T>
-    [[nodiscard]] constexpr auto push_front(T &&newValue) && {
-      auto fwdAll = [&newValue](Ts &&... xs) {
-        return tuple_t<decay_reference_wrapper_t<T>, Ts...>{FWD(newValue),
-                                                            FWD(xs)...};
-      };
-      return std::apply(fwdAll, std::move(m_storage));
-    }
-
-    [[nodiscard]] constexpr auto pop_back() const & {
-      auto extracter = [this](auto... numbers) { return extract(numbers...); };
-      constexpr auto numbers = build_index_sequence(length - 1_n);
-      return numbers(extracter);
-    }
-
-    [[nodiscard]] constexpr auto pop_back() && {
-      auto extracter = [this](auto... numbers) {
-        return std::move(*this).extract(numbers...);
-      };
-      constexpr auto numbers = build_index_sequence(length - 1_n);
-      return numbers(extracter);
-    }
-
-    [[nodiscard]] constexpr auto pop_front() const & {
-      auto extracter = [this](auto... numbers) {
-        return this->extract(numbers...);
-      };
-      constexpr auto numbers = build_index_sequence(1_n, length);
-      return apply(numbers, extracter);
-    }
-
-    [[nodiscard]] constexpr auto pop_front() && {
-      auto extracter = [this](auto... numbers) {
-        return std::move(*this).extract(numbers...);
-      };
-      constexpr auto numbers = build_index_sequence(1_n, length);
-      return apply(numbers, extracter);
-    }
-
-    template <typename N1, typename N2>
-    [[nodiscard]] static constexpr auto build_index_sequence(N1 n1, N2 n2) {
-      return build_index_sequence_helper(n1, n2);
-    }
-
-    template <typename N>
-    [[nodiscard]] static constexpr auto build_index_sequence(N n) {
-      return build_index_sequence(0_n, n);
-    }
-
-  private:
-    template <int N1, int N2, typename List = tuple_t<>>
-    [[nodiscard]] static constexpr auto
-    build_index_sequence_helper(number_t<N1> n1, number_t<N2> n2,
-                                const List list = List{}) {
-      typed_static_assert_msg(n1 <= n2, "n1 must be lesser or equal to n2");
-      if constexpr (n1 == n2) {
-        return list;
-      }
-
-      else {
-        return build_index_sequence_helper(n1 + 1_n, n2, list.push_back(n1));
-      }
-    }
-    */
 };
 
 } // namespace detail
@@ -249,11 +139,104 @@ class tuple_t : public detail::tuple_t<std::index_sequence_for<Ts...>, Ts...> {
 public:
   using super = detail::tuple_t<std::index_sequence_for<Ts...>, Ts...>;
 
+  using super::length;
   using super::super;
+  using super::operator=;
+
+  template <int... Is>
+  [[nodiscard]] constexpr auto extract(number_t<Is>... ns) const &noexcept {
+    constexpr tuple_t<type_t<Ts>...> types{};
+    return tuple_t<decltype_t(types[ns])...>{this->get(ns)...};
+  }
+
+  template <int... Is>
+      [[nodiscard]] constexpr auto extract(number_t<Is>... ns) && noexcept {
+    constexpr tuple_t<type_t<Ts>...> types{};
+    return tuple_t<decltype_t(types[ns])...>{std::move(*this).get(ns)...};
+  }
+
+  template <typename T>[[nodiscard]] constexpr auto push_back(T &&newValue) const & {
+    auto fwdAll = [&newValue](auto &... xs) {
+      return tuple_t<Ts..., decay_reference_wrapper_t<T>>{xs..., FWD(newValue)};
+    };
+    return (*this)(fwdAll);
+  }
+
+  template <typename T>[[nodiscard]] constexpr auto push_back(T &&newValue) && {
+    auto fwdAll = [&newValue](Ts &&... xs) {
+      return tuple_t<Ts..., decay_reference_wrapper_t<T>>{FWD(xs)..., FWD(newValue)};
+    };
+    return std::move(*this)(fwdAll);
+  }
+
+  template <typename T>[[nodiscard]] constexpr auto push_front(T &&newValue) const & {
+    auto fwdAll = [&newValue](auto &... xs) {
+      return tuple_t<decay_reference_wrapper_t<T>, Ts...>{FWD(newValue), xs...};
+    };
+    return (*this)(fwdAll);
+  }
+
+  template <typename T>[[nodiscard]] constexpr auto push_front(T &&newValue) && {
+    auto fwdAll = [&newValue](Ts &&... xs) {
+      return tuple_t<decay_reference_wrapper_t<T>, Ts...>{FWD(newValue), FWD(xs)...};
+    };
+    return std::move(*this)(fwdAll);
+  }
+
+  [[nodiscard]] constexpr auto pop_back() const & {
+    auto extracter = [this](auto... numbers) { return extract(numbers...); };
+    constexpr auto numbers = build_index_sequence(length - 1_n);
+    return numbers(extracter);
+  }
+
+  [[nodiscard]] constexpr auto pop_back() && {
+    auto extracter = [this](auto... numbers) {
+      return std::move(*this).extract(numbers...);
+    };
+    constexpr auto numbers = build_index_sequence(length - 1_n);
+    return numbers(extracter);
+  }
+
+  [[nodiscard]] constexpr auto pop_front() const & {
+    auto extracter = [this](auto... numbers) { return this->extract(numbers...); };
+    constexpr auto numbers = build_index_sequence(1_n, length);
+    return apply(numbers, extracter);
+  }
+
+  [[nodiscard]] constexpr auto pop_front() && {
+    auto extracter = [this](auto... numbers) {
+      return std::move(*this).extract(numbers...);
+    };
+    constexpr auto numbers = build_index_sequence(1_n, length);
+    return apply(numbers, extracter);
+  }
+
+  template <typename N1, typename N2>
+  [[nodiscard]] static constexpr auto build_index_sequence(N1 n1, N2 n2) {
+    return build_index_sequence_helper(n1, n2);
+  }
+
+  template <typename N>[[nodiscard]] static constexpr auto build_index_sequence(N n) {
+    return build_index_sequence(0_n, n);
+  }
+
+private:
+  template <int N1, int N2, typename List = tuple_t<>>
+  [[nodiscard]] static constexpr auto
+  build_index_sequence_helper(number_t<N1> n1, number_t<N2> n2,
+                              const List list = List{}) {
+    typed_static_assert_msg(n1 <= n2, "n1 must be lesser or equal to n2");
+    if constexpr (n1 == n2) {
+      return list;
+    }
+
+    else {
+      return build_index_sequence_helper(n1 + 1_n, n2, list.push_back(n1));
+    }
+  }
 };
 
-template <typename... Ts>
-tuple_t(Ts...)->tuple_t<decay_reference_wrapper_t<Ts>...>;
+template <typename... Ts> tuple_t(Ts...)->tuple_t<decay_reference_wrapper_t<Ts>...>;
 
 ////////////////////// Templates
 /// Convenience types
@@ -289,7 +272,6 @@ template <typename F, typename Tuple> F for_each(Tuple &&tuple, F &&f) {
   return FWD(f);
 }
 
-/*
 ////////////////////// Algorithm tuple
 template <typename N1, typename N2>
 [[nodiscard]] constexpr auto build_index_sequence(N1 n1, N2 n2) {
@@ -308,8 +290,7 @@ constexpr auto contains_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
 
 template <typename... Ts, typename T>
 constexpr auto count_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
-  if_constexpr(is_type_list_t(tuple)) return (0_n + ... +
-                                              bool_to_number(Ts{} == type));
+  if_constexpr(is_type_list_t(tuple)) return (0_n + ... + bool_to_number(Ts{} == type));
   else return count_type(type_list_v<Ts...>, type);
 }
 
@@ -325,8 +306,7 @@ constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
 }
 
 template <typename... Ts, typename P, int N = 0>
-constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P &&p,
-                            number_t<N> first = {}) {
+constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P &&p, number_t<N> first = {}) {
   if_constexpr(is_type_list_t(tuple)) {
     if_constexpr(FWD(p)(tuple[first])) return first;
     else return find_if_type(tuple, FWD(p), first + 1_n);
@@ -342,8 +322,7 @@ constexpr auto contains_if_type(const tuple_t<Ts...> &tuple, P &&p) {
 
 template <typename... Ts, typename P>
 constexpr auto count_if_type(const tuple_t<Ts...> &tuple, P &&p) {
-  if_constexpr(is_type_list_t(tuple)) return (0_n + ... +
-                                              bool_to_number(FWD(p)(Ts{})));
+  if_constexpr(is_type_list_t(tuple)) return (0_n + ... + bool_to_number(FWD(p)(Ts{})));
   else return count_type(type_list_v<Ts...>, FWD(p));
 }
 
@@ -373,43 +352,34 @@ struct build_from_type_listImpl<T, type_list_t<Ts...>> {
 };
 
 template <template <typename...> typename T, typename Ts>
-using build_from_type_list =
-    typename build_from_type_listImpl<T, std::decay_t<Ts>>::type;
+using build_from_type_list = typename build_from_type_listImpl<T, std::decay_t<Ts>>::type;
 
-template <typename... Ts> auto tie(Ts &... ts) {
-  return tuple_t<Ts &...>{ts...};
-}
-*/
+template <typename... Ts> auto tie(Ts &... ts) { return tuple_t<Ts &...>{ts...}; }
+
 } // namespace ltl
-/*
+
 namespace std {
 template <typename... Ts>
 struct tuple_size<::ltl::tuple_t<Ts...>>
     : std::integral_constant<std::size_t, sizeof...(Ts)> {};
 
-template <std::size_t I, typename... Ts>
-struct tuple_element<I, ::ltl::tuple_t<Ts...>> {
-  using type =
-      decltype(std::declval<::ltl::tuple_t<Ts...>>().template get<I>());
+template <std::size_t I, typename... Ts> struct tuple_element<I, ::ltl::tuple_t<Ts...>> {
+  using type = decltype(std::declval<::ltl::tuple_t<Ts...>>().template get<I>());
 };
 
 template <std::size_t I, typename... Ts>
 struct tuple_element<I, const ::ltl::tuple_t<Ts...>> {
-  using type =
-      decltype(std::declval<const ::ltl::tuple_t<Ts...>>().template get<I>());
+  using type = decltype(std::declval<const ::ltl::tuple_t<Ts...>>().template get<I>());
 };
 
-template <std::size_t N, typename Tuple, requires_f(::ltl::IsTuple<Tuple>)>
-decltype(auto) get(Tuple &&tuple) {
+template <std::size_t N, typename Tuple> decltype(auto) get(Tuple &&tuple) {
   return FWD(tuple)[number_v<N>];
 }
 
 } // namespace std
 
-#define FROM_VARIADIC(args)                                                    \
+#define FROM_VARIADIC(args)                                                              \
   ::ltl::tuple_t<decltype(args)...> { args... }
 
 #define TO_VARIADIC(tuple, var, expr) tuple([](auto &&... var) { expr; });
-#define TO_VARIADIC_RETURN(tuple, var, expr)                                   \
-  tuple([](auto &&... var) { return expr; });
-*/
+#define TO_VARIADIC_RETURN(tuple, var, expr) tuple([](auto &&... var) { return expr; });

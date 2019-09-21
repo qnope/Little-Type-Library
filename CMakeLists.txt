@@ -13,7 +13,8 @@ set(HEADERS
     ltl/concept.h
     ltl/range.h
     ltl/DefaultView.h
-    ltl/VariantUtils
+    ltl/VariantUtils.h
+    ltl/crtp.h
     lpl/lpl.h
     )
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Tuple.h"
-#include "ltl.h"
 #include <variant>
+
+#include "ltl.h"
 
 namespace ltl {
 template <typename V, typename... Fs> decltype(auto) match(V &&v, Fs &&... fs) {
@@ -16,8 +16,7 @@ constexpr auto getVariantTypes(type_t<::std::variant<Types...>>) {
 }
 } // namespace detail
 
-template <typename T>
-using decltype_template = typename ::std::decay_t<T>::type;
+template <typename T> using decltype_template = typename ::std::decay_t<T>::type;
 
 template <typename V, typename... Fs> auto match_result(V &&v, Fs &&... fs) {
   constexpr auto variant_type = type_from(v);
@@ -30,11 +29,9 @@ template <typename V, typename... Fs> auto match_result(V &&v, Fs &&... fs) {
   constexpr auto result_types = qualified_types([functionType](auto... t) {
     return ltl::tuple_t{invoke_result(functionType, t)...};
   });
-  using result_type =
-      build_from_type_list<std::variant, decltype(result_types)>;
-  return std::visit(
-      [&function](auto &&x) -> result_type { return function(FWD(x)); },
-      FWD(v));
+  using result_type = build_from_type_list<std::variant, decltype(result_types)>;
+  return std::visit([&function](auto &&x) -> result_type { return function(FWD(x)); },
+                    FWD(v));
 }
 
 } // namespace ltl
