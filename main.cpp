@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
+/*
 #include "ltl/DefaultView.h"
 #include "ltl/StrongType.h"
 #include "ltl/Tuple.h"
@@ -15,8 +15,11 @@
 #include "ltl/ltl.h"
 #include "ltl/operator.h"
 #include "ltl/range.h"
-#include "ltl/stream.h"
+#include "ltl/stream.h"*/
 
+#include "ltl/Tuple.h"
+
+/*
 void bool_test() {
   static_assert(false_v == false_v);
   static_assert(false_v != true_v);
@@ -69,9 +72,10 @@ void number_test() {
   static_assert(ltl::max(5_n, 3_n, 8_n, 4_n) == 8_n);
   static_assert(ltl::min(4_n, -8_n, 8_n, 4_n) == -8_n);
 }
-
+*/
 void constexpr_tuple_test() {
   constexpr ltl::tuple_t tuple{5, 3.0};
+  tuple[1_n];
 
   static_assert(decay_from(tuple) == ltl::type_v<ltl::tuple_t<int, double>>);
   static_assert(apply(tuple, [](auto a, auto b) { return a + b; }) == 8.0);
@@ -87,7 +91,7 @@ void constexpr_tuple_test() {
   static_assert(tuple == ltl::tuple_t<int, double>{5, 3.0});
   static_assert(tuple != ltl::tuple_t<int, double>{5, 3.1});
 
-  static_assert(
+  /*static_assert(
       ltl::type_list_v<int, double, char> ==
       ltl::type_list_v<double>.push_back(ltl::type_v<char>).push_front(ltl::type_v<int>));
 
@@ -105,9 +109,10 @@ void constexpr_tuple_test() {
 
   static_assert(number_list.pop_back().pop_back() == ltl::number_list_v<2>);
   static_assert(number_list.pop_front().pop_front() == ltl::number_list_v<4>);
-  static_assert(build_index_sequence(5_n) == ltl::number_list_v<0, 1, 2, 3, 4>);
+  static_assert(build_index_sequence(5_n) == ltl::number_list_v<0, 1, 2, 3,
+4>);*/
 }
-
+/*
 void tuple_test() {
   ltl::tuple_t _tuple{5, 3.0};
 
@@ -726,17 +731,19 @@ void test_variant_utils() {
   ltl::match(
       result, [](double) { assert(true); }, [](int) { assert(false); });
 }
-
+*/
 int main() {
-  bool_test();
-  type_test();
-  number_test();
-  tuple_test();
-  tuple_test_algo();
-  constexpr_tuple_test();
-  tuple_reference_test();
-  push_pop_test();
+  // bool_test();
+  // type_test();
+  // number_test();
 
+  // tuple_test();
+  // tuple_test_algo();
+  constexpr_tuple_test();
+  // tuple_reference_test();
+  // push_pop_test();
+
+  /*
   test_is_valid();
   test_trait();
   test_strong_type();
@@ -756,7 +763,7 @@ int main() {
   test_zip();
 
   test_default_view();
-  test_variant_utils();
+  test_variant_utils();*/
 
   return 0;
 }
