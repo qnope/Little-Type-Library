@@ -8,7 +8,7 @@
 namespace ltl {
 namespace detail {
 template <std::size_t I, typename T> struct Value {
-  constexpr Value() noexcept = default;
+  constexpr Value() noexcept : m_value{} {};
   constexpr Value(T &&t) noexcept : m_value{FWD(t)} {}
   constexpr Value(const Value &v) noexcept : m_value{v.m_value} {}
   constexpr Value(Value &&v) noexcept : m_value{FWD(v.m_value)} {}
@@ -35,7 +35,7 @@ template <std::size_t I, typename T> struct Value {
 
   constexpr auto &operator[](ltl::number_t<I>) & noexcept { return m_value; }
 
-  T m_value{};
+  T m_value;
 };
 
 template <typename...> class tuple_t;
@@ -59,6 +59,11 @@ public:
 
   template <typename... _Ts> tuple_t &operator=(const tuple_t<_Ts...> &t) {
     (((*this)[number_v<Is>] = t[number_v<Is>]), ...);
+    return *this;
+  }
+
+  template <typename... _Ts> tuple_t &operator=(tuple_t<_Ts...> &&t) {
+    (((*this)[number_v<Is>] = std::move(t)[number_v<Is>]), ...);
     return *this;
   }
 
@@ -354,7 +359,7 @@ struct build_from_type_listImpl<T, type_list_t<Ts...>> {
 template <template <typename...> typename T, typename Ts>
 using build_from_type_list = typename build_from_type_listImpl<T, std::decay_t<Ts>>::type;
 
-template <typename... Ts> auto tie(Ts &... ts) { return tuple_t<Ts &...>{ts...}; }
+template <typename... Ts> tuple_t<Ts &...> tie(Ts &... ts) noexcept { return {ts...}; }
 
 } // namespace ltl
 

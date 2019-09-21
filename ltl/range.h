@@ -1,13 +1,16 @@
 #pragma once
 
+#include "StrongType.h"
+#include "Tuple.h"
+#include "concept.h"
+#include "ltl.h"
+#include "operator.h"
+
 #include <deque>
-#include <iterator>
+#include <limits>
 #include <list>
 #include <memory>
 #include <vector>
-
-#include "Tuple.h"
-#include "concept.h"
 
 namespace ltl {
 
@@ -460,7 +463,6 @@ constexpr auto IsUsefulForSmartIterator = IsFilterType<T> || IsMapType<T> ||
 
 OP(FilterType, FilterIterator)
 OP(MapType, MapIterator)
-#undef OP
 
 template <typename R, requires_f(IsIterable<R>)> auto operator|(R &&r, TakerType taker) {
   auto begin = std::begin(FWD(r));

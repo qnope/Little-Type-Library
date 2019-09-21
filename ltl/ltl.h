@@ -306,17 +306,6 @@ template <typename F> constexpr auto is_valid(F f) {
   ltl::is_valid([] LPL_IDENTITY(LTL_WRITE_AUTO_IMPL LTL_ENSURE_NOT_EMPTY variables)      \
                     -> decltype(__VA_ARGS__, void()) {})
 
-template <typename T>[[nodiscard]] constexpr auto is_iterableImpl(type_t<T>) {
-  constexpr auto trait = IS_VALID((x), std::begin(FWD(x)), std::end(FWD(x)));
-  return decltype(trait(std::declval<T>())){};
-}
-
-template <typename T>[[nodiscard]] constexpr auto is_iterableImpl(T &&x) {
-  return is_iterableImpl(type_from(x));
-}
-
-constexpr auto is_iterable = [](auto &&x) constexpr { return is_iterableImpl(FWD(x)); };
-
 #define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                          \
   template <typename T> struct LPL_CAT(name, ImplStruct) : false_t {};                   \
   template <templateType... Ts>                                                          \

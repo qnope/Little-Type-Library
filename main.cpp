@@ -78,12 +78,12 @@ void constexpr_tuple_test() {
   static_assert(tuple == ltl::tuple_t<int, double>{5, 3.0});
   static_assert(tuple != ltl::tuple_t<int, double>{5, 3.1});
 
-  /*static_assert(tuple < ltl::tuple_t{5, 6.0});
+  static_assert(tuple < ltl::tuple_t{5, 6.0});
   static_assert(tuple < ltl::tuple_t{6, 2.0});
   static_assert(tuple <= ltl::tuple_t{5, 3.0});
 
   static_assert(tuple > ltl::tuple_t{5, 2.0});
-  static_assert(tuple >= ltl::tuple_t{5, 2.8});*/
+  static_assert(tuple >= ltl::tuple_t{5, 2.8});
 
   static_assert(
       ltl::type_list_v<int, double, char> ==
