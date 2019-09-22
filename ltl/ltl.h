@@ -23,9 +23,12 @@ namespace ltl {
 template <typename> constexpr bool always_false = false;
 
 /////////////////////// decay_reference_wrapper
-template <typename T> struct decay_reference_wrapper { using type = std::decay_t<T>; };
+template <typename T> struct decay_reference_wrapper {
+  using type = std::decay_t<T>;
+};
 
-template <typename T> struct decay_reference_wrapper<std::reference_wrapper<T>> {
+template <typename T>
+struct decay_reference_wrapper<std::reference_wrapper<T>> {
   using type = T &;
 };
 
@@ -55,17 +58,20 @@ constexpr ltl::true_t true_v;
 namespace ltl {
 template <bool v> constexpr bool_t<v> bool_v{};
 
-#define OP(op)                                                                           \
-  template <bool v1, bool v2>                                                            \
-  [[nodiscard]] constexpr bool_t<v1 op v2> operator op(bool_t<v1>, bool_t<v2>) {         \
-    return {};                                                                           \
+#define OP(op)                                                                 \
+  template <bool v1, bool v2>                                                  \
+  [[nodiscard]] constexpr bool_t<v1 op v2> operator op(bool_t<v1>,             \
+                                                       bool_t<v2>) {           \
+    return {};                                                                 \
   }
 
 LPL_MAP(OP, ==, !=, &&, ||)
 
 #undef OP
 
-template <bool v>[[nodiscard]] constexpr bool_t<!v> operator!(bool_t<v>) { return {}; }
+template <bool v>[[nodiscard]] constexpr bool_t<!v> operator!(bool_t<v>) {
+  return {};
+}
 
 ///////////////////////// type
 template <typename T> struct type_t {
@@ -80,7 +86,8 @@ template <typename T1, typename T2>
   return {};
 }
 
-template <typename T>[[nodiscard]] constexpr true_t operator==(type_t<T>, type_t<T>) {
+template <typename T>
+[[nodiscard]] constexpr true_t operator==(type_t<T>, type_t<T>) {
   return {};
 }
 
@@ -89,11 +96,13 @@ template <typename T1, typename T2>
   return {};
 }
 
-template <typename T>[[nodiscard]] constexpr false_t operator!=(type_t<T>, type_t<T>) {
+template <typename T>
+[[nodiscard]] constexpr false_t operator!=(type_t<T>, type_t<T>) {
   return {};
 }
 
-template <typename T>[[nodiscard]] constexpr true_t is_type_t(ltl::type_t<T>) noexcept {
+template <typename T>
+[[nodiscard]] constexpr true_t is_type_t(ltl::type_t<T>) noexcept {
   return {};
 }
 
@@ -116,26 +125,29 @@ template <char... _digits>[[nodiscard]] constexpr int digits_to_int() {
 }
 } // namespace detail
 
-#define OP(op)                                                                           \
-  template <int N1, int N2>                                                              \
-  [[nodiscard]] constexpr number_t<(N1 op N2)> operator op(number_t<N1>, number_t<N2>) { \
-    return {};                                                                           \
+#define OP(op)                                                                 \
+  template <int N1, int N2>                                                    \
+  [[nodiscard]] constexpr number_t<(N1 op N2)> operator op(number_t<N1>,       \
+                                                           number_t<N2>) {     \
+    return {};                                                                 \
   }
 LPL_MAP(OP, +, -, *, /, %, &, |, ^, <<, >>)
 #undef OP
 
-#define OP(op)                                                                           \
-  template <int N1, int N2>                                                              \
-  [[nodiscard]] constexpr bool_t<(N1 op N2)> operator op(number_t<N1>, number_t<N2>) {   \
-    return {};                                                                           \
+#define OP(op)                                                                 \
+  template <int N1, int N2>                                                    \
+  [[nodiscard]] constexpr bool_t<(N1 op N2)> operator op(number_t<N1>,         \
+                                                         number_t<N2>) {       \
+    return {};                                                                 \
   }
 
 LPL_MAP(OP, ==, !=, <, <=, >, >=)
 #undef OP
 
-#define OP(op)                                                                           \
-  template <int N>[[nodiscard]] constexpr number_t<(op N)> operator op(number_t<N>) {    \
-    return {};                                                                           \
+#define OP(op)                                                                 \
+  template <int N>                                                             \
+  [[nodiscard]] constexpr number_t<(op N)> operator op(number_t<N>) {          \
+    return {};                                                                 \
   }
 LPL_MAP(OP, ~, +, -)
 #undef OP
@@ -165,21 +177,21 @@ template <typename T1, typename T2, typename... Ts>
   else return ::ltl::min(b, ts...);
 }
 
-#define LTL_MAKE_IS_KIND(type, name, conceptName, lambdaName, templateType)              \
-  template <typename T> struct LPL_CAT(name, ImplStruct) : false_t {};                   \
-  template <templateType... Ts>                                                          \
-  struct LPL_CAT(name, ImplStruct)<type<Ts...>> : true_t {};                             \
-  template <typename T>                                                                  \
-      constexpr bool_t<LPL_CAT(name, ImplStruct) < T>::value > name(type_t<T>) {         \
-    return {};                                                                           \
-  }                                                                                      \
-  template <typename T>                                                                  \
-      constexpr bool_t<LPL_CAT(name, ImplStruct) < std::decay_t<T>>::value >             \
-      name(T &&) {                                                                       \
-    return {};                                                                           \
-  }                                                                                      \
-  constexpr auto lambdaName = [](auto &&x) constexpr noexcept { return name(FWD(x)); };  \
-  template <typename T>                                                                  \
-  constexpr bool conceptName = LPL_CAT(name, ImplStruct)<std::decay_t<T>>::value
+#define LTL_MAKE_IS_KIND(type, name, conceptName, lambdaName, templateType)    \
+  constexpr false_t LPL_CAT(name, Impl)(...);                                  \
+  template <templateType... Ts>                                                \
+  constexpr true_t LPL_CAT(name, Impl)(const type<Ts...> &);                   \
+                                                                               \
+  template <typename T> constexpr auto name(type_t<T>) {                       \
+    return decltype(LPL_CAT(name, Impl)(std::declval<T>())){};                 \
+  }                                                                            \
+  template <typename T> constexpr auto name(T &&t) {                           \
+    return decltype(LPL_CAT(name, Impl)(FWD(t))){};                            \
+  }                                                                            \
+  constexpr auto lambdaName = [](auto &&x) constexpr noexcept {                \
+    return name(FWD(x));                                                       \
+  };                                                                           \
+  template <typename T>                                                        \
+  constexpr bool conceptName = decltype(name(std::declval<T>()))::value
 
 } // namespace ltl
