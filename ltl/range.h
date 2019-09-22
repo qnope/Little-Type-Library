@@ -2,8 +2,8 @@
 
 #include "Tuple.h"
 #include "concept.h"
-#include "ltl.h"
 #include "operator.h"
+#include "tuple_algos.h"
 
 #include <deque>
 #include <limits>
@@ -15,8 +15,7 @@ namespace ltl {
 
 template <typename It> class Range {
 public:
-  template <typename R>
-  Range(R &r) noexcept : m_it{std::begin(r)}, m_end{std::end(r)} {}
+  template <typename R> Range(R &r) noexcept : m_it{std::begin(r)}, m_end{std::end(r)} {}
 
   Range(It it, It end) noexcept : m_it{std::move(it)}, m_end{std::move(end)} {}
 
@@ -53,7 +52,7 @@ template <typename It> auto begin(const Range<It> &r) { return r.begin(); }
 
 template <typename It> auto end(const Range<It> &r) { return r.end(); }
 
-LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
+LTL_MAKE_IS_KIND(Range, is_range, IsRange, is_range_lifted, typename);
 
 template <typename T> struct AsPointer {
   AsPointer(T &&v) noexcept : v{std::move(v)} {}
@@ -75,7 +74,7 @@ struct Nothing {};
 
 template <typename F> struct NullableFunction {
   struct DestructorPtr {
-    void operator()(F *x) { x->~F(); }
+    template <typename T> void operator()(T *x) { x->~T(); }
   };
 
   NullableFunction() = default;
@@ -92,154 +91,137 @@ template <typename F> struct NullableFunction {
     return *this;
   }
 
-  template <typename Args> decltype(auto) operator()(Args &&args) const {
+  template <typename... Args> decltype(auto) operator()(Args &&... args) const {
     assert(m_ptr);
-    return (*m_ptr)(FWD(args));
+    return (*m_ptr)(FWD(args)...);
   }
 
-  std::aligned_storage_t<sizeof(F)> m_memory;
+  std::aligned_storage_t<sizeof(F), alignof(F)> m_memory;
   std::unique_ptr<F, DestructorPtr> m_ptr;
 };
 
-#define DECLARE_EVERYTHING_BUT_REFERENCE                                       \
-  using pointer = AsPointer<reference>;                                        \
-  using value_type = std::decay_t<reference>;                                  \
-  using difference_type = std::size_t;                                         \
+template <typename DerivedIt, typename It, typename Function>
+class BaseIterator : public PostIncrementable<DerivedIt>,
+                     public PostDecrementable<DerivedIt>,
+                     public Comparable<DerivedIt>,
+                     public Additionnable<DerivedIt>,
+                     public Substractable<DerivedIt> {
+
+  ENABLE_CRTP(DerivedIt)
+public:
+  BaseIterator() = default;
+
+  BaseIterator(It it) : m_it{it}, m_sentinelBegin{it}, m_sentinelEnd{it} {}
+
+  BaseIterator(It it, It sentinelBegin, It sentinelEnd, Function function) noexcept
+      : m_it{std::move(it)}, m_sentinelBegin{std::move(sentinelBegin)},
+        m_sentinelEnd{std::move(sentinelEnd)}, m_function{std::move(function)} {
+    DerivedIt &derived = underlying();
+    derived.advanceUntilNext(IncrementTag{});
+  }
+
+  bool operator==(const DerivedIt &it) const noexcept {
+    return underlying().m_it == it.m_it;
+  }
+
+  DerivedIt &operator++() noexcept {
+    DerivedIt &it = underlying();
+    assert(it.m_it != it.m_sentinelEnd);
+    ++it.m_it;
+    it.advanceUntilNext(IncrementTag{});
+
+    return it;
+  }
+
+  DerivedIt &operator--() noexcept {
+    DerivedIt &it = underlying();
+    assert(it.m_it != it.m_sentinelBegin);
+    --it.m_it;
+    it.advanceUntilNext(DecrementTag{});
+    return it;
+  }
+
+  decltype(auto) operator*() const noexcept {
+    const DerivedIt &it = underlying();
+    assert(it.m_it != it.m_sentinelEnd);
+    return *it.m_it;
+  }
+
+  auto operator-> () const noexcept {
+    const DerivedIt &it = underlying();
+    return AsPointer<decltype(*it)>{*it};
+  }
+
+  DerivedIt &operator+=(long long int n) noexcept {
+    DerivedIt &it = underlying();
+    if (n > 0) {
+      while (n--)
+        ++it;
+    }
+
+    else {
+      while (n++)
+        --it;
+    }
+    return it;
+  }
+
+  DerivedIt &operator-=(long long int n) noexcept {
+    DerivedIt &it = underlying();
+    if (n > 0) {
+      while (n--)
+        --it;
+    }
+
+    else {
+      while (n++)
+        ++it;
+    }
+    return it;
+  }
+
+  friend std::size_t operator-(const DerivedIt &b, DerivedIt a) noexcept {
+    std::size_t d{0};
+    while (a != b) {
+      ++d;
+      ++a;
+    }
+    return d;
+  }
+
+protected:
+  It m_it{};
+  It m_sentinelBegin{};
+  It m_sentinelEnd{};
+  NullableFunction<Function> m_function{};
+};
+
+#define DECLARE_EVERYTHING_BUT_REFERENCE                                                 \
+  using pointer = AsPointer<reference>;                                                  \
+  using value_type = std::decay_t<reference>;                                            \
+  using difference_type = std::size_t;                                                   \
   using iterator_category = std::random_access_iterator_tag;
 
-constexpr auto hasAdvanceUntilNext =
-    IS_VALID((x), x.advanceUntilNext(IncrementTag{}),
-             x.advanceUntilNext(DecrementTag{}));
+template <typename It, typename Predicate>
+class FilterIterator : public BaseIterator<FilterIterator<It, Predicate>, It, Predicate> {
+  friend BaseIterator<FilterIterator, It, Predicate>;
 
-#define DEFINE_BASE_ITERATOR(name, It, Function)                               \
-public:                                                                        \
-  DECLARE_EVERYTHING_BUT_REFERENCE                                             \
-  COMPARABLE()                                                                 \
-                                                                               \
-  bool operator==(const name &it) const noexcept { return m_it == it.m_it; }   \
-                                                                               \
-  name &operator+=(long long int n) noexcept {                                 \
-    if (n > 0) {                                                               \
-      while (n--)                                                              \
-        ++(*this);                                                             \
-    }                                                                          \
-                                                                               \
-    else {                                                                     \
-      while (n++)                                                              \
-        --(*this);                                                             \
-    }                                                                          \
-    return *this;                                                              \
-  }                                                                            \
-                                                                               \
-  name &operator-=(long long int n) noexcept {                                 \
-    if (n > 0) {                                                               \
-      while (n--)                                                              \
-        --(*this);                                                             \
-    }                                                                          \
-                                                                               \
-    else {                                                                     \
-      while (n++)                                                              \
-        ++(*this);                                                             \
-    }                                                                          \
-    return *this;                                                              \
-  }                                                                            \
-                                                                               \
-  friend name operator+(name a, long long int n) noexcept {                    \
-    a += n;                                                                    \
-    return a;                                                                  \
-  }                                                                            \
-                                                                               \
-  friend name operator+(long long int n, name a) noexcept {                    \
-    a += n;                                                                    \
-    return a;                                                                  \
-  }                                                                            \
-                                                                               \
-  friend name operator-(name a, long long int n) noexcept {                    \
-    a -= n;                                                                    \
-    return a;                                                                  \
-  }                                                                            \
-                                                                               \
-  friend name operator-(long long int n, name a) noexcept {                    \
-    a -= n;                                                                    \
-    return a;                                                                  \
-  }                                                                            \
-                                                                               \
-  friend std::size_t operator-(const name &b, name a) noexcept {               \
-    std::size_t d{0};                                                          \
-    while (a != b) {                                                           \
-      ++d;                                                                     \
-      ++a;                                                                     \
-    }                                                                          \
-    return d;                                                                  \
-  }                                                                            \
-                                                                               \
-private:                                                                       \
-  It m_it{};                                                                   \
-  It m_sentinelBegin{};                                                        \
-  It m_sentinelEnd{};                                                          \
-  NullableFunction<Function> m_function{};
-
-#define DEFINE_CONSTRUCTOR_ITERATOR(name, It, Function)                        \
-public:                                                                        \
-  name() noexcept = default;                                                   \
-                                                                               \
-  name(It it) noexcept : m_it{it}, m_sentinelBegin{it}, m_sentinelEnd{it} {}   \
-                                                                               \
-  name(It it, It sentinelBegin, It sentinelEnd, Function function) noexcept    \
-      : m_it{std::move(it)}, m_sentinelBegin{std::move(sentinelBegin)},        \
-        m_sentinelEnd{std::move(sentinelEnd)},                                 \
-        m_function{std::move(function)} {                                      \
-    advanceUntilNext(IncrementTag{});                                          \
-  }
-
-#define DEFINE_DEREFERENCE_ITERATOR()                                          \
-public:                                                                        \
-  decltype(auto) operator*() const noexcept {                                  \
-    assert(m_it != m_sentinelEnd);                                             \
-    return *m_it;                                                              \
-  }                                                                            \
-                                                                               \
-  auto operator->() const noexcept {                                           \
-    return AsPointer<decltype(**this)>{**this};                                \
-  }
-
-#define DEFINE_INCREMENTATION_ITERATOR(name)                                   \
-public:                                                                        \
-  name &operator++() noexcept {                                                \
-    assert(m_it != m_sentinelEnd);                                             \
-    ++m_it;                                                                    \
-    advanceUntilNext(IncrementTag{});                                          \
-    return *this;                                                              \
-  }                                                                            \
-                                                                               \
-  name &operator--() noexcept {                                                \
-    assert(m_it != m_sentinelBegin);                                           \
-    --m_it;                                                                    \
-    advanceUntilNext(DecrementTag{});                                          \
-    return *this;                                                              \
-  }
-
-template <typename It, typename Predicate> class FilterIterator {
 public:
   using reference = typename std::iterator_traits<It>::reference;
+  DECLARE_EVERYTHING_BUT_REFERENCE
 
-  DEFINE_BASE_ITERATOR(FilterIterator, It, Predicate)
-  DEFINE_CONSTRUCTOR_ITERATOR(FilterIterator, It, Predicate)
-  DEFINE_DEREFERENCE_ITERATOR()
-  DEFINE_INCREMENTATION_ITERATOR(FilterIterator)
+  using BaseIterator<FilterIterator<It, Predicate>, It, Predicate>::BaseIterator;
 
 private:
   template <typename Tag> void advanceUntilNext(Tag) noexcept {
     if_constexpr(type_v<Tag> == type_v<IncrementTag>) {
-      while (this->m_it != this->m_sentinelEnd &&
-             !this->m_function(*this->m_it)) {
+      while (this->m_it != this->m_sentinelEnd && !this->m_function(*this->m_it)) {
         ++this->m_it;
       }
     }
 
     else {
-      while (this->m_it != this->m_sentinelBegin &&
-             !this->m_function(*this->m_it)) {
+      while (this->m_it != this->m_sentinelBegin && !this->m_function(*this->m_it)) {
         --this->m_it;
       }
       assert(this->m_function(*this->m_it));
@@ -247,24 +229,26 @@ private:
   }
 };
 
-template <typename It> class TakerIterator {
+template <typename It>
+class TakerIterator : public BaseIterator<TakerIterator<It>, It, Nothing> {
+  friend BaseIterator<TakerIterator, It, Nothing>;
+
 public:
   using reference = typename std::iterator_traits<It>::reference;
+  DECLARE_EVERYTHING_BUT_REFERENCE
 
-  DEFINE_BASE_ITERATOR(TakerIterator, It, Nothing)
-  DEFINE_DEREFERENCE_ITERATOR()
-  DEFINE_INCREMENTATION_ITERATOR(TakerIterator)
-
-public:
   TakerIterator() = default;
 
   TakerIterator(It begin, It sentinelBegin, It sentinelEnd, std::size_t n)
-      : m_it{std::move(begin)}, m_sentinelBegin{std::move(sentinelBegin)},
-        m_sentinelEnd{std::move(sentinelEnd)}, m_n{n} {
+      : BaseIterator<TakerIterator<It>, It, Nothing>{std::move(begin),
+                                                     std::move(sentinelBegin),
+                                                     std::move(sentinelEnd), Nothing{}},
+        m_n{n} {
     advanceUntilNext(IncrementTag{});
   }
 
-  TakerIterator(It begin) : m_it{std::move(begin)} {}
+  TakerIterator(It begin)
+      : BaseIterator<TakerIterator<It>, It, Nothing>{std::move(begin)} {}
 
 private:
   template <typename Tag> void advanceUntilNext(Tag) noexcept {
@@ -281,28 +265,26 @@ private:
   }
 
   std::size_t m_n{0};
-}; // namespace ltl
-
-template <typename It, typename Function> struct MapIterator {
-  using reference =
-      std::invoke_result_t<Function,
-                           typename std::iterator_traits<It>::reference>;
-  DEFINE_BASE_ITERATOR(MapIterator, It, Function)
-  DEFINE_CONSTRUCTOR_ITERATOR(MapIterator, It, Function)
-  DEFINE_INCREMENTATION_ITERATOR(MapIterator)
-
-public:
-  reference operator*() const { return m_function(*m_it); }
-  pointer operator->() const { return m_function(*m_it); }
-  void advanceUntilNext(...) {}
 };
 
-template <typename ValueType> struct ValueIterator {
+template <typename It, typename Function>
+struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
+  using reference =
+      std::invoke_result_t<Function, typename std::iterator_traits<It>::reference>;
+  DECLARE_EVERYTHING_BUT_REFERENCE
+
+  using BaseIterator<MapIterator<It, Function>, It, Function>::BaseIterator;
+
+  reference operator*() const { return this->m_function(*this->m_it); }
+  pointer operator->() const { return this->m_function(*this->m_it); }
+  constexpr void advanceUntilNext(...) {}
+};
+
+template <typename ValueType>
+struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing> {
   using reference = ValueType;
+  DECLARE_EVERYTHING_BUT_REFERENCE
 
-  DEFINE_BASE_ITERATOR(ValueIterator, ValueType, Nothing)
-
-public:
   ValueIterator() noexcept {
     this->m_sentinelBegin = std::numeric_limits<ValueType>::lowest();
     this->m_sentinelEnd = std::numeric_limits<ValueType>::max();
@@ -331,17 +313,21 @@ public:
 
   ValueType operator*() const noexcept { return this->m_it; }
 
+  constexpr void advanceUntilNext(...) {}
+
   ValueType m_step;
 };
 
-template <typename... Iterators> struct ZipIterator {
-  using reference =
-      tuple_t<typename std::iterator_traits<Iterators>::reference...>;
+template <typename... Iterators>
+struct ZipIterator
+    : BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>, Nothing> {
+  using reference = tuple_t<typename std::iterator_traits<Iterators>::reference...>;
 
-  DEFINE_BASE_ITERATOR(ZipIterator, tuple_t<Iterators...>, Nothing)
-  DEFINE_CONSTRUCTOR_ITERATOR(ZipIterator, tuple_t<Iterators...>, Nothing)
+  using BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>,
+                     Nothing>::BaseIterator;
 
-public:
+  DECLARE_EVERYTHING_BUT_REFERENCE
+
   ZipIterator &operator++() {
     assert(this->m_it != this->m_sentinelEnd);
     TO_VARIADIC(this->m_it, xs, (++xs, ...));
@@ -357,17 +343,17 @@ public:
   reference operator*() const {
     return TO_VARIADIC(this->m_it, xs, return reference{*xs...});
   }
-  void advanceUntilNext(...) {}
+
+  constexpr void advanceUntilNext(...) {}
 };
 
 #undef DECLARE_EVERYTHING_BUT_REFERENCE
 
 template <typename... Containers> auto zip(Containers &&... containers) {
-  // constexpr auto types = type_list_v<Containers...>;
-  // typed_static_assert(!types.isEmpty);
-  // because clang is shit...
-  // typed_static_assert_msg(all_of_type(types, is_iterable),
-  //                        "Zip operations must be used with containers");
+  constexpr auto types = type_list_v<Containers...>;
+  typed_static_assert(!types.isEmpty);
+  typed_static_assert_msg(all_of_type(types, is_iterable_lifted),
+                          "Zip operations must be used with containers");
 
   assert(FROM_VARIADIC(FWD(containers))([](auto &&c1, auto &&... cs) {
     return (true && ... && (FWD(c1).size() == FWD(cs).size()));
@@ -401,8 +387,7 @@ template <typename ValueType> auto steppedValueRange(ValueType step) {
   return Range{begin, end};
 }
 
-template <typename ValueType>
-auto steppedValueRange(ValueType start, ValueType step) {
+template <typename ValueType> auto steppedValueRange(ValueType start, ValueType step) {
   auto begin = ValueIterator{start, step};
   auto end = ValueIterator{std::numeric_limits<ValueType>::max(), step};
   return Range{begin, end};
@@ -420,9 +405,11 @@ template <typename Container> auto enumerate(Container &&container) {
 }
 
 LTL_MAKE_IS_KIND(FilterIterator, is_filter_iterator, IsFilterIterator,
+                 is_filter_iterator_lifted, typename);
+LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator, is_map_iterator_lifted,
                  typename);
-LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator, typename);
-LTL_MAKE_IS_KIND(TakerIterator, is_taker_iterator, IsTakerIterator, typename);
+LTL_MAKE_IS_KIND(TakerIterator, is_taker_iterator, IsTakerIterator,
+                 is_taker_iterator_lifted, typename);
 template <typename T>
 constexpr auto IsSmartIterator =
     IsFilterIterator<T> || IsMapIterator<T> || IsTakerIterator<T>;
@@ -434,71 +421,20 @@ struct TakerType {
   std::size_t n;
 };
 
-template <typename F> FilterType<std::decay_t<F>> filter(F &&f) {
-  return {FWD(f)};
-}
+template <typename F> auto filter(F &&f) { return FilterType<std::decay_t<F>>{FWD(f)}; }
 
-template <typename F> MapType<std::decay_t<F>> map(F &&f) { return {FWD(f)}; }
+template <typename F> auto map(F &&f) { return MapType<std::decay_t<F>>{FWD(f)}; }
 
 inline auto take_n(std::size_t n) { return TakerType{n}; }
 
-LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType, typename);
-LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, typename);
+LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType, is_filter_type_lifted,
+                 typename);
+LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, is_map_type_lifted, typename);
 
 template <typename T>
 constexpr auto IsUsefulForSmartIterator = IsFilterType<T> || IsMapType<T> ||
                                           (type_v<T> == type_v<TakerType>);
 
-#define OP(Type, Iterator)                                                     \
-  template <typename R, typename F, requires_f(IsIterable<R>)>                 \
-  auto operator|(R &&r, Type<F> f) {                                           \
-    auto begin = std::begin(FWD(r));                                           \
-    auto end = std::end(FWD(r));                                               \
-    using it = decltype(begin);                                                \
-    return Range{Iterator<it, F>{begin, begin, end, std::move(f.f)},           \
-                 Iterator<it, F>{end}};                                        \
-  }
-
-OP(FilterType, FilterIterator)
-OP(MapType, MapIterator)
-#undef OP
-
-template <typename R, requires_f(IsIterable<R>)>
-auto operator|(R &&r, TakerType taker) {
-  auto begin = std::begin(FWD(r));
-  auto end = std::end(FWD(r));
-  return Range{TakerIterator<decltype(begin)>{begin, begin, end, taker.n},
-               TakerIterator<decltype(begin)>{end}};
-}
-
-// Chaining functions
-template <
-    typename F1, typename F2,
-    requires_f(IsUsefulForSmartIterator<F1> &&IsUsefulForSmartIterator<F2>)>
-auto operator|(F1 &&f1, F2 &&f2) {
-  return tuple_t{FWD(f1), FWD(f2)};
-}
-
-template <typename Tuple, typename F,
-          requires_f(IsTuple<Tuple> &&IsUsefulForSmartIterator<F>)>
-auto operator|(Tuple &&tuple, F &&f) {
-  return FWD(tuple).push_back(FWD(f));
-}
-
-// because clang is shit
-template <typename R> auto piper(R r) { return r; }
-
-template <typename R, typename T, typename... Ts>
-auto piper(R &&r, T &&t, Ts &&... ts) {
-  return piper(FWD(r) | FWD(t), FWD(ts)...);
-}
-
-template <typename R, typename Tuple,
-          requires_f(IsIterable<R> &&IsTuple<Tuple>)>
-auto operator|(R &&r, Tuple &&chainFunctions) {
-  return chainFunctions(
-      [&r](auto &&... xs) { return piper(FWD(r), FWD(xs)...); });
-}
 // To vector, deque, list
 struct to_vector_t {};
 struct to_deque_t {};
@@ -514,17 +450,54 @@ auto operator|(R &&r, to_vector_t) noexcept {
       std::begin(FWD(r)), std::end(FWD(r)));
 }
 
-template <typename R, requires_f(IsRange<R>)>
-auto operator|(R &&r, to_deque_t) noexcept {
+template <typename R, requires_f(IsRange<R>)> auto operator|(R &&r, to_deque_t) noexcept {
   return std::deque<
       typename std::iterator_traits<decltype(std::begin(FWD(r)))>::value_type>(
       std::begin(FWD(r)), std::end(FWD(r)));
 }
 
-template <typename R, requires_f(IsRange<R>)>
-auto operator|(R &&r, to_list_t) noexcept {
+template <typename R, requires_f(IsRange<R>)> auto operator|(R &&r, to_list_t) noexcept {
   return std::list<
       typename std::iterator_traits<decltype(std::begin(FWD(r)))>::value_type>(
       std::begin(FWD(r)), std::end(FWD(r)));
 }
+
+#define OP(Type, Iterator)                                                               \
+  template <typename R, typename F, requires_f(IsIterable<R>)>                           \
+  auto operator|(R &&r, Type<F> f) {                                                     \
+    auto begin = std::begin(FWD(r));                                                     \
+    auto end = std::end(FWD(r));                                                         \
+    return Range{Iterator<decltype(begin), F>{begin, begin, end, std::move(f.f)},        \
+                 Iterator<decltype(begin), F>{end}};                                     \
+  }
+
+OP(FilterType, FilterIterator)
+OP(MapType, MapIterator)
+#undef OP
+
+template <typename R, requires_f(IsIterable<R>)> auto operator|(R &&r, TakerType taker) {
+  auto begin = std::begin(FWD(r));
+  auto end = std::end(FWD(r));
+  return Range{TakerIterator<decltype(begin)>{begin, begin, end, taker.n},
+               TakerIterator<decltype(begin)>{end}};
+}
+
+// Chaining functions
+template <typename F1, typename F2,
+          requires_f(IsUsefulForSmartIterator<F1> &&IsUsefulForSmartIterator<F2>)>
+auto operator|(F1 &&f1, F2 &&f2) {
+  return tuple_t{FWD(f1), FWD(f2)};
+}
+
+template <typename Tuple, typename F,
+          requires_f(IsTuple<Tuple> &&IsUsefulForSmartIterator<F>)>
+auto operator|(Tuple &&tuple, F &&f) {
+  return FWD(tuple).push_back(FWD(f));
+}
+
+template <typename R, typename Tuple, requires_f(IsIterable<R> &&IsTuple<Tuple>)>
+auto operator|(R &&r, Tuple &&chainFunctions) {
+  return chainFunctions([&r](auto &&... xs) { return (FWD(r) | ... | (FWD(xs))); });
+}
+
 } // namespace ltl
