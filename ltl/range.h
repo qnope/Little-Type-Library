@@ -75,7 +75,7 @@ struct Nothing {};
 
 template <typename F> struct NullableFunction {
   struct DestructorPtr {
-    template <typename T> void operator()(T *x) { x->~T(); }
+    void operator()(F *x) { x->~F(); }
   };
 
   NullableFunction() = default;
@@ -92,12 +92,12 @@ template <typename F> struct NullableFunction {
     return *this;
   }
 
-  template <typename... Args> decltype(auto) operator()(Args &&... args) const {
+  template <typename Args> decltype(auto) operator()(Args &&args) const {
     assert(m_ptr);
-    return (*m_ptr)(FWD(args)...);
+    return (*m_ptr)(FWD(args));
   }
 
-  std::aligned_storage_t<sizeof(F), alignof(F)> m_memory;
+  std::aligned_storage_t<sizeof(F)> m_memory;
   std::unique_ptr<F, DestructorPtr> m_ptr;
 };
 
