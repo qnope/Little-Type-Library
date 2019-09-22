@@ -15,7 +15,8 @@ namespace ltl {
 
 template <typename It> class Range {
 public:
-  template <typename R> Range(R &r) noexcept : m_it{std::begin(r)}, m_end{std::end(r)} {}
+  template <typename R>
+  Range(R &r) noexcept : m_it{std::begin(r)}, m_end{std::end(r)} {}
 
   Range(It it, It end) noexcept : m_it{std::move(it)}, m_end{std::move(end)} {}
 
@@ -74,7 +75,7 @@ struct Nothing {};
 
 template <typename F> struct NullableFunction {
   struct DestructorPtr {
-    template <typename T> void operator()(T *x) { x->~T(); }
+    void operator()(F *x) { x->~F(); }
   };
 
   NullableFunction() = default;
@@ -106,14 +107,14 @@ class BaseIterator : public PostIncrementable<DerivedIt>,
                      public Comparable<DerivedIt>,
                      public Additionnable<DerivedIt>,
                      public Substractable<DerivedIt> {
-
   ENABLE_CRTP(DerivedIt)
 public:
   BaseIterator() = default;
 
   BaseIterator(It it) : m_it{it}, m_sentinelBegin{it}, m_sentinelEnd{it} {}
 
-  BaseIterator(It it, It sentinelBegin, It sentinelEnd, Function function) noexcept
+  BaseIterator(It it, It sentinelBegin, It sentinelEnd,
+               Function function) noexcept
       : m_it{std::move(it)}, m_sentinelBegin{std::move(sentinelBegin)},
         m_sentinelEnd{std::move(sentinelEnd)}, m_function{std::move(function)} {
     DerivedIt &derived = underlying();
@@ -196,32 +197,36 @@ protected:
   NullableFunction<Function> m_function{};
 };
 
-#define DECLARE_EVERYTHING_BUT_REFERENCE                                                 \
-  using pointer = AsPointer<reference>;                                                  \
-  using value_type = std::decay_t<reference>;                                            \
-  using difference_type = std::size_t;                                                   \
+#define DECLARE_EVERYTHING_BUT_REFERENCE                                       \
+  using pointer = AsPointer<reference>;                                        \
+  using value_type = std::decay_t<reference>;                                  \
+  using difference_type = std::size_t;                                         \
   using iterator_category = std::random_access_iterator_tag;
 
 template <typename It, typename Predicate>
-class FilterIterator : public BaseIterator<FilterIterator<It, Predicate>, It, Predicate> {
+class FilterIterator
+    : public BaseIterator<FilterIterator<It, Predicate>, It, Predicate> {
   friend BaseIterator<FilterIterator, It, Predicate>;
 
 public:
   using reference = typename std::iterator_traits<It>::reference;
   DECLARE_EVERYTHING_BUT_REFERENCE
 
-  using BaseIterator<FilterIterator<It, Predicate>, It, Predicate>::BaseIterator;
+  using BaseIterator<FilterIterator<It, Predicate>, It,
+                     Predicate>::BaseIterator;
 
 private:
   template <typename Tag> void advanceUntilNext(Tag) noexcept {
     if_constexpr(type_v<Tag> == type_v<IncrementTag>) {
-      while (this->m_it != this->m_sentinelEnd && !this->m_function(*this->m_it)) {
+      while (this->m_it != this->m_sentinelEnd &&
+             !this->m_function(*this->m_it)) {
         ++this->m_it;
       }
     }
 
     else {
-      while (this->m_it != this->m_sentinelBegin && !this->m_function(*this->m_it)) {
+      while (this->m_it != this->m_sentinelBegin &&
+             !this->m_function(*this->m_it)) {
         --this->m_it;
       }
       assert(this->m_function(*this->m_it));
@@ -242,7 +247,8 @@ public:
   TakerIterator(It begin, It sentinelBegin, It sentinelEnd, std::size_t n)
       : BaseIterator<TakerIterator<It>, It, Nothing>{std::move(begin),
                                                      std::move(sentinelBegin),
-                                                     std::move(sentinelEnd), Nothing{}},
+                                                     std::move(sentinelEnd),
+                                                     Nothing{}},
         m_n{n} {
     advanceUntilNext(IncrementTag{});
   }
@@ -270,7 +276,8 @@ private:
 template <typename It, typename Function>
 struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
   using reference =
-      std::invoke_result_t<Function, typename std::iterator_traits<It>::reference>;
+      std::invoke_result_t<Function,
+                           typename std::iterator_traits<It>::reference>;
   DECLARE_EVERYTHING_BUT_REFERENCE
 
   using BaseIterator<MapIterator<It, Function>, It, Function>::BaseIterator;
@@ -281,7 +288,8 @@ struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
 };
 
 template <typename ValueType>
-struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing> {
+struct ValueIterator
+    : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing> {
   using reference = ValueType;
   DECLARE_EVERYTHING_BUT_REFERENCE
 
@@ -321,7 +329,8 @@ struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing
 template <typename... Iterators>
 struct ZipIterator
     : BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>, Nothing> {
-  using reference = tuple_t<typename std::iterator_traits<Iterators>::reference...>;
+  using reference =
+      tuple_t<typename std::iterator_traits<Iterators>::reference...>;
 
   using BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>,
                      Nothing>::BaseIterator;
@@ -387,7 +396,8 @@ template <typename ValueType> auto steppedValueRange(ValueType step) {
   return Range{begin, end};
 }
 
-template <typename ValueType> auto steppedValueRange(ValueType start, ValueType step) {
+template <typename ValueType>
+auto steppedValueRange(ValueType start, ValueType step) {
   auto begin = ValueIterator{start, step};
   auto end = ValueIterator{std::numeric_limits<ValueType>::max(), step};
   return Range{begin, end};
@@ -406,8 +416,8 @@ template <typename Container> auto enumerate(Container &&container) {
 
 LTL_MAKE_IS_KIND(FilterIterator, is_filter_iterator, IsFilterIterator,
                  is_filter_iterator_lifted, typename);
-LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator, is_map_iterator_lifted,
-                 typename);
+LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator,
+                 is_map_iterator_lifted, typename);
 LTL_MAKE_IS_KIND(TakerIterator, is_taker_iterator, IsTakerIterator,
                  is_taker_iterator_lifted, typename);
 template <typename T>
@@ -421,14 +431,18 @@ struct TakerType {
   std::size_t n;
 };
 
-template <typename F> auto filter(F &&f) { return FilterType<std::decay_t<F>>{FWD(f)}; }
+template <typename F> auto filter(F &&f) {
+  return FilterType<std::decay_t<F>>{FWD(f)};
+}
 
-template <typename F> auto map(F &&f) { return MapType<std::decay_t<F>>{FWD(f)}; }
+template <typename F> auto map(F &&f) {
+  return MapType<std::decay_t<F>>{FWD(f)};
+}
 
 inline auto take_n(std::size_t n) { return TakerType{n}; }
 
-LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType, is_filter_type_lifted,
-                 typename);
+LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType,
+                 is_filter_type_lifted, typename);
 LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, is_map_type_lifted, typename);
 
 template <typename T>
@@ -443,61 +457,75 @@ constexpr to_vector_t to_vector{};
 constexpr to_deque_t to_deque{};
 constexpr to_list_t to_list{};
 
-template <typename R, requires_f(IsRange<R>)>
-auto operator|(R &&r, to_vector_t) noexcept {
-  return std::vector<
-      typename std::iterator_traits<decltype(std::begin(FWD(r)))>::value_type>(
-      std::begin(FWD(r)), std::end(FWD(r)));
-}
+template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
+  using std::begin;
+  using std::end;
+  [[maybe_unused]] constexpr auto t1 = decay_from(a);
+  [[maybe_unused]] constexpr auto t2 = decay_from(b);
 
-template <typename R, requires_f(IsRange<R>)> auto operator|(R &&r, to_deque_t) noexcept {
-  return std::deque<
-      typename std::iterator_traits<decltype(std::begin(FWD(r)))>::value_type>(
-      std::begin(FWD(r)), std::end(FWD(r)));
-}
+  if constexpr (is_iterable(t1)) {
+    using value =
+        typename std::iterator_traits<decltype(begin(FWD(a)))>::value_type;
 
-template <typename R, requires_f(IsRange<R>)> auto operator|(R &&r, to_list_t) noexcept {
-  return std::list<
-      typename std::iterator_traits<decltype(std::begin(FWD(r)))>::value_type>(
-      std::begin(FWD(r)), std::end(FWD(r)));
-}
+    [[maybe_unused]] auto beginIt = begin(FWD(a));
+    [[maybe_unused]] auto endIt = end(FWD(a));
+    using it = decltype(beginIt);
 
-#define OP(Type, Iterator)                                                               \
-  template <typename R, typename F, requires_f(IsIterable<R>)>                           \
-  auto operator|(R &&r, Type<F> f) {                                                     \
-    auto begin = std::begin(FWD(r));                                                     \
-    auto end = std::end(FWD(r));                                                         \
-    return Range{Iterator<decltype(begin), F>{begin, begin, end, std::move(f.f)},        \
-                 Iterator<decltype(begin), F>{end}};                                     \
+    if constexpr (t2 == ltl::type_v<to_vector_t>)
+      return std::vector<value>(beginIt, endIt);
+
+    else if constexpr (t2 == ltl::type_v<to_deque_t>)
+      return std::deque<value>(beginIt, endIt);
+
+    else if constexpr (t2 == ltl::type_v<to_list_t>)
+      return std::list<value>(beginIt, endIt);
+
+    else if constexpr (IsFilterType<T2>)
+      return Range{FilterIterator<it, std::decay_t<decltype(b.f)>>{
+                       beginIt, beginIt, endIt, std::move(b.f)},
+                   FilterIterator<it, std::decay_t<decltype(b.f)>>{endIt}};
+
+    else if constexpr (IsMapType<T2>)
+      return Range{MapIterator<it, std::decay_t<decltype(b.f)>>{
+                       beginIt, beginIt, endIt, std::move(b.f)},
+                   MapIterator<it, std::decay_t<decltype(b.f)>>{endIt}};
+
+    else if constexpr (t2 == type_v<TakerType>)
+      return Range{TakerIterator<it>{beginIt, beginIt, endIt, b.n},
+                   TakerIterator<it>{endIt}};
+
+    else if constexpr (is_tuple_t(t2))
+      return FWD(b)([&a](auto &&... xs) { return (FWD(a) | ... | (FWD(xs))); });
+
+    else
+      compile_time_error(
+          "If a is an iterable, you must provide a range provided type, or a "
+          "tuple of range provided type",
+          T2);
   }
 
-OP(FilterType, FilterIterator)
-OP(MapType, MapIterator)
-#undef OP
+  else if constexpr (IsUsefulForSmartIterator<T1>) {
+    if constexpr (IsUsefulForSmartIterator<T2>)
+      return tuple_t{FWD(a), FWD(b)};
 
-template <typename R, requires_f(IsIterable<R>)> auto operator|(R &&r, TakerType taker) {
-  auto begin = std::begin(FWD(r));
-  auto end = std::end(FWD(r));
-  return Range{TakerIterator<decltype(begin)>{begin, begin, end, taker.n},
-               TakerIterator<decltype(begin)>{end}};
-}
+    else
+      compile_time_error("If a is a range provided type, you must provide "
+                         "another range provided type",
+                         T2);
+  }
 
-// Chaining functions
-template <typename F1, typename F2,
-          requires_f(IsUsefulForSmartIterator<F1> &&IsUsefulForSmartIterator<F2>)>
-auto operator|(F1 &&f1, F2 &&f2) {
-  return tuple_t{FWD(f1), FWD(f2)};
-}
+  else if constexpr (is_tuple_t(t1)) {
+    if constexpr (IsUsefulForSmartIterator<T2>)
+      return FWD(a).push_back(FWD(b));
+    else
+      compile_time_error(
+          "If a is a tuple, you mustr provide a range provided type", T2);
+  }
 
-template <typename Tuple, typename F,
-          requires_f(IsTuple<Tuple> &&IsUsefulForSmartIterator<F>)>
-auto operator|(Tuple &&tuple, F &&f) {
-  return FWD(tuple).push_back(FWD(f));
-}
-
-template <typename R, typename Tuple, requires_f(IsIterable<R> &&IsTuple<Tuple>)>
-auto operator|(R &&r, Tuple &&chainFunctions) {
-  return chainFunctions([&r](auto &&... xs) { return (FWD(r) | ... | (FWD(xs))); });
+  else {
+    compile_time_error(
+        "You must use iterable or range provided type to this function", T1);
+  }
 }
 
 } // namespace ltl
