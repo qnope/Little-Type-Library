@@ -42,6 +42,9 @@ template <typename... Fs> struct overloader : Fs... {
   using Fs::operator()...;
 };
 
+template <typename... Fs>
+overloader(Fs &&...)->overloader<decay_reference_wrapper_t<Fs>...>;
+
 ///////////////////// bool
 template <bool v> struct bool_t {
   static constexpr bool value = v;
@@ -98,15 +101,6 @@ template <typename T1, typename T2>
 
 template <typename T>
 [[nodiscard]] constexpr false_t operator!=(type_t<T>, type_t<T>) {
-  return {};
-}
-
-template <typename T>
-[[nodiscard]] constexpr true_t is_type_t(ltl::type_t<T>) noexcept {
-  return {};
-}
-
-template <typename T>[[nodiscard]] constexpr false_t is_type_t(T &&) noexcept {
   return {};
 }
 
@@ -177,19 +171,12 @@ template <typename T1, typename T2, typename... Ts>
   else return ::ltl::min(b, ts...);
 }
 
-#define LTL_MAKE_IS_KIND(type, name, conceptName, lambdaName, templateType)    \
+#define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                \
   constexpr false_t LPL_CAT(name, Impl)(...);                                  \
   template <templateType... Ts>                                                \
   constexpr true_t LPL_CAT(name, Impl)(const type<Ts...> &);                   \
-                                                                               \
-  template <typename T> constexpr auto name(type_t<T>) {                       \
-    return decltype(LPL_CAT(name, Impl)(std::declval<T>())){};                 \
-  }                                                                            \
-  template <typename T> constexpr auto name(T &&t) {                           \
-    return decltype(LPL_CAT(name, Impl)(FWD(t))){};                            \
-  }                                                                            \
-  constexpr auto lambdaName = [](auto &&x) constexpr noexcept {                \
-    return name(FWD(x));                                                       \
+  constexpr auto name = [](auto &&x) constexpr noexcept {                      \
+    return decltype(LPL_CAT(name, Impl)(declval(FWD(x)))){};                   \
   };                                                                           \
   template <typename T>                                                        \
   constexpr bool conceptName = decltype(name(std::declval<T>()))::value

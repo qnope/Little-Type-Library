@@ -7,8 +7,7 @@
 #include "traits.h"
 
 namespace ltl {
-LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, is_optional_lifted,
-                 typename);
+LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, typename);
 
 template <typename T, bool b> using requires_t = std::enable_if_t<b, T>;
 template <bool b> using requires_void = requires_t<void, b>;

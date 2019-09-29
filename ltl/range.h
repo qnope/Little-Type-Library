@@ -53,7 +53,7 @@ template <typename It> auto begin(const Range<It> &r) { return r.begin(); }
 
 template <typename It> auto end(const Range<It> &r) { return r.end(); }
 
-LTL_MAKE_IS_KIND(Range, is_range, IsRange, is_range_lifted, typename);
+LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
 
 template <typename T> struct AsPointer {
   AsPointer(T &&v) noexcept : v{std::move(v)} {}
@@ -361,7 +361,7 @@ struct ZipIterator
 template <typename... Containers> auto zip(Containers &&... containers) {
   constexpr auto types = type_list_v<Containers...>;
   typed_static_assert(!types.isEmpty);
-  typed_static_assert_msg(all_of_type(types, is_iterable_lifted),
+  typed_static_assert_msg(all_of_type(types, is_iterable),
                           "Zip operations must be used with containers");
 
   assert(FROM_VARIADIC(FWD(containers))([](auto &&c1, auto &&... cs) {
@@ -415,11 +415,9 @@ template <typename Container> auto enumerate(Container &&container) {
 }
 
 LTL_MAKE_IS_KIND(FilterIterator, is_filter_iterator, IsFilterIterator,
-                 is_filter_iterator_lifted, typename);
-LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator,
-                 is_map_iterator_lifted, typename);
-LTL_MAKE_IS_KIND(TakerIterator, is_taker_iterator, IsTakerIterator,
-                 is_taker_iterator_lifted, typename);
+                 typename);
+LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator, typename);
+LTL_MAKE_IS_KIND(TakerIterator, is_taker_iterator, IsTakerIterator, typename);
 template <typename T>
 constexpr auto IsSmartIterator =
     IsFilterIterator<T> || IsMapIterator<T> || IsTakerIterator<T>;
@@ -441,9 +439,8 @@ template <typename F> auto map(F &&f) {
 
 inline auto take_n(std::size_t n) { return TakerType{n}; }
 
-LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType,
-                 is_filter_type_lifted, typename);
-LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, is_map_type_lifted, typename);
+LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType, typename);
+LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, typename);
 
 template <typename T>
 constexpr auto IsUsefulForSmartIterator = IsFilterType<T> || IsMapType<T> ||

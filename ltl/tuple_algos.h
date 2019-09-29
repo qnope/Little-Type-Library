@@ -4,12 +4,10 @@
 
 namespace ltl {
 // Conditional functions
-LTL_MAKE_IS_KIND(tuple_t, is_tuple_t, IsTuple, is_tuple_lifted, typename);
-LTL_MAKE_IS_KIND(type_list_t, is_type_list_t, IsTypeList, is_type_list_lifted, typename);
-
-LTL_MAKE_IS_KIND(number_list_t, is_number_list_t, IsNumberList, is_number_list_lifted,
-                 int);
-LTL_MAKE_IS_KIND(bool_list_t, is_bool_list_t, IsBoolList, is_bool_list_lifted, bool);
+LTL_MAKE_IS_KIND(tuple_t, is_tuple_t, IsTuple, typename);
+LTL_MAKE_IS_KIND(type_list_t, is_type_list_t, IsTypeList, typename);
+LTL_MAKE_IS_KIND(number_list_t, is_number_list_t, IsNumberList, int);
+LTL_MAKE_IS_KIND(bool_list_t, is_bool_list_t, IsBoolList, bool);
 
 template <typename F, typename Tuple>
 constexpr decltype(auto) apply(Tuple &&tuple,
@@ -44,7 +42,8 @@ constexpr auto contains_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
 
 template <typename... Ts, typename T>
 constexpr auto count_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
-  if_constexpr(is_type_list_t(tuple)) return (0_n + ... + bool_to_number(Ts{} == type));
+  if_constexpr(is_type_list_t(tuple)) return (0_n + ... +
+                                              bool_to_number(Ts{} == type));
   else return count_type(type_list_v<Ts...>, type);
 }
 
@@ -60,7 +59,8 @@ constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
 }
 
 template <typename... Ts, typename P, int N = 0>
-constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P &&p, number_t<N> first = {}) {
+constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P &&p,
+                            number_t<N> first = {}) {
   if_constexpr(is_type_list_t(tuple)) {
     if_constexpr(FWD(p)(tuple[first])) return first;
     else return find_if_type(tuple, FWD(p), first + 1_n);
@@ -76,7 +76,8 @@ constexpr auto contains_if_type(const tuple_t<Ts...> &tuple, P &&p) {
 
 template <typename... Ts, typename P>
 constexpr auto count_if_type(const tuple_t<Ts...> &tuple, P &&p) {
-  if_constexpr(is_type_list_t(tuple)) return (0_n + ... + bool_to_number(FWD(p)(Ts{})));
+  if_constexpr(is_type_list_t(tuple)) return (0_n + ... +
+                                              bool_to_number(FWD(p)(Ts{})));
   else return count_type(type_list_v<Ts...>, FWD(p));
 }
 
@@ -106,6 +107,7 @@ struct build_from_type_listImpl<T, type_list_t<Ts...>> {
 };
 
 template <template <typename...> typename T, typename Ts>
-using build_from_type_list = typename build_from_type_listImpl<T, std::decay_t<Ts>>::type;
+using build_from_type_list =
+    typename build_from_type_listImpl<T, std::decay_t<Ts>>::type;
 
 } // namespace ltl
