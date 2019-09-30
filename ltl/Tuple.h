@@ -51,10 +51,7 @@ class tuple_t<std::index_sequence<Is...>, Ts...>
     : public Value<Is, Ts>...,
       public Comparable<tuple_t<std::index_sequence<Is...>, Ts...>> {
 public:
-#ifndef _MSC_VER
-  using Value<Is, Ts>::operator[]...; // does not compile with msvc, but gcc
-                                      // necessite it, clang works everytime
-#endif
+  using Value<Is, Ts>::operator[]...;
 
   constexpr static auto length = number_v<sizeof...(Ts)>;
   constexpr static auto isEmpty = length == 0_n;
