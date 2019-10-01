@@ -2,6 +2,8 @@
 
 #include "ltl.h"
 
+#include <any>
+
 namespace ltl {
 // Uniformize declval
 template <typename T> std::add_rvalue_reference_t<T> declval(type_t<T>);
@@ -183,4 +185,5 @@ using std::begin;
 using std::end;
 
 constexpr auto is_iterable = IS_VALID((x), begin(x), end(x));
+constexpr auto is_generic_callable = IS_VALID((x), x(std::any{}));
 } // namespace ltl

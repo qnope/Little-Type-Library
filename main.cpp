@@ -327,6 +327,19 @@ void test_trait() {
   static_assert(ltl::is_iterable(ltl::type_v<std::vector<int>>));
   static_assert(!ltl::is_iterable(ltl::type_v<int>));
   static_assert(ltl::is_iterable(ltl::type_v<std::array<int, 1>>));
+  typed_static_assert(!ltl::is_generic_callable(std::any{}));
+
+  auto lambda_int = [](int) {};
+  auto lambda_double = [](double) {};
+  auto lambda_auto = [](auto) {};
+
+  typed_static_assert(
+      !ltl::is_generic_callable(ltl::overloader{lambda_int, lambda_double}));
+  typed_static_assert(!ltl::is_generic_callable(lambda_int));
+  typed_static_assert(ltl::is_generic_callable(lambda_auto));
+  typed_static_assert(ltl::is_generic_callable(
+      ltl::overloader{lambda_auto, lambda_int, lambda_double}));
+
   typed_static_assert(
       ltl::copy_cv_reference<double>(ltl::type_v<const int &>) ==
       ltl::type_v<const double &>);
