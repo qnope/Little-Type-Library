@@ -340,12 +340,11 @@ void test_trait() {
   typed_static_assert(ltl::is_generic_callable(
       ltl::overloader{lambda_auto, lambda_int, lambda_double}));
 
-  typed_static_assert(
-      ltl::copy_cv_reference<double>(ltl::type_v<const int &>) ==
-      ltl::type_v<const double &>);
-  typed_static_assert(ltl::copy_cv_reference<double>(ltl::type_v<int &>) ==
+  typed_static_assert(ltl::copy_qualifier<double>(ltl::type_v<const int &>) ==
+                      ltl::type_v<const double &>);
+  typed_static_assert(ltl::copy_qualifier<double>(ltl::type_v<int &>) ==
                       ltl::type_v<double &>);
-  typed_static_assert(ltl::copy_cv_reference<double>(ltl::type_v<int &&>) ==
+  typed_static_assert(ltl::copy_qualifier<double>(ltl::type_v<int &&>) ==
                       ltl::type_v<double &&>);
 
   {
@@ -392,9 +391,8 @@ void test_qualifier() {
   constexpr auto qualifier = qualifier_from(refA);
   const double b = 8.0;
   constexpr auto normalType = type_from(a);
-  constexpr auto constRefType =
-      qualifier_from(b) + normalType +
-      ltl::qualifier_v<ltl::qualifier_enum::VOLATILE> + qualifier;
+  constexpr auto constRefType = qualifier_from(b) + normalType + qualifier +
+                                ltl::qualifier_v<ltl::qualifier_enum::VOLATILE>;
 
   typed_static_assert(normalType == ltl::type_v<int>);
   typed_static_assert(constRefType == ltl::type_v<volatile const int &>);

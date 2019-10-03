@@ -165,16 +165,8 @@ template <qualifier_enum e> struct qualifier_t {};
 template <qualifier_enum e> constexpr qualifier_t<e> qualifier_v{};
 
 template <typename T>
-[[nodiscard]] constexpr qualifier_enum getQualifierEnum(type_t<T> t) noexcept {
+[[nodiscard]] constexpr qualifier_enum getRefQualifierEnum(type_t<T>) noexcept {
   qualifier_enum result{};
-  if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
-    result |= qualifier_enum::CONST;
-  }
-
-  if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
-    result |= qualifier_enum::VOLATILE;
-  }
-
   if constexpr (std::is_lvalue_reference_v<T>) {
     result |= qualifier_enum::LVALUE_REF;
   }
@@ -183,6 +175,24 @@ template <typename T>
     result |= qualifier_enum::RVALUE_REF;
   }
   return result;
+}
+
+template <typename T>
+[[nodiscard]] constexpr qualifier_enum getCVQualifierEnum(type_t<T>) noexcept {
+  qualifier_enum result{};
+  if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
+    result |= qualifier_enum::CONST;
+  }
+
+  if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
+    result |= qualifier_enum::VOLATILE;
+  }
+  return result;
+}
+
+template <typename T>
+[[nodiscard]] constexpr qualifier_enum getQualifierEnum(type_t<T> t) noexcept {
+  return getCVQualifierEnum(t) | getRefQualifierEnum(t);
 }
 
 template <qualifier_enum a, qualifier_enum b>
@@ -194,10 +204,12 @@ template <qualifier_enum a, qualifier_enum b>
 template <typename T, qualifier_enum a>
 [[nodiscard]] constexpr auto operator+(type_t<T> t, qualifier_t<a>) noexcept {
   if constexpr (a & qualifier_enum::CONST)
-    return add_const(t) + qualifier_v<a ^ qualifier_enum::CONST>;
+    return add_const(remove_reference(t)) +
+           qualifier_v<(a ^ qualifier_enum::CONST) | getRefQualifierEnum(t)>;
 
   else if constexpr (a & qualifier_enum::VOLATILE)
-    return add_volatile(t) + qualifier_v<a ^ qualifier_enum::VOLATILE>;
+    return add_volatile(remove_reference(t)) +
+           qualifier_v<a ^ qualifier_enum::VOLATILE | getRefQualifierEnum(t)>;
 
   else if constexpr (a & qualifier_enum::LVALUE_REF)
     return add_lvalue_reference(t) +
@@ -261,21 +273,8 @@ constexpr auto invoke_result(type_t<F>, type_t<Ts>...) noexcept {
 }
 
 template <typename ResultType, typename T>
-constexpr auto copy_cv_reference(type_t<T> type) {
-  if_constexpr(is_lvalue_reference(type)) {
-    if_constexpr(is_const(remove_reference(type))) {
-      return type_v<const ResultType &>;
-    }
-    else {
-      return type_v<ResultType &>;
-    }
-  }
-
-  else_if_constexpr(is_rvalue_reference(type)) { return type_v<ResultType &&>; }
-
-  else {
-    return type_v<ResultType>;
-  }
+constexpr auto copy_qualifier(type_t<T> type) {
+  return type_v<ResultType> + qualifier_v<getQualifierEnum(type)>;
 }
 
 using std::begin;
