@@ -168,6 +168,8 @@ template <typename T1, typename T2, typename... Ts>
   else return ::ltl::min(b, ts...);
 }
 
+////////////////////////////// MAKE_IS_KIND //////////////////////////////////
+
 #define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                \
   constexpr false_t LPL_CAT(name, Impl)(...);                                  \
   template <templateType... Ts>                                                \

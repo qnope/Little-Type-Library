@@ -4,13 +4,15 @@
 
 #include <any>
 
+#define qualifier_from(x) ltl::qualifier_v<ltl::getQualifierEnum(type_from(x))>
+
 namespace ltl {
 // Uniformize declval
 template <typename T> std::add_rvalue_reference_t<T> declval(type_t<T>);
 template <typename T> std::add_rvalue_reference_t<T> declval(T &&);
 
 #define TRAIT(name)                                                            \
-  constexpr auto LPL_CAT(name) = [](auto &&... xs) constexpr noexcept {        \
+  constexpr auto name = [](auto &&... xs) constexpr noexcept {                 \
     return bool_v<std::LPL_CAT(name, _v) <                                     \
                   std::decay_t<decltype(declval(FWD(xs)))>...>> ;              \
   };
@@ -95,8 +97,8 @@ LPL_MAP(TRAIT, alignment_of, rank)
 #undef TRAIT
 
 #define TRAIT(name)                                                            \
-  constexpr auto name = [](auto &&x) constexpr noexcept {                      \
-    return type_v<std::LPL_CAT(name, _t) < decltype(declval(x))>> ;            \
+  constexpr auto name = [](auto x) constexpr noexcept {                        \
+    return type_v<std::LPL_CAT(name, _t) < decltype_t(x)>> ;                   \
   };
 
 // const-volatibility specifiers
@@ -117,6 +119,101 @@ LPL_MAP(TRAIT, remove_extent, remove_all_extents)
 
 TRAIT(decay)
 #undef TRAIT
+
+/////////////////////////// type qualifier //////////////////////////////////
+enum class qualifier_enum {
+  NO_CV = 1 << 0,
+  VOLATILE = 1 << 1,
+  CONST = 1 << 2,
+  NO_REF = 1 << 3,
+  LVALUE_REF = 1 << 4,
+  RVALUE_REF = 1 << 5
+};
+
+constexpr qualifier_enum &operator|=(qualifier_enum &a,
+                                     qualifier_enum b) noexcept {
+  a = static_cast<qualifier_enum>(static_cast<unsigned int>(a) |
+                                  static_cast<unsigned int>(b));
+  return a;
+}
+
+constexpr qualifier_enum operator|(qualifier_enum a,
+                                   qualifier_enum b) noexcept {
+  a |= b;
+  return a;
+}
+
+constexpr qualifier_enum &operator^=(qualifier_enum &a,
+                                     qualifier_enum b) noexcept {
+  a = static_cast<qualifier_enum>(static_cast<unsigned int>(a) ^
+                                  static_cast<unsigned int>(b));
+  return a;
+}
+
+constexpr qualifier_enum operator^(qualifier_enum a,
+                                   qualifier_enum b) noexcept {
+  a ^= b;
+  return a;
+}
+
+constexpr bool operator&(qualifier_enum a, qualifier_enum b) noexcept {
+  return (static_cast<unsigned int>(a) & static_cast<unsigned int>(b)) ==
+         static_cast<unsigned int>(b);
+}
+
+template <qualifier_enum e> struct qualifier_t {};
+template <qualifier_enum e> constexpr qualifier_t<e> qualifier_v{};
+
+template <typename T>
+[[nodiscard]] constexpr qualifier_enum getQualifierEnum(type_t<T> t) noexcept {
+  qualifier_enum result{};
+  if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
+    result |= qualifier_enum::CONST;
+  }
+
+  if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
+    result |= qualifier_enum::VOLATILE;
+  }
+
+  if constexpr (std::is_lvalue_reference_v<T>) {
+    result |= qualifier_enum::LVALUE_REF;
+  }
+
+  if constexpr (std::is_rvalue_reference_v<T>) {
+    result |= qualifier_enum::RVALUE_REF;
+  }
+  return result;
+}
+
+template <qualifier_enum a, qualifier_enum b>
+[[nodiscard]] constexpr qualifier_t<a | b> operator+(qualifier_t<a>,
+                                                     qualifier_t<b>) noexcept {
+  return {};
+}
+
+template <typename T, qualifier_enum a>
+[[nodiscard]] constexpr auto operator+(type_t<T> t, qualifier_t<a>) noexcept {
+  if constexpr (a & qualifier_enum::CONST)
+    return add_const(t) + qualifier_v<a ^ qualifier_enum::CONST>;
+
+  else if constexpr (a & qualifier_enum::VOLATILE)
+    return add_volatile(t) + qualifier_v<a ^ qualifier_enum::VOLATILE>;
+
+  else if constexpr (a & qualifier_enum::LVALUE_REF)
+    return add_lvalue_reference(t) +
+           qualifier_v<a ^ qualifier_enum::LVALUE_REF>;
+
+  else if constexpr (a & qualifier_enum::RVALUE_REF)
+    return add_rvalue_reference(t) +
+           qualifier_v<a ^ qualifier_enum::RVALUE_REF>;
+  else
+    return t;
+}
+
+template <qualifier_enum a, typename T>
+[[nodiscard]] constexpr auto operator+(qualifier_t<a> q, type_t<T> t) noexcept {
+  return t + q;
+}
 
 ///////////////////////// is_valid
 

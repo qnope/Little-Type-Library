@@ -386,6 +386,23 @@ void test_trait() {
   }
 }
 
+void test_qualifier() {
+  int a = 0;
+  int &refA = a;
+  constexpr auto qualifier = qualifier_from(refA);
+  const double b = 8.0;
+  constexpr auto normalType = type_from(a);
+  constexpr auto constRefType =
+      qualifier_from(b) + normalType +
+      ltl::qualifier_v<ltl::qualifier_enum::VOLATILE> + qualifier;
+
+  typed_static_assert(normalType == ltl::type_v<int>);
+  typed_static_assert(constRefType == ltl::type_v<volatile const int &>);
+  static_assert(ltl::getQualifierEnum(constRefType) ==
+                (ltl::qualifier_enum::CONST | ltl::qualifier_enum::LVALUE_REF |
+                 ltl::qualifier_enum::VOLATILE));
+}
+
 using Float =
     ltl::strong_type_t<float, struct FloatTag, ltl::EqualityComparable,
                        ltl::GreaterThan, ltl::LessThan, ltl::Addable,
@@ -751,6 +768,8 @@ int main() {
   test_is_valid();
   test_trait();
   test_strong_type();
+
+  test_qualifier();
 
   test_algos();
   test_find_range();

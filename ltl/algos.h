@@ -4,6 +4,8 @@
 #include <numeric>
 #include <optional>
 
+#include "traits.h"
+
 namespace ltl {
 #define ALGO_MONO_ITERATOR(name)                                               \
   template <typename C, typename... As> auto name(C &&c, As &&... as) {        \
