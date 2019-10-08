@@ -151,6 +151,7 @@ class tuple_t : public detail::tuple_t<std::index_sequence_for<Ts...>, Ts...> {
 public:
   using super = detail::tuple_t<std::index_sequence_for<Ts...>, Ts...>;
 
+  using super::isEmpty;
   using super::length;
   using super::super;
   using super::operator=;
