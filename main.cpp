@@ -92,9 +92,9 @@ void constexpr_tuple_test() {
       ltl::type_list_v<double>.push_back(ltl::type_v<char>).push_front(ltl::type_v<int>));
 
   static_assert(
-          ltl::type_list_v<float, int, double, double, char,
-                           double>.pop_front().pop_back().pop_back().pop_back().push_back(ltl::type_v<char>)
-          == ltl::type_list_v<int, double, char>);
+        ltl::type_list_v<float, int, double, double, char,
+                         double>.pop_front().pop_back().pop_back().pop_back().push_back(ltl::type_v<char>)
+        == ltl::type_list_v<int, double, char>);
 
   constexpr auto number_list = ltl::number_list_v<2, 3, 4>;
 
@@ -223,6 +223,13 @@ void tuple_test_algo() {
     typed_static_assert(ltl::all_of_type(tuple1, ltl::is_integral));
     typed_static_assert(ltl::none_of_type(tuple1, ltl::is_floating_point));
     typed_static_assert(ltl::any_of_type(tuple1, ltl::is_unsigned));
+  }
+
+  {
+    ltl::type_list_t<int, int, double, unsigned char> tuple;
+    ltl::type_list_t<int *, int *, double *, unsigned char *> ptrs;
+    typed_static_assert(type_from(ptrs) ==
+                        type_from(ltl::transform(tuple, ltl::add_pointer)));
   }
 }
 
@@ -750,6 +757,31 @@ void test_variant_utils() {
   result = 5.0;
   ltl::match(
       result, [](double) { assert(true); }, [](int) { assert(false); });
+
+  {
+    std::variant<int, double, std::string> variant;
+    auto ok1 = [](auto &&) {};
+    auto ok2 = ltl::overloader{[](int) {}, [](double) {}, [](std::string) {}};
+    auto ok3 = ltl::overloader{[](int) {}, [](double) {}, [](std::string &) {}};
+    auto ok4 =
+        ltl::overloader{[](int) {}, [](double) {}, [](const std::string &) {}};
+    auto bad1 =
+        ltl::overloader{[](int &&) {}, [](double &&) {}, [](std::string &&) {}};
+    auto bad2 = [](int) {};
+    typed_static_assert(ltl::is_callable_from(ok1, variant));
+    typed_static_assert(ltl::is_callable_from(ok2, variant));
+    typed_static_assert(ltl::is_callable_from(ok3, variant));
+    typed_static_assert(ltl::is_callable_from(ok4, variant));
+    typed_static_assert(!ltl::is_callable_from(bad1, variant));
+    typed_static_assert(!ltl::is_callable_from(bad2, variant));
+
+    typed_static_assert(!ltl::is_callable_from(ok3, std::as_const(variant)));
+    typed_static_assert(ltl::is_callable_from(ok4, std::as_const(variant)));
+
+    typed_static_assert(!ltl::is_callable_from(ok3, std::move(variant)));
+    typed_static_assert(ltl::is_callable_from(ok4, std::move(variant)));
+    typed_static_assert(ltl::is_callable_from(bad1, std::move(variant)));
+  }
 }
 
 int main() {

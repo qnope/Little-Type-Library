@@ -2,7 +2,24 @@
 
 #include "Tuple.h"
 
+#define types_from(x) ::ltl::getQualifiedTypeList(type_from(x))
+
 namespace ltl {
+template <template <typename... Types> typename List, typename... Types>
+constexpr auto getQualifiedTypeList(type_t<const List<Types...> &>) {
+  return type_list_v<std::add_lvalue_reference_t<std::add_const_t<Types>>...>;
+}
+
+template <template <typename... Types> typename List, typename... Types>
+constexpr auto getQualifiedTypeList(type_t<List<Types...> &>) {
+  return type_list_v<std::add_lvalue_reference_t<Types>...>;
+}
+
+template <template <typename... Types> typename List, typename... Types>
+constexpr auto getQualifiedTypeList(type_t<List<Types...> &&>) {
+  return type_list_v<std::add_rvalue_reference_t<Types>...>;
+}
+
 template <typename F, typename Tuple>
 constexpr decltype(auto) apply(Tuple &&tuple,
                                F &&f) noexcept(noexcept(FWD(tuple)(FWD(f)))) {
@@ -16,6 +33,15 @@ template <typename F, typename Tuple> F for_each(Tuple &&tuple, F &&f) {
   auto retrieveAllArgs = [&f](auto &&... xs) { (FWD(f)(FWD(xs)), ...); };
   ltl::apply(FWD(tuple), retrieveAllArgs);
   return FWD(f);
+}
+
+template <typename F, typename Tuple>
+constexpr decltype(auto) transform(Tuple &&tuple, F &&f) {
+  typed_static_assert(is_tuple_t(tuple));
+  auto build_tuple = [&f](auto &&... xs) {
+    return ltl::tuple_t<decltype(FWD(f)(FWD(xs)))...>{FWD(f)(FWD(xs))...};
+  };
+  return FWD(tuple)(build_tuple);
 }
 
 ////////////////////// Algorithm tuple

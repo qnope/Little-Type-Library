@@ -277,6 +277,10 @@ constexpr auto copy_qualifier(type_t<T> type) {
   return type_v<ResultType> + qualifier_v<getQualifierEnum(type)>;
 }
 
+template <qualifier_enum q> constexpr auto add_qualifier(qualifier_t<q>) {
+  return [](auto x) constexpr { return x + qualifier_v<q>; };
+}
+
 using std::begin;
 using std::end;
 
