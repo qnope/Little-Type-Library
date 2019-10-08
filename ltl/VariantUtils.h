@@ -26,9 +26,9 @@ auto match_result(Variant &&variant, Fs &&... fs) {
 }
 
 template <typename F, typename Variant>
-constexpr auto is_callable_from(F &&f, Variant &&variant) {
-  auto is_f_invocable =
-      is_valid([&f](auto &&x) -> decltype(FWD(f)(declval(FWD(x))), void()) {});
+constexpr auto is_callable_from(F &&, Variant &&variant) {
+  constexpr auto is_f_invocable =
+      IS_VALID((x), declval(type_v<F>)(declval(FWD(x))));
   constexpr auto qualified_types = types_from(variant);
   return all_of_type(qualified_types, is_f_invocable);
 }
