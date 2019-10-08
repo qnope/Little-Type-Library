@@ -3,12 +3,6 @@
 #include "Tuple.h"
 
 namespace ltl {
-// Conditional functions
-LTL_MAKE_IS_KIND(tuple_t, is_tuple_t, IsTuple, typename);
-LTL_MAKE_IS_KIND(type_list_t, is_type_list_t, IsTypeList, typename);
-LTL_MAKE_IS_KIND(number_list_t, is_number_list_t, IsNumberList, int);
-LTL_MAKE_IS_KIND(bool_list_t, is_bool_list_t, IsBoolList, bool);
-
 template <typename F, typename Tuple>
 constexpr decltype(auto) apply(Tuple &&tuple,
                                F &&f) noexcept(noexcept(FWD(tuple)(FWD(f)))) {

@@ -49,9 +49,13 @@ private:
 
 template <typename R> Range(R &r)->Range<decltype(std::begin(r))>;
 
-template <typename It> auto begin(const Range<It> &r) { return r.begin(); }
-
-template <typename It> auto end(const Range<It> &r) { return r.end(); }
+template <typename It> auto begin(const Range<It> &r) noexcept {
+  return r.begin();
+}
+template <typename It> auto end(const Range<It> &r) noexcept { return r.end(); }
+template <typename It> std::size_t size(const Range<It> &r) noexcept {
+  return r.size();
+}
 
 LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
 
@@ -360,12 +364,13 @@ struct ZipIterator
 
 template <typename... Containers> auto zip(Containers &&... containers) {
   constexpr auto types = type_list_v<Containers...>;
+  using std::size;
   typed_static_assert(!types.isEmpty);
   typed_static_assert_msg(all_of_type(types, is_iterable),
                           "Zip operations must be used with containers");
 
   assert(FROM_VARIADIC(FWD(containers))([](auto &&c1, auto &&... cs) {
-    return (true && ... && (FWD(c1).size() == FWD(cs).size()));
+    return (true && ... && (size(FWD(c1)) == size(FWD(cs))));
   }));
 
   return Range{ZipIterator<decltype(std::begin(FWD(containers)))...>{
@@ -411,7 +416,8 @@ auto steppedValueRange(ValueType start, ValueType end, ValueType step) {
 }
 
 template <typename Container> auto enumerate(Container &&container) {
-  return zip(valueRange<std::size_t>(0, container.size()), FWD(container));
+  using std::size;
+  return zip(valueRange<std::size_t>(0, size(FWD(container))), FWD(container));
 }
 
 LTL_MAKE_IS_KIND(FilterIterator, is_filter_iterator, IsFilterIterator,

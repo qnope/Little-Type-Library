@@ -38,7 +38,6 @@ using decay_reference_wrapper_t = typename decay_reference_wrapper<T>::type;
 ///////////////////// overloader
 template <typename... Fs> struct overloader : Fs... {
   constexpr overloader(Fs... fs) : Fs{std::move(fs)}... {}
-
   using Fs::operator()...;
 };
 

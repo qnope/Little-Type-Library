@@ -1,5 +1,6 @@
 #pragma once
 
+#include "concept.h"
 #include "crtp.h"
 #include "ltl.h"
 
@@ -276,6 +277,11 @@ template <typename... Ts> tuple_t<Ts &...> tie(Ts &... ts) noexcept {
   return {ts...};
 }
 
+LTL_MAKE_IS_KIND(tuple_t, is_tuple_t, IsTuple, typename);
+LTL_MAKE_IS_KIND(type_list_t, is_type_list_t, IsTypeList, typename);
+LTL_MAKE_IS_KIND(number_list_t, is_number_list_t, IsNumberList, int);
+LTL_MAKE_IS_KIND(bool_list_t, is_bool_list_t, IsBoolList, bool);
+
 } // namespace ltl
 
 namespace std {
@@ -295,7 +301,8 @@ struct tuple_element<I, const ::ltl::tuple_t<Ts...>> {
       decltype(std::declval<const ::ltl::tuple_t<Ts...>>().template get<I>());
 };
 
-template <std::size_t N, typename Tuple> decltype(auto) get(Tuple &&tuple) {
+template <std::size_t N, typename Tuple, requires_f(::ltl::IsTuple<Tuple>)>
+decltype(auto) get(Tuple &&tuple) {
   return FWD(tuple)[number_v<N>];
 }
 

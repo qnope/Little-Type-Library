@@ -149,15 +149,15 @@ template <typename C> auto computeMean(const C &c) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   using std::begin;
   using std::end;
-  const auto size = c.size();
+  using std::size;
 
-  if (size == 0) {
+  if (c.empty()) {
     return std::optional<decltype(
-        std::accumulate(std::next(begin(c)), end(c), *begin(c)) / size)>{};
+        std::accumulate(std::next(begin(c)), end(c), *begin(c)) / size(c))>{};
   }
 
   const auto total = std::accumulate(std::next(begin(c)), end(c), *begin(c));
-  return std::make_optional(total / size);
+  return std::make_optional(total / size(c));
 }
 
 template <typename C, typename V> auto contains(const C &c, V &&v) {
@@ -190,7 +190,7 @@ template <typename C, typename... P>
 auto min_element_value(const C &c, P &&... p) {
   using std::begin;
   using std::end;
-  if (c.size() == 0) {
+  if (c.empty()) {
     return std::decay_t<decltype(*begin(c))>{};
   }
   return *min_element(c, FWD(p)...);
@@ -200,7 +200,7 @@ template <typename C, typename... P>
 auto max_element_value(const C &c, P &&... p) {
   using std::begin;
   using std::end;
-  if (c.size() == 0) {
+  if (c.empty()) {
     return std::decay_t<decltype(*begin(c))>{};
   }
   return *max_element(c, FWD(p)...);
@@ -212,7 +212,7 @@ auto minmax_element_value(const C &c, P &&... p) {
   using std::end;
   using underlying = std::decay_t<decltype(*begin(c))>;
   using T = std::pair<underlying, underlying>;
-  if (c.size() == 0) {
+  if (c.empty()) {
     return T{};
   }
   auto [min, max] = minmax_element(c, FWD(p)...);
