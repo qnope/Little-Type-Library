@@ -14,10 +14,10 @@ template <typename Variant, typename... Fs>
 auto match_result(Variant &&variant, Fs &&... fs) {
   constexpr auto qualified_types = types_from(variant);
   overloader function{FWD(fs)...};
-  constexpr auto functionType = type_from(function);
-  constexpr auto result_types = qualified_types([functionType](auto... t) {
-    return ltl::tuple_t{invoke_result(functionType, t)...};
-  });
+  constexpr auto result_types =
+      transform(qualified_types, [f = type_from(function)](auto t) {
+        return invoke_result(f, t);
+      });
   using result_type =
       build_from_type_list<std::variant, decltype(result_types)>;
   return std::visit(
