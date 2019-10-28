@@ -179,4 +179,12 @@ template <typename T1, typename T2, typename... Ts>
   template <typename T>                                                        \
   constexpr bool conceptName = decltype(name(std::declval<T>()))::value
 
+//////////////////////////////// Y_Combinator /////////////////////////////////
+template <typename F> struct fix : F {
+  template <typename... Args>
+  constexpr decltype(auto) operator()(Args &&... args) noexcept {
+    return static_cast<F &>(*this)(*this, FWD(args)...);
+  }
+};
+template <typename F> fix(F)->fix<F>;
 } // namespace ltl

@@ -784,6 +784,16 @@ void test_variant_utils() {
   }
 }
 
+void test_fix() {
+  auto factorial =
+      ltl::fix{[](auto f, auto x) -> int { return x ? x * f(x - 1) : 1; }};
+  static_assert(factorial(1) == 1);
+  static_assert(factorial(2) == 2);
+  static_assert(factorial(3) == 6);
+  static_assert(factorial(4) == 24);
+  static_assert(factorial(5) == 120);
+}
+
 int main() {
   bool_test();
   type_test();
