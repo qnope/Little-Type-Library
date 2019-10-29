@@ -830,6 +830,12 @@ void test_functional() {
   static_assert(ltl::report_call(divisor, 1000, 10)(5, 5) == 4);
   static_assert(ltl::report_call(divisor, 1000)(10, 5, 5) == 4);
   static_assert(ltl::report_call(divisor)(1000, 10, 5, 5) == 4);
+
+  static_assert(ltl::curry(divisor, 1000, 10, 5, 5) == 4);
+  static_assert(ltl::curry(divisor, 1000, 10, 5)(5) == 4);
+  static_assert(ltl::curry(divisor, 1000, 10)(5, 5) == 4);
+  static_assert(ltl::curry(divisor)(1000, 10, 5, 5) == 4);
+  static_assert(ltl::curry(divisor)(1000)(10)(5)(5) == 4);
 }
 
 int main() {

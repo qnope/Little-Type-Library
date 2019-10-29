@@ -20,4 +20,14 @@ constexpr auto report_call(F f, Args... xs) {
     return args([f](auto &&... args) { return f(FWD(args)...); });
   };
 }
+
+template <typename F, typename... Args>
+constexpr auto curry(F f, Args &&... args) {
+  if constexpr (ltl::is_invocable(type_from(f), type_from(args)...)) {
+    return f(FWD(args)...);
+  } else {
+    return report_call(lift(curry), std::move(f), FWD(args)...);
+  }
+}
+
 } // namespace ltl

@@ -19,6 +19,8 @@
 
 #define FWD(x) std::forward<decltype(x)>(x)
 
+#define lift(f) [](auto &&... xs) { return f(FWD(xs)...); }
+
 namespace ltl {
 template <typename> constexpr bool always_false = false;
 
