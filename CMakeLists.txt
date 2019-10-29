@@ -9,6 +9,7 @@ set(HEADERS
     ltl/StrongType.h
     ltl/algos.h
     ltl/stream.h
+    ltl/functional.h
     ltl/operator.h
     ltl/concept.h
     ltl/range.h

@@ -5,6 +5,7 @@
 #include "operator.h"
 #include "tuple_algos.h"
 
+#include <cassert>
 #include <deque>
 #include <limits>
 #include <list>

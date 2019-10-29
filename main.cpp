@@ -7,6 +7,7 @@
 #include "ltl/StrongType.h"
 #include "ltl/VariantUtils.h"
 #include "ltl/algos.h"
+#include "ltl/functional.h"
 #include "ltl/operator.h"
 #include "ltl/traits.h"
 
@@ -178,6 +179,33 @@ void tuple_test() {
   assert(tb == tuple[1_n]);
   assert(tc == tuple[2_n]);
   assert(td == tuple[3_n]);
+
+  int lvalue = 25;
+  ltl::tuple_t firstTuple{28, lvalue, std::ref(lvalue)};
+  ltl::tuple_t secondTuple{34, std::cref(lvalue)};
+
+  typed_static_assert(
+      (ltl::type_v<ltl::tuple_t<int, int, int &>> == type_from(firstTuple)));
+  typed_static_assert(
+      (ltl::type_v<ltl::tuple_t<int, const int &>> == type_from(secondTuple)));
+
+  auto firstAdd = firstTuple + secondTuple;
+  auto secondAdd = firstTuple + std::move(secondTuple);
+  auto thirdAdd = std::move(firstTuple) + std::move(secondTuple);
+  auto lastAdd = std::move(secondTuple) + std::move(firstTuple);
+
+  typed_static_assert(
+      (ltl::type_v<ltl::tuple_t<int, int, int &, int, const int &>> ==
+       type_from(firstAdd)));
+  typed_static_assert(
+      (ltl::type_v<ltl::tuple_t<int, int, int &, int, const int &>> ==
+       type_from(secondAdd)));
+  typed_static_assert(
+      (ltl::type_v<ltl::tuple_t<int, int, int &, int, const int &>> ==
+       type_from(thirdAdd)));
+  typed_static_assert(
+      (ltl::type_v<ltl::tuple_t<int, const int &, int, int, int &>> ==
+       type_from(lastAdd)));
 }
 
 void tuple_test_algo() {
@@ -784,7 +812,7 @@ void test_variant_utils() {
   }
 }
 
-void test_fix() {
+void test_functional() {
   auto factorial =
       ltl::fix{[](auto f, auto x) -> int { return x ? x * f(x - 1) : 1; }};
   static_assert(factorial(1) == 1);
@@ -792,6 +820,16 @@ void test_fix() {
   static_assert(factorial(3) == 6);
   static_assert(factorial(4) == 24);
   static_assert(factorial(5) == 120);
+
+  auto divisor = _((w, x, y, z), w / x / y / z);
+
+  static_assert(divisor(1000, 10, 10, 10) == 1);
+
+  static_assert(ltl::report_call(divisor, 1000, 10, 5, 5)() == 4);
+  static_assert(ltl::report_call(divisor, 1000, 10, 5)(5) == 4);
+  static_assert(ltl::report_call(divisor, 1000, 10)(5, 5) == 4);
+  static_assert(ltl::report_call(divisor, 1000)(10, 5, 5) == 4);
+  static_assert(ltl::report_call(divisor)(1000, 10, 5, 5) == 4);
 }
 
 int main() {
@@ -827,6 +865,8 @@ int main() {
 
   test_default_view();
   test_variant_utils();
+
+  test_functional();
 
   return 0;
 }

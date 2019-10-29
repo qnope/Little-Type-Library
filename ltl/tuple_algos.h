@@ -45,15 +45,6 @@ constexpr decltype(auto) transform(Tuple &&tuple, F &&f) {
 }
 
 ////////////////////// Algorithm tuple
-template <typename N1, typename N2>
-[[nodiscard]] constexpr auto build_index_sequence(N1 n1, N2 n2) {
-  return tuple_t<>::build_index_sequence(n1, n2);
-}
-
-template <typename N>[[nodiscard]] constexpr auto build_index_sequence(N n) {
-  return tuple_t<>::build_index_sequence(0_n, n); // does not compile
-}
-
 template <typename... Ts, typename T>
 constexpr auto contains_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
   if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (Ts{} == type));
