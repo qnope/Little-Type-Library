@@ -6,12 +6,16 @@ namespace ltl {
 //////////////////////////////// Y_Combinator /////////////////////////////////
 template <typename F> struct fix : F {
   template <typename... Args>
-    constexpr auto operator()(Args &&... args) const -> decltype(std::declval<const F&>()(std::declval<const fix&>(), std::declval<Args>()...)) {
+  constexpr auto operator()(Args &&... args) const
+      -> decltype(std::declval<const F &>()(std::declval<const fix &>(),
+                                            std::declval<Args>()...)) {
     return static_cast<const F &>(*this)(*this, FWD(args)...);
   }
 
   template <typename... Args>
-  constexpr auto operator()(Args &&... args) -> decltype(std::declval<F&>()(std::declval<fix&>(), std::declval<Args>()...)) {
+  constexpr auto operator()(Args &&... args)
+      -> decltype(std::declval<F &>()(std::declval<fix &>(),
+                                      std::declval<Args>()...)) {
     return static_cast<F &>(*this)(*this, FWD(args)...);
   }
 };
@@ -30,9 +34,8 @@ constexpr auto report_call(F f, Args... xs) {
 
 template <typename F, typename... Args>
 constexpr decltype(auto) curry(F f, Args &&... args) {
-  if constexpr (ltl::is_invocable(type_from(f), type_from(args)...)) {
-    return f(FWD(args)...);
-  } else {
+  if_constexpr(ltl::is_invocable(f, FWD(args)...)) { return f(FWD(args)...); }
+  else {
     return report_call(lift(curry), std::move(f), FWD(args)...);
   }
 }

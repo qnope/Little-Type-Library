@@ -55,14 +55,11 @@ LPL_MAP(TRAIT, is_constructible, is_trivially_constructible,
 // Type relationships
 LPL_MAP(TRAIT, is_same, is_base_of, is_convertible)
 
-LPL_MAP(TRAIT, is_invocable, is_invocable_r, is_nothrow_invocable,
-        is_nothrow_invocable_r)
-
 #undef TRAIT
 
 #define TRAIT_REFERENCE(name)                                                  \
-  constexpr auto name = [](auto &&x) constexpr noexcept {                      \
-    return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(x)))>> ;       \
+  constexpr auto name = [](auto &&... xs) constexpr noexcept {                 \
+    return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...>> ;   \
   };
 
 #define TRAIT_CVNESS(name)                                                     \
@@ -72,7 +69,8 @@ LPL_MAP(TRAIT, is_invocable, is_invocable_r, is_nothrow_invocable,
   };
 
 // Reference / cv-ness
-LPL_MAP(TRAIT_REFERENCE, is_lvalue_reference, is_rvalue_reference)
+LPL_MAP(TRAIT_REFERENCE, is_lvalue_reference, is_rvalue_reference, is_invocable,
+        is_invocable_r, is_nothrow_invocable, is_nothrow_invocable_r)
 LPL_MAP(TRAIT_CVNESS, is_const, is_volatile, is_array)
 
 #undef TRAIT_REFERENCE
