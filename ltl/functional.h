@@ -29,7 +29,7 @@ constexpr auto report_call(F f, Args... xs) {
 }
 
 template <typename F, typename... Args>
-constexpr auto curry(F f, Args &&... args) {
+constexpr decltype(auto) curry(F f, Args &&... args) {
   if constexpr (ltl::is_invocable(type_from(f), type_from(args)...)) {
     return f(FWD(args)...);
   } else {
