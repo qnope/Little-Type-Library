@@ -6,12 +6,12 @@ namespace ltl {
 //////////////////////////////// Y_Combinator /////////////////////////////////
 template <typename F> struct fix : F {
   template <typename... Args>
-  constexpr decltype(auto) operator()(Args &&... args) const {
+    constexpr auto operator()(Args &&... args) const -> decltype(std::declval<const F&>()(std::declval<const fix&>(), std::declval<Args&&...>())) {
     return static_cast<const F &>(*this)(*this, FWD(args)...);
   }
 
   template <typename... Args>
-  constexpr decltype(auto) operator()(Args &&... args) {
+  constexpr auto operator()(Args &&... args) -> decltype(std::declval<F&>()(std::declval<fix&>(), std::declval<Args&&...>())) {
     return static_cast<F &>(*this)(*this, FWD(args)...);
   }
 };
