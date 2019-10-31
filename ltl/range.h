@@ -499,7 +499,9 @@ template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
                    TakerIterator<it>{endIt}};
 
     else if constexpr (is_tuple_t(t2))
-      return FWD(b)([&a](auto &&... xs) { return (FWD(a) | ... | (FWD(xs))); });
+      return FWD(b)([&a](auto &&... xs) {
+        return (std::forward<T1>(a) | ... | (FWD(xs)));
+      });
 
     else
       compile_time_error(
