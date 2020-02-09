@@ -855,6 +855,21 @@ void test_fix_issue_1() {
 
   assert(ltl::equal(a | ltl::reversed | ltl::map(square),
                     std::array{16, 9, 4, 1, 0}));
+
+  struct obj {
+    bool isSet() const { return m_isSet; }
+    bool m_isSet;
+  };
+
+  std::array b = {obj{false}, obj{true}, obj{false}};
+  std::array c = {obj{false}, obj{false}, obj{false}};
+  std::array d = {obj{true}, obj{true}, obj{true}};
+
+  auto isSet = ltl::map(&obj::isSet);
+  auto id = [](const auto &x) { return x; };
+  assert(ltl::any_of(b | isSet, id));
+  assert(ltl::none_of(c | isSet, id));
+  assert(ltl::all_of(d | isSet, id));
 }
 
 int main() {
