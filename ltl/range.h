@@ -461,6 +461,10 @@ constexpr to_vector_t to_vector{};
 constexpr to_deque_t to_deque{};
 constexpr to_list_t to_list{};
 
+// reverse iterator
+struct reverse_t {};
+constexpr reverse_t reversed;
+
 template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
   using std::begin;
   using std::end;
@@ -502,6 +506,10 @@ template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
       return FWD(b)([&a](auto &&... xs) {
         return (std::forward<T1>(a) | ... | (FWD(xs)));
       });
+
+    else if constexpr (t2 == type_v<reverse_t>) {
+      return Range{FWD(a).rbegin(), FWD(a).rend()};
+    }
 
     else
       compile_time_error(

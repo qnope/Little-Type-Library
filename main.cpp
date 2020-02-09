@@ -852,6 +852,9 @@ void test_fix_issue_1() {
   ltl::for_each(a, [](auto x) {
     assert(x == 0 || x == 1 || x == 2 || x == 3 || x == 4);
   });
+
+  assert(ltl::equal(a | ltl::reversed | ltl::map(square),
+                    std::array{16, 9, 4, 1, 0}));
 }
 
 int main() {
