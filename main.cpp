@@ -838,6 +838,22 @@ void test_functional() {
   static_assert(ltl::curry(divisor)(1000)(10)(5)(5) == 4);
 }
 
+/// Issues are:
+/// contains algos for transformed iterator
+/// for_each for tuple called instead of algos
+/// reverse iterator
+/// std invoke
+void test_fix_issue_1() {
+  std::array a = {0, 1, 2, 3, 4};
+  auto square = _((x), x * x);
+  assert(ltl::contains(a | ltl::map(square), 9));
+  assert(!ltl::contains(a | ltl::map(square), 2));
+
+  ltl::for_each(a, [](auto x) {
+    assert(x == 0 || x == 1 || x == 2 || x == 3 || x == 4);
+  });
+}
+
 int main() {
   bool_test();
   type_test();
@@ -873,6 +889,7 @@ int main() {
   test_variant_utils();
 
   test_functional();
+  test_fix_issue_1();
 
   return 0;
 }

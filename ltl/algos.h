@@ -163,7 +163,7 @@ template <typename C> auto computeMean(const C &c) {
 template <typename C, typename V> auto contains(const C &c, V &&v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
 
-  return static_cast<bool>(find_ptr(c, FWD(v)));
+  return static_cast<bool>(find(c, FWD(v)));
 }
 
 template <typename C, typename K> auto contains_map(const C &c, K &&k) {

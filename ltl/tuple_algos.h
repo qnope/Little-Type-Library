@@ -27,7 +27,8 @@ constexpr decltype(auto) apply(Tuple &&tuple,
   return FWD(tuple)(FWD(f));
 }
 
-template <typename F, typename Tuple> F for_each(Tuple &&tuple, F &&f) {
+template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
+F for_each(Tuple &&tuple, F &&f) {
   typed_static_assert(is_tuple_t(tuple));
 
   auto retrieveAllArgs = [&f](auto &&... xs) {
