@@ -166,6 +166,11 @@ template <typename C, typename V> auto contains(const C &c, V &&v) {
   return static_cast<bool>(find(c, FWD(v)));
 }
 
+template <typename C, typename F> auto contains_if(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return static_cast<bool>(find_if(c, FWD(f)));
+}
+
 template <typename C, typename K> auto contains_map(const C &c, K &&k) {
   return c.find(FWD(k)) != c.end();
 }
