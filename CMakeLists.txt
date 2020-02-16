@@ -3,6 +3,20 @@ project(LittleTypeLibrary)
 
 set(SOURCES "main.cpp")
 
+set(HEADERS_RANGE
+    ltl/range/Range.h
+    ltl/range/NullableFunction.h
+    ltl/range/BaseIterator.h
+    ltl/Range/AsPointer.h
+    ltl/Range/Filter.h
+    ltl/Range/Map.h
+    ltl/Range/Taker.h
+    ltl/Range/Zip.h
+    ltl/Range/Value.h
+    ltl/Range/enumerate.h
+    ltl/Range/DefaultView.h
+    )
+
 set(HEADERS
     ltl/ltl.h
     ltl/Tuple.h
@@ -17,18 +31,8 @@ set(HEADERS
     ltl/invoke.h
     ltl/traits.h
     ltl/tuple_algos.h
-    ltl/range/Range.h
-    ltl/range/NullableFunction.h
-    ltl/range/BaseIterator.h
-    ltl/Range/AsPointer.h
-    ltl/Range/Filter.h
-    ltl/Range/Map.h
-    ltl/Range/Taker.h
-    ltl/Range/Zip.h
-    ltl/Range/Value.h
-    ltl/Range/enumerate.h
-    ltl/Range/DefaultView.h
     lpl/lpl.h
+    ${HEADERS_RANGE}
     )
 
 if(MSVC)
