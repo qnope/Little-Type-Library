@@ -137,13 +137,30 @@ ALGO_DOUBLE_ITERATOR(is_permutation)
 LPL_MAP(ALGO_MONO_ITERATOR, next_permutation, prev_permutation)
 
 // numeric operations
-LPL_MAP(ALGO_MONO_ITERATOR, iota, accumulate, inner_product,
-        adjacent_difference, partial_sum)
+LPL_MAP(ALGO_MONO_ITERATOR, iota, inner_product, adjacent_difference,
+        partial_sum)
 
 #undef ALGO_MONO_ITERATOR
 #undef ALGO_DOUBLE_ITERATOR
 #undef ALGO_FIND_RANGE
 #undef ALGO_FIND_VALUE
+
+template <class C, class T> constexpr T accumulate(const C &c, T init) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  for (const auto &e : c) {
+    init = std::move(init) + e;
+  }
+  return init;
+}
+
+template <class C, class T, class BinaryOperation>
+constexpr T accumulate(const C &c, T init, BinaryOperation op) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  for (const auto &e : c) {
+    init = op(std::move(init), e);
+  }
+  return init;
+}
 
 template <typename C> auto computeMean(const C &c) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
