@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BaseIterator.h"
+#include "Range.h"
 
 namespace ltl {
 template <typename ValueType>

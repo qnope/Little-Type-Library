@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstddef>
-
 #include "Value.h"
 #include "Zip.h"
 

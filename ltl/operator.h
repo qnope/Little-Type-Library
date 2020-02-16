@@ -3,11 +3,14 @@
 #include "concept.h"
 
 #include <deque>
+#include <list>
+#include <vector>
 
 #include "Range/Filter.h"
 #include "Range/Map.h"
 #include "Range/Range.h"
 #include "Range/Taker.h"
+#include "Tuple.h"
 
 #define _LAMBDA_WRITE_AUTO(x, y, ...)                                          \
   auto &&x LPL_WHEN(LPL_IS_NOT_PARENTHESES(y))(                                \

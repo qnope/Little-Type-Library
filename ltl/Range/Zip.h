@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Tuple.h"
 #include "BaseIterator.h"
 #include "Range.h"
 
