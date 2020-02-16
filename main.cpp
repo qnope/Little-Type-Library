@@ -705,9 +705,24 @@ void test_to() {
   auto oddTimes2List = oddTimes2 | map(_((x), std::to_string(x))) | to_list;
   auto oddTimes2Deque = oddTimes2 | map(_((x), std::to_string(x))) | to_deque;
   auto oddTimes2Vector = oddTimes2 | map(_((x), std::to_string(x))) | to_vector;
+
+  std::vector<std::string> oddTimes2Vector2 =
+      oddTimes2 | map(_((x), std::to_string(x)));
+
+  std::deque<std::string> oddTimes2Deque2 =
+      oddTimes2 | map(_((x), std::to_string(x)));
+
+  std::list<std::string> oddTimes2List2 =
+      oddTimes2 | map(_((x), std::to_string(x)));
+
   assert(ltl::equal(oddTimes2Deque, strs));
   assert(ltl::equal(oddTimes2List, strs));
   assert(ltl::equal(oddTimes2Vector, strs));
+
+  assert(ltl::equal(oddTimes2Vector2, strs));
+  assert(ltl::equal(oddTimes2Deque2, strs));
+  assert(ltl::equal(oddTimes2List2, strs));
+
   typed_static_assert(type_v<std::vector<std::string>> ==
                       type_from(oddTimes2Vector));
   typed_static_assert(type_v<std::deque<std::string>> ==

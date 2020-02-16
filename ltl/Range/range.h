@@ -34,6 +34,8 @@ public:
     return *(m_it + std::size_t{size() - 1});
   }
 
+  template <typename T> operator T() const noexcept { return T(m_it, m_end); }
+
 private:
   It m_it;
   It m_end;
