@@ -825,17 +825,30 @@ void test_functional() {
 
   static_assert(divisor(1000, 10, 10, 10) == 1);
 
-  static_assert(ltl::report_call(divisor, 1000, 10, 5, 5)() == 4);
-  static_assert(ltl::report_call(divisor, 1000, 10, 5)(5) == 4);
-  static_assert(ltl::report_call(divisor, 1000, 10)(5, 5) == 4);
-  static_assert(ltl::report_call(divisor, 1000)(10, 5, 5) == 4);
-  static_assert(ltl::report_call(divisor)(1000, 10, 5, 5) == 4);
+  assert(ltl::report_call(divisor, 1000, 10, 5, 5)() == 4);
+  assert(ltl::report_call(divisor, 1000, 10, 5)(5) == 4);
+  assert(ltl::report_call(divisor, 1000, 10)(5, 5) == 4);
+  assert(ltl::report_call(divisor, 1000)(10, 5, 5) == 4);
+  assert(ltl::report_call(divisor)(1000, 10, 5, 5) == 4);
 
-  static_assert(ltl::curry(divisor, 1000, 10, 5, 5) == 4);
-  static_assert(ltl::curry(divisor, 1000, 10, 5)(5) == 4);
-  static_assert(ltl::curry(divisor, 1000, 10)(5, 5) == 4);
-  static_assert(ltl::curry(divisor)(1000, 10, 5, 5) == 4);
-  static_assert(ltl::curry(divisor)(1000)(10)(5)(5) == 4);
+  assert(ltl::curry(divisor, 1000, 10, 5, 5) == 4);
+  assert(ltl::curry(divisor, 1000, 10, 5)(5) == 4);
+  assert(ltl::curry(divisor, 1000, 10)(5, 5) == 4);
+  assert(ltl::curry(divisor)(1000, 10, 5, 5) == 4);
+  assert(ltl::curry(divisor)(1000)(10)(5)(5) == 4);
+
+  struct test {
+    int sum(int a, int b, int c) { return a + b + c; }
+  };
+
+  test a;
+  assert(ltl::curry(&test::sum, a, 1, 2, 3) == 6);
+  assert(ltl::curry(&test::sum)(a, 1, 2, 3) == 6);
+  assert(ltl::curry(&test::sum, a, 1)(2, 3) == 6);
+  assert(ltl::curry(&test::sum)(a)(1)(2, 3) == 6);
+  assert(ltl::curry(&test::sum)(a)(1)(2)(3) == 6);
+
+  assert(ltl::curry(&test::sum)(test{})(1)(2)(3) == 6);
 }
 
 /// Issues are:
