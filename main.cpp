@@ -1,5 +1,6 @@
 #include <array>
 #include <cassert>
+#include <functional>
 #include <string>
 #include <unordered_map>
 
@@ -30,6 +31,8 @@ void bool_test() {
   static_assert(!false_v);
   static_assert(!!true_v);
   static_assert(true_v);
+
+  static_assert(ltl::not_fn([] { return false_v; })());
 }
 
 void type_test() {
@@ -879,10 +882,13 @@ void test_fix_issue_1() {
   std::array d = {obj{true}, obj{true}, obj{true}};
 
   auto isSet = ltl::map(&obj::isSet);
+  auto isNotSet = ltl::map(ltl::not_fn(&obj::isSet));
   auto id = [](const auto &x) { return x; };
   assert(ltl::any_of(b | isSet, id));
   assert(ltl::none_of(c | isSet, id));
   assert(ltl::all_of(d | isSet, id));
+  assert(ltl::all_of(c | isNotSet, id));
+  assert(ltl::none_of(d | isNotSet, id));
 }
 
 void test_associative_map() {

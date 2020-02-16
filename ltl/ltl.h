@@ -3,6 +3,8 @@
 #include <type_traits>
 #include <utility>
 
+#include "invoke.h"
+
 #include "../lpl/lpl.h"
 
 #define decltype_t(t) typename std::decay_t<decltype(t)>::type
@@ -167,6 +169,13 @@ template <typename T1, typename T2, typename... Ts>
 [[nodiscard]] constexpr auto min(T1 a, T2 b, Ts... ts) {
   if_constexpr(a < b) return ::ltl::min(a, ts...);
   else return ::ltl::min(b, ts...);
+}
+
+template <typename F> constexpr auto not_fn(F f) {
+  return [f = std::move(f)](auto &&... xs) -> decltype(
+                                               !ltl::invoke(f, FWD(xs)...)) {
+    return !ltl::invoke(f, FWD(xs)...);
+  };
 }
 
 ////////////////////////////// MAKE_IS_KIND //////////////////////////////////

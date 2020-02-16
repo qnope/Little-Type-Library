@@ -16,6 +16,7 @@ set(HEADERS
     ltl/DefaultView.h
     ltl/VariantUtils.h
     ltl/crtp.h
+    ltl/invoke.h
     ltl/traits.h
     ltl/tuple_algos.h
     lpl/lpl.h

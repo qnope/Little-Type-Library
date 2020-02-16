@@ -13,22 +13,22 @@
 
 template <typename Opt, typename F>
 constexpr auto operator|(Opt &&opt, F &&f) -> ltl::requires_t<
-    std::optional<std::decay_t<decltype(std::invoke(FWD(f), *FWD(opt)))>>,
+    std::optional<std::decay_t<decltype(ltl::invoke(FWD(f), *FWD(opt)))>>,
     ::ltl::IsOptional<Opt>> {
   if (FWD(opt))
-    return std::invoke(FWD(f), *FWD(opt));
+    return ltl::invoke(FWD(f), *FWD(opt));
   return std::nullopt;
 }
 
 template <typename Opt, typename F>
 constexpr auto operator>>(Opt &&opt, F &&f)
-    -> ltl::requires_t<decltype(std::invoke(FWD(f), *FWD(opt))),
+    -> ltl::requires_t<decltype(ltl::invoke(FWD(f), *FWD(opt))),
                        ::ltl::IsOptional<Opt>> {
   typed_static_assert_msg(
-      ::ltl::is_optional(std::invoke(FWD(f), *FWD(opt))),
+      ::ltl::is_optional(ltl::invoke(FWD(f), *FWD(opt))),
       "Binding requires the function to return an optional");
   if (FWD(opt))
-    return std::invoke(FWD(f), *FWD(opt));
+    return ltl::invoke(FWD(f), *FWD(opt));
   return std::nullopt;
 }
 

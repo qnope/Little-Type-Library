@@ -28,7 +28,7 @@ constexpr auto report_call(F f, Args... xs) {
     auto ys = tuple_t<decltype(_ys)...>(FWD(_ys)...);
     auto args = xs + std::move(ys);
     return args([f](auto &&... args) -> decltype(auto) {
-      return std::invoke(f, FWD(args)...);
+      return ltl::invoke(f, FWD(args)...);
     });
   };
 }
@@ -36,7 +36,7 @@ constexpr auto report_call(F f, Args... xs) {
 template <typename F, typename... Args>
 constexpr decltype(auto) curry(F f, Args &&... args) {
   if_constexpr(ltl::is_invocable(f, FWD(args)...)) {
-    return std::invoke(f, FWD(args)...);
+    return ltl::invoke(f, FWD(args)...);
   }
   else {
     return report_call(lift(curry), std::move(f), FWD(args)...);

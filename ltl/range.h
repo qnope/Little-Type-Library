@@ -99,7 +99,7 @@ template <typename F> struct NullableFunction {
 
   template <typename... Args> decltype(auto) operator()(Args &&... args) const {
     assert(m_ptr);
-    return std::invoke(*m_ptr, FWD(args)...);
+    return ltl::invoke(*m_ptr, FWD(args)...);
   }
 
   std::aligned_storage_t<sizeof(F), alignof(F)> m_memory;
