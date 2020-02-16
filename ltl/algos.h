@@ -201,11 +201,21 @@ template <typename C, typename K> auto find_map_value(C &&c, K &&k) {
 }
 
 template <typename C, typename K> auto find_map_ptr(C &c, K &&k) {
-  auto it = FWD(c).find(FWD(k));
-  if (it == FWD(c).end()) {
+  auto it = c.find(FWD(k));
+  if (it == c.end()) {
     return decltype(std::addressof(it->second)){nullptr};
   }
   return std::addressof(it->second);
+}
+
+template <typename C, typename K> auto take_map(C &c, K &&k) {
+  auto it = c.find(FWD(k));
+  if (it == c.end()) {
+    return std::optional<decltype(it->second)>{};
+  }
+  auto result = std::make_optional(std::move(it->second));
+  c.erase(it);
+  return result;
 }
 
 template <typename C, typename... P>

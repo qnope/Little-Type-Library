@@ -872,6 +872,20 @@ void test_fix_issue_1() {
   assert(ltl::all_of(d | isSet, id));
 }
 
+void test_associative_map() {
+  std::unordered_map<std::string, std::string> dict = {
+      {"a", "A"}, {"b", "B"}, {"c", "C"}, {"d", "D"}, {"e", "E"}, {"f", "F"}};
+
+  assert(ltl::contains_map(dict, "a"));
+  assert(ltl::contains_map(dict, "d"));
+  assert(!ltl::contains_map(dict, "g"));
+  assert(ltl::find_map_value(dict, "e") == "E");
+  assert(ltl::find_map_ptr(dict, "f") == &dict["f"]);
+  assert(ltl::find_map_value(dict, "g") == std::nullopt);
+  assert(ltl::take_map(dict, "f") == "F");
+  assert(ltl::find_map_ptr(dict, "f") == nullptr);
+}
+
 int main() {
   bool_test();
   type_test();
@@ -908,6 +922,7 @@ int main() {
 
   test_functional();
   test_fix_issue_1();
+  test_associative_map();
 
   return 0;
 }
