@@ -136,8 +136,8 @@ void tuple_test() {
   const auto [a4, b4, c4, d4] = std::as_const(tuple);
   const auto &[a5, b5, c5, d5] = tuple;
   const auto &[a6, b6, c6, d6] = std::as_const(tuple);
-  auto [a7, b7, c7, d7] = std::move(tuple);
   auto &&[a8, b8, c8, d8] = std::move(tuple);
+  auto [a7, b7, c7, d7] = std::move(tuple);
   assert(a == tuple[0_n]);
   assert(b == tuple[1_n]);
   assert(c == tuple[2_n]);
