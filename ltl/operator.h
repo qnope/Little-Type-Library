@@ -114,25 +114,24 @@ template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
         "You must use iterable or range provided type to this function", T1);
   }
 }
-} // namespace ltl
 
 template <typename Opt, typename F>
-constexpr auto operator|(Opt &&opt, F &&f) -> ltl::requires_t<
-    std::optional<std::decay_t<decltype(ltl::invoke(FWD(f), *FWD(opt)))>>,
-    ::ltl::IsOptional<Opt>> {
+constexpr auto operator|(Opt &&opt, MapType<F> f) -> ltl::requires_t<
+    std::optional<std::decay_t<decltype(ltl::invoke(f.f, *FWD(opt)))>>,
+    IsOptional<Opt>> {
   if (FWD(opt))
-    return ltl::invoke(FWD(f), *FWD(opt));
+    return ltl::invoke(f.f, *FWD(opt));
   return std::nullopt;
 }
 
 template <typename Opt, typename F>
-constexpr auto operator>>(Opt &&opt, F &&f)
-    -> ltl::requires_t<decltype(ltl::invoke(FWD(f), *FWD(opt))),
-                       ::ltl::IsOptional<Opt>> {
+constexpr auto operator>>(Opt &&opt, MapType<F> f)
+    -> ltl::requires_t<decltype(ltl::invoke(f.f, *FWD(opt))), IsOptional<Opt>> {
   typed_static_assert_msg(
-      ::ltl::is_optional(ltl::invoke(FWD(f), *FWD(opt))),
+      ::ltl::is_optional(ltl::invoke(f.f, *FWD(opt))),
       "Binding requires the function to return an optional");
   if (FWD(opt))
-    return ltl::invoke(FWD(f), *FWD(opt));
+    return ltl::invoke(f.f, *FWD(opt));
   return std::nullopt;
 }
+} // namespace ltl

@@ -623,10 +623,11 @@ void test_concept() {
 }
 
 void test_optional() {
+  using namespace ltl;
   std::optional<int> a(5), b;
-  auto times_3 = _((x), x * 3);
-  auto plus_1 = _((x), x + 1);
-  auto identity = [](auto x) -> std::optional<int> { return x; };
+  auto times_3 = map(_((x), x * 3));
+  auto plus_1 = map(_((x), x + 1));
+  auto identity = map([](auto x) -> std::optional<int> { return x; });
   assert((a | times_3) == 15);
   assert((b | times_3) == std::nullopt);
 
