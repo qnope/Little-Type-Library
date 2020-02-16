@@ -12,13 +12,22 @@ set(HEADERS
     ltl/functional.h
     ltl/operator.h
     ltl/concept.h
-    ltl/range.h
-    ltl/DefaultView.h
     ltl/VariantUtils.h
     ltl/crtp.h
     ltl/invoke.h
     ltl/traits.h
     ltl/tuple_algos.h
+    ltl/range/Range.h
+    ltl/range/NullableFunction.h
+    ltl/range/BaseIterator.h
+    ltl/Range/AsPointer.h
+    ltl/Range/Filter.h
+    ltl/Range/Map.h
+    ltl/Range/Taker.h
+    ltl/Range/Zip.h
+    ltl/Range/Value.h
+    ltl/Range/enumerate.h
+    ltl/Range/DefaultView.h
     lpl/lpl.h
     )
 

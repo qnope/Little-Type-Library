@@ -4,13 +4,16 @@
 #include <string>
 #include <unordered_map>
 
-#include "ltl/DefaultView.h"
 #include "ltl/StrongType.h"
 #include "ltl/VariantUtils.h"
 #include "ltl/algos.h"
 #include "ltl/functional.h"
 #include "ltl/operator.h"
 #include "ltl/traits.h"
+
+#include "ltl/Range/DefaultView.h"
+#include "ltl/Range/Value.h"
+#include "ltl/Range/enumerate.h"
 
 void bool_test() {
   static_assert(false_v == false_v);
