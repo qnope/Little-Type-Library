@@ -178,6 +178,16 @@ template <typename F> constexpr auto not_fn(F f) {
   };
 }
 
+template <typename F, typename... Fs> constexpr auto compose(F f, Fs... fs) {
+  if constexpr (sizeof...(Fs) == 0) {
+    return f;
+  } else {
+    return [f, fs...](auto &&... xs) -> decltype(auto) {
+      return f(compose(fs...)(FWD(xs)...));
+    };
+  }
+}
+
 ////////////////////////////// MAKE_IS_KIND //////////////////////////////////
 
 #define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                \

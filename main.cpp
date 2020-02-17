@@ -924,6 +924,20 @@ void test_associative_map() {
   assert(ltl::find_map_ptr(dict, "f") == nullptr);
 }
 
+void test_composition() {
+  auto plus_3 = _((x), x + 3);
+  auto mul_5 = _((x), x * 5);
+  auto minus_1 = _((x), x - 1);
+
+  constexpr auto pMm = ltl::compose(minus_1, mul_5, plus_3);
+  constexpr auto mpM = ltl::compose(mul_5, plus_3, minus_1);
+  constexpr auto mMp = ltl::compose(plus_3, mul_5, minus_1);
+
+  static_assert(pMm(10) == 64);
+  static_assert(mpM(10) == 60);
+  static_assert(mMp(10) == 48);
+}
+
 int main() {
   bool_test();
   type_test();
@@ -961,6 +975,8 @@ int main() {
   test_functional();
   test_fix_issue_1();
   test_associative_map();
+
+  test_composition();
 
   return 0;
 }
