@@ -735,6 +735,7 @@ void test_to() {
 void test_integer_list() {
   std::array values = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
   assert(ltl::equal(ltl::valueRange(5) | ltl::take_n(10), values));
+  assert(ltl::equal(ltl::valueRange(5, 10), values | ltl::take_n(5)));
 }
 
 void test_zip() {

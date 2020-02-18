@@ -31,8 +31,6 @@ struct ZipIterator
   reference operator*() const {
     return TO_VARIADIC(this->m_it, xs, return reference{*xs...});
   }
-
-  constexpr void advanceUntilNext(...) {}
 };
 
 template <typename... Containers> auto zip(Containers &&... containers) {

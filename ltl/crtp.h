@@ -39,10 +39,9 @@ public:
 #define OP(name, op)                                                           \
   template <typename T> struct name {                                          \
     ENABLE_CRTP(T)                                                             \
-    constexpr T operator op(int) {                                             \
-      auto tmp = underlying();                                                 \
-      op underlying();                                                         \
-      return tmp;                                                              \
+    constexpr friend T operator op(T &v, int) {                                \
+      op v;                                                                    \
+      return v;                                                                \
     }                                                                          \
   };
 

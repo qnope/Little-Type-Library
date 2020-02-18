@@ -33,8 +33,6 @@ public:
                Function function) noexcept
       : m_it{std::move(it)}, m_sentinelBegin{std::move(sentinelBegin)},
         m_sentinelEnd{std::move(sentinelEnd)}, m_function{std::move(function)} {
-    DerivedIt &derived = underlying();
-    derived.advanceUntilNext(IncrementTag{});
   }
 
   bool operator==(const DerivedIt &it) const noexcept {
@@ -42,20 +40,15 @@ public:
   }
 
   DerivedIt &operator++() noexcept {
-    DerivedIt &it = underlying();
-    assert(it.m_it != it.m_sentinelEnd);
-    ++it.m_it;
-    it.advanceUntilNext(IncrementTag{});
-
-    return it;
+    assert(m_it != m_sentinelEnd);
+    ++m_it;
+    return underlying();
   }
 
   DerivedIt &operator--() noexcept {
-    DerivedIt &it = underlying();
-    assert(it.m_it != it.m_sentinelBegin);
-    --it.m_it;
-    it.advanceUntilNext(DecrementTag{});
-    return it;
+    assert(m_it != m_sentinelBegin);
+    --m_it;
+    return underlying();
   }
 
   decltype(auto) operator*() const noexcept {

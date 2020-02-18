@@ -16,24 +16,30 @@ public:
   using BaseIterator<FilterIterator<It, Predicate>, It,
                      Predicate>::BaseIterator;
 
-private:
-  template <typename Tag> void advanceUntilNext(Tag) noexcept {
-    if_constexpr(type_v<Tag> == type_v<IncrementTag>) {
-      while (this->m_it != this->m_sentinelEnd &&
-             !this->m_function(*this->m_it)) {
-        ++this->m_it;
-      }
-    }
-
-    else {
-      while (this->m_it != this->m_sentinelBegin &&
-             !this->m_function(*this->m_it)) {
-        --this->m_it;
-      }
-      assert(this->m_function(*this->m_it));
-    }
+  FilterIterator(It it, It sentinelBegin, It sentinelEnd, Predicate function)
+      : BaseIterator<FilterIterator<It, Predicate>, It, Predicate>{
+            std::move(it), std::move(sentinelBegin), std::move(sentinelEnd),
+            std::move(function)} {
+    this->m_it =
+        std::find_if(this->m_it, this->m_sentinelEnd, this->m_function);
   }
-};
+
+  FilterIterator &operator++() noexcept {
+    this->m_it = std::find_if(std::next(this->m_it), this->m_sentinelEnd,
+                              this->m_function);
+    return *this;
+  }
+
+  FilterIterator &operator--() noexcept {
+    --this->m_it;
+    while (!this->m_function(*this->m_it) &&
+           this->m_it != this->m_sentinelBegin) {
+      --this->m_it;
+    }
+    assert(this->m_function(*this->m_it));
+    return *this;
+  }
+}; // namespace ltl
 
 template <typename F> struct FilterType { F f; };
 template <typename F> auto filter(F &&f) {

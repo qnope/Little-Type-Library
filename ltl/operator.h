@@ -38,6 +38,12 @@ constexpr to_list_t to_list{};
 struct reverse_t {};
 constexpr reverse_t reversed;
 
+template <typename It> auto safe_advance(It beg, It end, std::size_t n) {
+  while (n-- && beg != end)
+    ++beg;
+  return beg;
+}
+
 template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
   using std::begin;
   using std::end;
@@ -71,9 +77,10 @@ template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
                        beginIt, beginIt, endIt, std::move(b.f)},
                    MapIterator<it, std::decay_t<decltype(b.f)>>{endIt}};
 
-    else if constexpr (t2 == type_v<TakerType>)
-      return Range{TakerIterator<it>{beginIt, beginIt, endIt, b.n},
-                   TakerIterator<it>{endIt}};
+    else if constexpr (t2 == type_v<TakerType>) {
+      auto sentinelEnd = safe_advance(beginIt, endIt, b.n);
+      return Range{beginIt, sentinelEnd};
+    }
 
     else if constexpr (is_tuple_t(t2))
       return FWD(b)([&a](auto &&... xs) {

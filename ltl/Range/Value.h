@@ -38,8 +38,6 @@ struct ValueIterator
 
   ValueType operator*() const noexcept { return this->m_it; }
 
-  constexpr void advanceUntilNext(...) {}
-
   ValueType m_step;
 };
 
