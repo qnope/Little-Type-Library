@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Range/Filter.h"
+#include "Range/Join.h"
 #include "Range/Map.h"
 #include "Range/Range.h"
 #include "Range/Taker.h"
@@ -57,44 +58,56 @@ template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
     [[maybe_unused]] auto endIt = end(FWD(a));
     using it = decltype(beginIt);
 
-    if constexpr (t2 == ltl::type_v<to_vector_t>)
+    if constexpr (t2 == ltl::type_v<to_vector_t>) {
       return std::vector<value>(beginIt, endIt);
+    }
 
-    else if constexpr (t2 == ltl::type_v<to_deque_t>)
+    else if constexpr (t2 == ltl::type_v<to_deque_t>) {
       return std::deque<value>(beginIt, endIt);
+    }
 
-    else if constexpr (t2 == ltl::type_v<to_list_t>)
+    else if constexpr (t2 == ltl::type_v<to_list_t>) {
       return std::list<value>(beginIt, endIt);
+    }
 
-    else if constexpr (is_filter_type(t2))
+    else if constexpr (is_filter_type(t2)) {
       return Range{FilterIterator<it, std::decay_t<decltype(FWD(b).f)>>{
                        beginIt, beginIt, endIt, FWD(b).f},
                    FilterIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
+    }
 
-    else if constexpr (is_map_type(t2))
+    else if constexpr (is_map_type(t2)) {
       return Range{MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{
                        beginIt, beginIt, endIt, FWD(b).f},
                    MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
+    }
 
     else if constexpr (t2 == type_v<TakerType>) {
       auto sentinelEnd = safe_advance(beginIt, endIt, b.n);
       return Range{beginIt, sentinelEnd};
     }
 
-    else if constexpr (is_tuple_t(t2))
+    else if constexpr (is_tuple_t(t2)) {
       return FWD(b)([&a](auto &&... xs) {
         return (std::forward<T1>(a) | ... | (FWD(xs)));
       });
+    }
 
     else if constexpr (t2 == type_v<reverse_t>) {
       return Range{FWD(a).rbegin(), FWD(a).rend()};
     }
 
-    else
+    else if constexpr (t2 == type_v<join_t>) {
+      return Range{JoinIterator<it>{beginIt, beginIt, endIt},
+                   JoinIterator<it>{endIt}};
+    }
+
+    else {
       compile_time_error(
           "If a is an iterable, you must provide a range provided type, or a "
           "tuple of range provided type",
           T2);
+    }
   }
 
   else if constexpr (is_optional(t1)) {
@@ -128,6 +141,21 @@ template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
     compile_time_error("You must use iterable, optional or range provided type "
                        "for this operator |",
                        T1);
+  }
+}
+
+template <typename T1, typename T2> decltype(auto) operator>>(T1 &&a, T2 &&b) {
+  using std::begin;
+  using std::end;
+  [[maybe_unused]] constexpr auto t1 = decay_from(a);
+  [[maybe_unused]] constexpr auto t2 = decay_from(b);
+
+  if constexpr (is_iterable(t1)) {
+    if constexpr (is_map_type(t2)) {
+      return FWD(a) | FWD(b) | join;
+    } else
+      compile_time_error("If a is an iterable, b must be a map type joinable",
+                         T2);
   }
 }
 

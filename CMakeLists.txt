@@ -13,6 +13,7 @@ set(HEADERS_RANGE
     ltl/Range/Taker.h
     ltl/Range/Zip.h
     ltl/Range/Value.h
+    ltl/Range/Join.h
     ltl/Range/enumerate.h
     ltl/Range/DefaultView.h
     )

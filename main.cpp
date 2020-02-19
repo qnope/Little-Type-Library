@@ -939,6 +939,29 @@ void test_composition() {
   static_assert(mMp(10) == 48);
 }
 
+void test_join() {
+  using namespace ltl;
+  struct Test {
+    Test(int n) {
+      for (int i = 0; i < n; ++i)
+        v.push_back(i);
+    }
+    std::vector<int> v;
+  };
+  std::array array = {0, 1, 2, 3, 4, 5};
+  auto to_range = [](auto n) { return valueRange(0, n); };
+  auto arrayRange = array >> map(to_range);
+  assert(equal(arrayRange,
+               std::array{0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4}));
+
+  std::array array2 = {Test{0}, Test{1}, Test{2}, Test{3}, Test{4}, Test{5}};
+  auto to_vector_ref = [](auto &x) -> std::vector<int> & { return x.v; };
+  auto to_vector = [](auto &x) { return x.v; };
+
+  assert(equal(arrayRange, array2 >> map(to_vector)));
+  assert(equal(arrayRange, array2 >> map(to_vector_ref)));
+}
+
 int main() {
   bool_test();
   type_test();
@@ -978,6 +1001,7 @@ int main() {
   test_associative_map();
 
   test_composition();
+  test_join();
 
   return 0;
 }

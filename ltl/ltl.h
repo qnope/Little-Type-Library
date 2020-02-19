@@ -188,6 +188,8 @@ template <typename F, typename... Fs> constexpr auto compose(F f, Fs... fs) {
   }
 }
 
+template <typename... Ts> struct Error;
+
 ////////////////////////////// MAKE_IS_KIND //////////////////////////////////
 
 #define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                \
