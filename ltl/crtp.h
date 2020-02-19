@@ -40,8 +40,9 @@ public:
   template <typename T> struct name {                                          \
     ENABLE_CRTP(T)                                                             \
     constexpr friend T operator op(T &v, int) {                                \
+      auto tmp = v;                                                            \
       op v;                                                                    \
-      return v;                                                                \
+      return tmp;                                                              \
     }                                                                          \
   };
 

@@ -44,7 +44,7 @@ template <typename It> auto safe_advance(It beg, It end, std::size_t n) {
   return beg;
 }
 
-template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
+template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
   using std::begin;
   using std::end;
   [[maybe_unused]] constexpr auto t1 = decay_from(a);
@@ -68,14 +68,14 @@ template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
       return std::list<value>(beginIt, endIt);
 
     else if constexpr (IsFilterType<T2>)
-      return Range{FilterIterator<it, std::decay_t<decltype(b.f)>>{
-                       beginIt, beginIt, endIt, std::move(b.f)},
-                   FilterIterator<it, std::decay_t<decltype(b.f)>>{endIt}};
+      return Range{FilterIterator<it, std::decay_t<decltype(FWD(b).f)>>{
+                       beginIt, beginIt, endIt, FWD(b).f},
+                   FilterIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
 
     else if constexpr (IsMapType<T2>)
-      return Range{MapIterator<it, std::decay_t<decltype(b.f)>>{
-                       beginIt, beginIt, endIt, std::move(b.f)},
-                   MapIterator<it, std::decay_t<decltype(b.f)>>{endIt}};
+      return Range{MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{
+                       beginIt, beginIt, endIt, FWD(b).f},
+                   MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
 
     else if constexpr (t2 == type_v<TakerType>) {
       auto sentinelEnd = safe_advance(beginIt, endIt, b.n);
@@ -98,6 +98,15 @@ template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
           T2);
   }
 
+  else if constexpr (is_optional(t1)) {
+    if constexpr (is_map_type(t2)) {
+      if (a)
+        return std::make_optional(ltl::invoke(FWD(b).f, *FWD(a)));
+      return decltype(std::make_optional(ltl::invoke(FWD(b).f, *FWD(a)))){};
+    } else
+      compile_time_error("If a is an optional, you must provide map type", T2);
+  }
+
   else if constexpr (IsUsefulForSmartIterator<T1>) {
     if constexpr (IsUsefulForSmartIterator<T2>)
       return tuple_t{FWD(a), FWD(b)};
@@ -117,18 +126,10 @@ template <typename T1, typename T2> auto operator|(T1 &&a, T2 &&b) {
   }
 
   else {
-    compile_time_error(
-        "You must use iterable or range provided type to this function", T1);
+    compile_time_error("You must use iterable, optional or range provided type "
+                       "for this operator |",
+                       T1);
   }
-}
-
-template <typename Opt, typename F>
-constexpr auto operator|(Opt &&opt, MapType<F> f) -> ltl::requires_t<
-    std::optional<std::decay_t<decltype(ltl::invoke(f.f, *FWD(opt)))>>,
-    IsOptional<Opt>> {
-  if (FWD(opt))
-    return ltl::invoke(f.f, *FWD(opt));
-  return std::nullopt;
 }
 
 template <typename Opt, typename F>
