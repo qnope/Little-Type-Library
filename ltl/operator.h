@@ -22,10 +22,9 @@
                                             (), ()))) { return expr; }
 
 namespace ltl {
-template <typename T>
-constexpr auto IsUsefulForSmartIterator = IsFilterType<T> || IsMapType<T> ||
-                                          (type_v<T> == type_v<TakerType>);
-
+constexpr auto is_chainable_operation = [](auto type) {
+  return is_filter_type(type) || is_map_type(type) || type == type_v<TakerType>;
+};
 // To vector, deque, list
 struct to_vector_t {};
 struct to_deque_t {};
@@ -67,12 +66,12 @@ template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
     else if constexpr (t2 == ltl::type_v<to_list_t>)
       return std::list<value>(beginIt, endIt);
 
-    else if constexpr (IsFilterType<T2>)
+    else if constexpr (is_filter_type(t2))
       return Range{FilterIterator<it, std::decay_t<decltype(FWD(b).f)>>{
                        beginIt, beginIt, endIt, FWD(b).f},
                    FilterIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
 
-    else if constexpr (IsMapType<T2>)
+    else if constexpr (is_map_type(t2))
       return Range{MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{
                        beginIt, beginIt, endIt, FWD(b).f},
                    MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
@@ -107,8 +106,8 @@ template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
       compile_time_error("If a is an optional, you must provide map type", T2);
   }
 
-  else if constexpr (IsUsefulForSmartIterator<T1>) {
-    if constexpr (IsUsefulForSmartIterator<T2>)
+  else if constexpr (is_chainable_operation(t1)) {
+    if constexpr (is_chainable_operation(t2))
       return tuple_t{FWD(a), FWD(b)};
 
     else
@@ -118,7 +117,7 @@ template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
   }
 
   else if constexpr (is_tuple_t(t1)) {
-    if constexpr (IsUsefulForSmartIterator<T2>)
+    if constexpr (is_chainable_operation(t2))
       return FWD(a).push_back(FWD(b));
     else
       compile_time_error(
