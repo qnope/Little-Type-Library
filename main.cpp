@@ -969,6 +969,16 @@ void test_join() {
   assert(equal(array2ptr, array2 >> map(to_vector_ref) | map(to_ptr)));
 }
 
+void test_and_or() {
+  auto is_multiple_of = [](auto x) {
+    return [x](auto y) { return y % x == 0; };
+  };
+
+  static_assert(ltl::or_(is_multiple_of(3), is_multiple_of(5))(9));
+  static_assert(!ltl::and_(is_multiple_of(3), is_multiple_of(5))(9));
+  static_assert(ltl::and_(is_multiple_of(3), is_multiple_of(5))(15));
+}
+
 int main() {
   bool_test();
   type_test();

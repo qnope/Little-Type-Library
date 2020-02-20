@@ -190,6 +190,15 @@ template <typename F, typename... Fs> constexpr auto compose(F f, Fs... fs) {
 
 template <typename... Ts> struct Error;
 
+template <typename... Fs> constexpr auto or_(Fs... fs) {
+  return
+      [fs...](auto &&... xs) { return (false_v || ... || (fs(FWD(xs)...))); };
+}
+
+template <typename... Fs> constexpr auto and_(Fs... fs) {
+  return [fs...](auto &&... xs) { return (true_v && ... && (fs(FWD(xs)...))); };
+}
+
 ////////////////////////////// MAKE_IS_KIND //////////////////////////////////
 
 #define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                \
