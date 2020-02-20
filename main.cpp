@@ -957,9 +957,16 @@ void test_join() {
   std::array array2 = {Test{0}, Test{1}, Test{2}, Test{3}, Test{4}, Test{5}};
   auto to_vector_ref = [](auto &x) -> std::vector<int> & { return x.v; };
   auto to_vector = [](auto &x) { return x.v; };
+  auto to_ptr = [](auto &x) { return std::addressof(x); };
+  std::array array2ptr = {&array2[1].v[0], &array2[2].v[0], &array2[2].v[1],
+                          &array2[3].v[0], &array2[3].v[1], &array2[3].v[2],
+                          &array2[4].v[0], &array2[4].v[1], &array2[4].v[2],
+                          &array2[4].v[3], &array2[5].v[0], &array2[5].v[1],
+                          &array2[5].v[2], &array2[5].v[3], &array2[5].v[4]};
 
   assert(equal(arrayRange, array2 >> map(to_vector)));
   assert(equal(arrayRange, array2 >> map(to_vector_ref)));
+  assert(equal(array2ptr, array2 >> map(to_vector_ref) | map(to_ptr)));
 }
 
 int main() {

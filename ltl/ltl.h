@@ -193,9 +193,9 @@ template <typename... Ts> struct Error;
 ////////////////////////////// MAKE_IS_KIND //////////////////////////////////
 
 #define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                \
-  constexpr false_t LPL_CAT(name, Impl)(...);                                  \
+  constexpr ltl::false_t LPL_CAT(name, Impl)(...);                             \
   template <templateType... Ts>                                                \
-  constexpr true_t LPL_CAT(name, Impl)(const type<Ts...> &);                   \
+  constexpr ltl::true_t LPL_CAT(name, Impl)(const type<Ts...> &);              \
   constexpr auto name = [](auto &&x) constexpr noexcept {                      \
     return decltype(LPL_CAT(name, Impl)(declval(FWD(x)))){};                   \
   };                                                                           \
