@@ -74,43 +74,43 @@ constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
 }
 
 template <typename... Ts, typename P, int N = 0>
-constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P &&p,
+constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P p,
                             number_t<N> first = {}) {
   if_constexpr(is_type_list_t(tuple)) {
-    if_constexpr(FWD(p)(tuple[first])) return first;
-    else return find_if_type(tuple, FWD(p), first + 1_n);
+    if_constexpr(p(tuple[first])) return first;
+    else return find_if_type(tuple, p, first + 1_n);
   }
-  else return find_if_type(type_list_v<Ts...>, FWD(p), first);
+  else return find_if_type(type_list_v<Ts...>, p, first);
 }
 
 template <typename... Ts, typename P>
-constexpr auto contains_if_type(const tuple_t<Ts...> &tuple, P &&p) {
-  if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (FWD(p)(Ts{})));
-  else return contains_type(type_list_v<Ts...>, FWD(p));
+constexpr auto contains_if_type(const tuple_t<Ts...> &tuple, P p) {
+  if_constexpr(is_type_list_t(tuple)) return (false_v || ... || p(Ts{}));
+  else return contains_if_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
-constexpr auto count_if_type(const tuple_t<Ts...> &tuple, P &&p) {
+constexpr auto count_if_type(const tuple_t<Ts...> &tuple, P p) {
   if_constexpr(is_type_list_t(tuple)) return (0_n + ... +
-                                              bool_to_number(FWD(p)(Ts{})));
-  else return count_type(type_list_v<Ts...>, FWD(p));
+                                              bool_to_number(p(Ts{})));
+  else return count_if_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
-constexpr auto all_of_type(const tuple_t<Ts...> &tuple, P &&p) {
-  if_constexpr(is_type_list_t(tuple)) return (true_v && ... && (FWD(p)(Ts{})));
-  else return all_of_type(type_list_v<Ts...>, FWD(p));
+constexpr auto all_of_type(const tuple_t<Ts...> &tuple, P p) {
+  if_constexpr(is_type_list_t(tuple)) return (true_v && ... && (p(Ts{})));
+  else return all_of_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
-constexpr auto any_of_type(const tuple_t<Ts...> &tuple, P &&p) {
-  if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (FWD(p)(Ts{})));
-  else return any_of_type(type_list_v<Ts...>, FWD(p));
+constexpr auto any_of_type(const tuple_t<Ts...> &tuple, P p) {
+  if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (p(Ts{})));
+  else return any_of_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
-constexpr auto none_of_type(const tuple_t<Ts...> &tuple, P &&p) {
-  return !any_of_type(tuple, FWD(p));
+constexpr auto none_of_type(const tuple_t<Ts...> &tuple, P p) {
+  return !any_of_type(tuple, p);
 }
 
 template <template <typename...> typename T, typename List>
