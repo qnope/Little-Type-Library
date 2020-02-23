@@ -9,6 +9,7 @@
 #include "ltl/algos.h"
 #include "ltl/functional.h"
 #include "ltl/operator.h"
+#include "ltl/optional_type.h"
 #include "ltl/traits.h"
 
 #include "ltl/Range/DefaultView.h"
@@ -35,7 +36,7 @@ void bool_test() {
   static_assert(!!true_v);
   static_assert(true_v);
 
-  static_assert(ltl::not_fn([] { return false_v; })());
+  static_assert(ltl::not_([] { return false_v; })());
 }
 
 void type_test() {
@@ -229,8 +230,8 @@ void tuple_test_algo() {
     typed_static_assert(ltl::count_type(tuple, ltl::type_v<int>) == 1_n);
     typed_static_assert(ltl::count_type(tuple, ltl::type_v<char>) == 0_n);
 
-    typed_static_assert(ltl::find_type(tuple, ltl::type_v<double>) == 1_n);
-    typed_static_assert(ltl::find_type(tuple, ltl::type_v<int>) == 3_n);
+    typed_static_assert(*ltl::find_type(tuple, ltl::type_v<double>) == 1_n);
+    typed_static_assert(*ltl::find_type(tuple, ltl::type_v<int>) == 3_n);
   }
 
   {
@@ -238,18 +239,18 @@ void tuple_test_algo() {
     typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int>));
     typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<char>));
     typed_static_assert(ltl::count_type(tuple, ltl::type_v<int>) == 3_n);
-    typed_static_assert(ltl::find_type(tuple, ltl::type_v<int>) == 0_n);
-    typed_static_assert(ltl::find_type(tuple, ltl::type_v<int>, 0_n + 1_n) ==
+    typed_static_assert(*ltl::find_type(tuple, ltl::type_v<int>) == 0_n);
+    typed_static_assert(*ltl::find_type(tuple, ltl::type_v<int>, 0_n + 1_n) ==
                         2_n);
-    typed_static_assert(ltl::find_type(tuple, ltl::type_v<double>) == 1_n);
+    typed_static_assert(*ltl::find_type(tuple, ltl::type_v<double>) == 1_n);
   }
 
   {
     ltl::type_list_t<int, double *, int *, int, char *> tuple;
     typed_static_assert(ltl::contains_if_type(tuple, ltl::is_pointer));
     typed_static_assert(ltl::count_if_type(tuple, ltl::is_pointer) == 3_n);
-    typed_static_assert(ltl::find_if_type(tuple, ltl::is_pointer) == 1_n);
-    typed_static_assert(ltl::find_if_type(tuple, ltl::is_pointer, 2_n) == 2_n);
+    typed_static_assert(*ltl::find_if_type(tuple, ltl::is_pointer) == 1_n);
+    typed_static_assert(*ltl::find_if_type(tuple, ltl::is_pointer, 2_n) == 2_n);
   }
 
   {
@@ -902,7 +903,7 @@ void test_fix_issue_1() {
   std::array d = {obj{true}, obj{true}, obj{true}};
 
   auto isSet = ltl::map(&obj::isSet);
-  auto isNotSet = ltl::map(ltl::not_fn(&obj::isSet));
+  auto isNotSet = ltl::map(ltl::not_(&obj::isSet));
   auto id = [](const auto &x) { return x; };
   assert(ltl::any_of(b | isSet, id));
   assert(ltl::none_of(c | isSet, id));
@@ -979,6 +980,19 @@ void test_and_or() {
   static_assert(ltl::and_(is_multiple_of(3), is_multiple_of(5))(15));
 }
 
+void test_optional_type() {
+  auto tuple = ltl::tuple_t<int, double, float, int *>{};
+  auto tuple2 = tuple + ltl::tuple_t{(char *)nullptr};
+  auto empty = ltl::find_type(tuple2, ltl::type_v<double *>);
+
+  static_assert(!empty);
+  static_assert(ltl::find_type(tuple2, ltl::type_v<char *>));
+  static_assert(*ltl::find_type(tuple2, ltl::type_v<char *>) == 4_n);
+  static_assert(ltl::find_if_type(tuple2, ltl::is_pointer));
+  static_assert(*ltl::find_if_type(tuple2, ltl::is_pointer) == 3_n);
+  static_assert(!ltl::find_if_type(tuple2, ltl::is_type(ltl::type_v<char>)));
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1019,6 +1033,8 @@ int main() {
 
   test_composition();
   test_join();
+
+  test_optional_type();
 
   return 0;
 }

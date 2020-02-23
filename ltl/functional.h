@@ -61,6 +61,11 @@ template <typename... Fs> constexpr auto compose(Fs... fs) {
   return detail::composeImpl(ltl::tuple_t<Fs...>{std::move(fs)...});
 }
 
+template <typename F> constexpr auto not_(F f) {
+  return
+      [f = std::move(f)](auto &&... xs) { return !ltl::invoke(f, FWD(xs)...); };
+}
+
 template <typename... Fs> constexpr auto or_(Fs... fs) {
   return
       [fs...](auto &&... xs) { return (false_v || ... || (fs(FWD(xs)...))); };

@@ -32,6 +32,7 @@ set(HEADERS
     ltl/invoke.h
     ltl/traits.h
     ltl/tuple_algos.h
+    ltl/optional_type.h
     lpl/lpl.h
     ${HEADERS_RANGE}
     )

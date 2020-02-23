@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Tuple.h"
+#include "optional_type.h"
 
 #define types_from(x) ::ltl::getQualifiedTypeList(type_from(x))
 
@@ -66,7 +67,8 @@ template <typename... Ts, typename T, int N = 0>
 constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
                          number_t<N> first = {}) {
   if_constexpr(is_type_list_t(tuple)) {
-    if_constexpr(tuple[first] == type) return first;
+    if_constexpr(first == tuple.length) return nullopt_type;
+    else_if_constexpr(tuple[first] == type) return optional_type{first};
     else return find_type(tuple, type, first + 1_n);
   }
 
@@ -77,7 +79,8 @@ template <typename... Ts, typename P, int N = 0>
 constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P p,
                             number_t<N> first = {}) {
   if_constexpr(is_type_list_t(tuple)) {
-    if_constexpr(p(tuple[first])) return first;
+    if_constexpr(first == tuple.length) return nullopt_type;
+    else_if_constexpr(p(tuple[first])) return optional_type{first};
     else return find_if_type(tuple, p, first + 1_n);
   }
   else return find_if_type(type_list_v<Ts...>, p, first);

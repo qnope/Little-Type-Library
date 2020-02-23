@@ -171,13 +171,6 @@ template <typename T1, typename T2, typename... Ts>
   else return ::ltl::min(b, ts...);
 }
 
-template <typename F> constexpr auto not_fn(F f) {
-  return [f = std::move(f)](auto &&... xs) -> decltype(
-                                               !ltl::invoke(f, FWD(xs)...)) {
-    return !ltl::invoke(f, FWD(xs)...);
-  };
-}
-
 template <typename... Ts> struct Error;
 
 ////////////////////////////// MAKE_IS_KIND //////////////////////////////////
