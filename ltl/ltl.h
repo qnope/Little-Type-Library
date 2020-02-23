@@ -178,26 +178,7 @@ template <typename F> constexpr auto not_fn(F f) {
   };
 }
 
-template <typename F, typename... Fs> constexpr auto compose(F f, Fs... fs) {
-  if constexpr (sizeof...(Fs) == 0) {
-    return f;
-  } else {
-    return [f, fs...](auto &&... xs) -> decltype(auto) {
-      return f(compose(fs...)(FWD(xs)...));
-    };
-  }
-}
-
 template <typename... Ts> struct Error;
-
-template <typename... Fs> constexpr auto or_(Fs... fs) {
-  return
-      [fs...](auto &&... xs) { return (false_v || ... || (fs(FWD(xs)...))); };
-}
-
-template <typename... Fs> constexpr auto and_(Fs... fs) {
-  return [fs...](auto &&... xs) { return (true_v && ... && (fs(FWD(xs)...))); };
-}
 
 ////////////////////////////// MAKE_IS_KIND //////////////////////////////////
 

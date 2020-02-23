@@ -930,9 +930,9 @@ void test_composition() {
   auto mul_5 = _((x), x * 5);
   auto minus_1 = _((x), x - 1);
 
-  constexpr auto pMm = ltl::compose(minus_1, mul_5, plus_3);
-  constexpr auto mpM = ltl::compose(mul_5, plus_3, minus_1);
-  constexpr auto mMp = ltl::compose(plus_3, mul_5, minus_1);
+  constexpr auto pMm = ltl::compose(plus_3, mul_5, minus_1);
+  constexpr auto mpM = ltl::compose(minus_1, plus_3, mul_5);
+  constexpr auto mMp = ltl::compose(minus_1, mul_5, plus_3);
 
   static_assert(pMm(10) == 64);
   static_assert(mpM(10) == 60);

@@ -16,22 +16,22 @@ template <typename Derived> class Comparable {
 
 public:
   template <typename Other>
-  constexpr bool operator!=(const Other &o) const noexcept {
+  constexpr auto operator!=(const Other &o) const noexcept {
     return !(underlying() == o);
   }
 
   template <typename Other>
-  constexpr bool operator<=(const Other &o) const noexcept {
+  constexpr auto operator<=(const Other &o) const noexcept {
     return !(o < underlying());
   }
 
   template <typename Other>
-  constexpr bool operator>(const Other &o) const noexcept {
+  constexpr auto operator>(const Other &o) const noexcept {
     return o < underlying();
   }
 
   template <typename Other>
-  constexpr bool operator>=(const Other &o) const noexcept {
+  constexpr auto operator>=(const Other &o) const noexcept {
     return !(underlying() < o);
   }
 };

@@ -43,4 +43,31 @@ constexpr decltype(auto) curry(F f, Args &&... args) {
   }
 }
 
+namespace detail {
+template <typename... Fs> constexpr auto composeImpl(ltl::tuple_t<Fs...> fs) {
+  auto f = std::move(fs[fs.length - 1_n]);
+  auto tails = std::move(fs).pop_back();
+  if_constexpr(tails.isEmpty) { return f; }
+  else {
+    return [f = std::move(f),
+            tails = std::move(tails)](auto &&... xs) -> decltype(auto) {
+      return f(composeImpl(tails)(FWD(xs)...));
+    };
+  }
+}
+
+} // namespace detail
+template <typename... Fs> constexpr auto compose(Fs... fs) {
+  return detail::composeImpl(ltl::tuple_t<Fs...>{std::move(fs)...});
+}
+
+template <typename... Fs> constexpr auto or_(Fs... fs) {
+  return
+      [fs...](auto &&... xs) { return (false_v || ... || (fs(FWD(xs)...))); };
+}
+
+template <typename... Fs> constexpr auto and_(Fs... fs) {
+  return [fs...](auto &&... xs) { return (true_v && ... && (fs(FWD(xs)...))); };
+}
+
 } // namespace ltl
