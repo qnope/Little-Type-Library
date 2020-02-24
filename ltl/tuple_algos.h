@@ -51,20 +51,23 @@ constexpr auto transform(Tuple &&tuple, F &&f) {
 
 ////////////////////// Algorithm tuple
 template <typename... Ts, typename T>
-constexpr auto contains_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
+constexpr auto contains_type(const tuple_t<Ts...> &tuple,
+                             [[maybe_unused]] type_t<T> type) {
   if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (Ts{} == type));
   else return contains_type(type_list_v<Ts...>, type);
 }
 
 template <typename... Ts, typename T>
-constexpr auto count_type(const tuple_t<Ts...> &tuple, type_t<T> type) {
+constexpr auto count_type(const tuple_t<Ts...> &tuple,
+                          [[maybe_unused]] type_t<T> type) {
   if_constexpr(is_type_list_t(tuple)) return (0_n + ... +
                                               bool_to_number(Ts{} == type));
   else return count_type(type_list_v<Ts...>, type);
 }
 
 template <typename... Ts, typename T, int N = 0>
-constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
+constexpr auto find_type(const tuple_t<Ts...> &tuple,
+                         [[maybe_unused]] type_t<T> type,
                          number_t<N> first = {}) {
   if_constexpr(is_type_list_t(tuple)) {
     if_constexpr(first == tuple.length) return nullopt_type;
@@ -76,7 +79,7 @@ constexpr auto find_type(const tuple_t<Ts...> &tuple, type_t<T> type,
 }
 
 template <typename... Ts, typename P, int N = 0>
-constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P p,
+constexpr auto find_if_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p,
                             number_t<N> first = {}) {
   if_constexpr(is_type_list_t(tuple)) {
     if_constexpr(first == tuple.length) return nullopt_type;
@@ -87,32 +90,34 @@ constexpr auto find_if_type(const tuple_t<Ts...> &tuple, P p,
 }
 
 template <typename... Ts, typename P>
-constexpr auto contains_if_type(const tuple_t<Ts...> &tuple, P p) {
+constexpr auto contains_if_type(const tuple_t<Ts...> &tuple,
+                                [[maybe_unused]] P p) {
   if_constexpr(is_type_list_t(tuple)) return (false_v || ... || p(Ts{}));
   else return contains_if_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
-constexpr auto count_if_type(const tuple_t<Ts...> &tuple, P p) {
+constexpr auto count_if_type(const tuple_t<Ts...> &tuple,
+                             [[maybe_unused]] P p) {
   if_constexpr(is_type_list_t(tuple)) return (0_n + ... +
                                               bool_to_number(p(Ts{})));
   else return count_if_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
-constexpr auto all_of_type(const tuple_t<Ts...> &tuple, P p) {
+constexpr auto all_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
   if_constexpr(is_type_list_t(tuple)) return (true_v && ... && (p(Ts{})));
   else return all_of_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
-constexpr auto any_of_type(const tuple_t<Ts...> &tuple, P p) {
+constexpr auto any_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
   if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (p(Ts{})));
   else return any_of_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
-constexpr auto none_of_type(const tuple_t<Ts...> &tuple, P p) {
+constexpr auto none_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
   return !any_of_type(tuple, p);
 }
 
