@@ -7,6 +7,7 @@
 #include "ltl/StrongType.h"
 #include "ltl/VariantUtils.h"
 #include "ltl/algos.h"
+#include "ltl/condition.h"
 #include "ltl/functional.h"
 #include "ltl/operator.h"
 #include "ltl/optional_type.h"
@@ -993,6 +994,45 @@ void test_optional_type() {
   static_assert(!ltl::find_if_type(tuple2, ltl::is_type(ltl::type_v<char>)));
 }
 
+void test_condition() {
+  static_assert(ltl::AllOf{5, 3, 4} > 2);
+  static_assert(ltl::AllOf{5, 3, 4} < 10);
+  static_assert(!(ltl::AllOf{5, 3, 4} <= 4));
+  static_assert(!(ltl::AllOf{5, 3, 4} >= 4));
+  static_assert((ltl::AllOf{5, 3, 4} >= 3));
+  static_assert((ltl::AllOf{5, 3, 4} <= 6));
+  static_assert(ltl::AllOf{5, 5, 5} == 5);
+  static_assert(!(ltl::AllOf{7, 8, 10} == 9));
+  static_assert(ltl::AllOf{7, 8, 10} != 9);
+  static_assert(!(ltl::AllOf{7, 8, 10} != 8));
+
+  static_assert(ltl::AnyOf{8, 9, 10} < 19);
+  static_assert(!(ltl::AnyOf{8, 9, 10} < 7));
+  static_assert(ltl::AnyOf{8, 9, 10} > 9);
+  static_assert(!(ltl::AnyOf{8, 9, 10} > 12));
+  static_assert(ltl::AnyOf{9, 9, 18} == 9);
+  static_assert(!(ltl::AnyOf{9, 9, 18} == 10));
+  static_assert(ltl::AnyOf{9, 9, 18} != 9);
+  static_assert(!(ltl::AnyOf{9, 9, 9} != 9));
+  static_assert(ltl::AnyOf{8, 9, 10} >= 10);
+  static_assert(!(ltl::AnyOf{8, 9, 10} >= 15));
+  static_assert(ltl::AnyOf{8, 9, 10} <= 10);
+  static_assert(!(ltl::AnyOf{8, 9, 10} <= 5));
+
+  static_assert(ltl::NoneOf{8, 9, 10} < 8);
+  static_assert(!(ltl::NoneOf{8, 9, 10} < 9));
+  static_assert(ltl::NoneOf{8, 9, 10} > 10);
+  static_assert(!(ltl::NoneOf{8, 9, 10} > 9));
+  static_assert(ltl::NoneOf{9, 9, 18} == 8);
+  static_assert(!(ltl::NoneOf{9, 9, 18} == 18));
+  static_assert(ltl::NoneOf{9, 9, 9} != 9);
+  static_assert(!(ltl::NoneOf{9, 9, 18} != 9));
+  static_assert(ltl::NoneOf{8, 9, 10} >= 12);
+  static_assert(!(ltl::NoneOf{8, 9, 10} >= 10));
+  static_assert(ltl::NoneOf{8, 9, 10} <= 6);
+  static_assert(!(ltl::NoneOf{8, 9, 10} <= 15));
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1035,6 +1075,7 @@ int main() {
   test_join();
 
   test_optional_type();
+  test_condition();
 
   return 0;
 }

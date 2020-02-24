@@ -33,6 +33,7 @@ set(HEADERS
     ltl/traits.h
     ltl/tuple_algos.h
     ltl/optional_type.h
+    ltl/condition.h
     lpl/lpl.h
     ${HEADERS_RANGE}
     )
