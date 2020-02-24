@@ -40,7 +40,7 @@ F for_each(Tuple &&tuple, F &&f) {
 }
 
 template <typename F, typename Tuple>
-constexpr decltype(auto) transform(Tuple &&tuple, F &&f) {
+constexpr auto transform(Tuple &&tuple, F &&f) {
   typed_static_assert(is_tuple_t(tuple));
   auto build_tuple = [&f](auto &&... xs) {
     return ltl::tuple_t<decltype(std::forward<F>(f)(FWD(xs)))...>{

@@ -4,9 +4,9 @@ project(LittleTypeLibrary)
 set(SOURCES "main.cpp")
 
 set(HEADERS_RANGE
-    ltl/range/Range.h
-    ltl/range/NullableFunction.h
-    ltl/range/BaseIterator.h
+	ltl/Range/Range.h
+	ltl/Range/NullableFunction.h
+	ltl/Range/BaseIterator.h
     ltl/Range/AsPointer.h
     ltl/Range/Filter.h
     ltl/Range/Map.h
