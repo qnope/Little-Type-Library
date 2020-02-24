@@ -252,6 +252,16 @@ template <typename F> constexpr auto is_valid(F &&) {
       [] LPL_IDENTITY(LTL_WRITE_AUTO_IMPL LTL_ENSURE_NOT_EMPTY variables)      \
           -> decltype(__VA_ARGS__, void()) {})
 
+#define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                \
+  constexpr ltl::false_t LPL_CAT(name, Impl)(...);                             \
+  template <templateType... Ts>                                                \
+  constexpr ltl::true_t LPL_CAT(name, Impl)(const type<Ts...> &);              \
+  constexpr auto name = [](auto &&x) constexpr noexcept {                      \
+    return decltype(LPL_CAT(name, Impl)(declval(FWD(x)))){};                   \
+  };                                                                           \
+  template <typename T>                                                        \
+  constexpr bool conceptName = decltype(name(std::declval<T>()))::value
+
 LTL_MAKE_IS_KIND(number_t, is_number_t, IsNumber, int);
 LTL_MAKE_IS_KIND(bool_t, is_bool_t, IsBool, bool);
 

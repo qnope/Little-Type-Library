@@ -2,7 +2,7 @@
 
 #include <iterator>
 
-#include "../ltl.h"
+#include "../traits.h"
 
 namespace ltl {
 template <typename It> class Range {

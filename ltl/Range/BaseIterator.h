@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "../crtp.h"
+#include "../traits.h"
 #include "AsPointer.h"
 #include "NullableFunction.h"
 

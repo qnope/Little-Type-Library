@@ -2,7 +2,6 @@
 
 #include <optional>
 
-#include "../ltl.h"
 #include "BaseIterator.h"
 
 namespace ltl {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../ltl.h"
 #include "BaseIterator.h"
 
 namespace ltl {

@@ -1,10 +1,10 @@
 #pragma once
 
+#include <utility>
+
 #include "concept.h"
 #include "crtp.h"
 #include "ltl.h"
-
-#include <utility>
 
 namespace ltl {
 namespace detail {
