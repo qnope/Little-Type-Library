@@ -275,6 +275,18 @@ void tuple_test_algo() {
          ltl::type_v<
              ltl::type_list_t<int, int *, double, double *, char, char *>>));
   }
+
+  {
+    constexpr ltl::tuple_t<int, double, char> tuple1{8, 5.0, 3};
+    static_assert(16 == ltl::accumulate_type(tuple1));
+
+    constexpr ltl::type_list_t<int, double, char> tuple2;
+    constexpr auto accumulator = [](auto... types) {
+      return (... + ltl::tuple_t{ltl::add_pointer(types)});
+    };
+    static_assert(type_from(ltl::accumulate_type(tuple2, accumulator)) ==
+                  type_from(ltl::transform_type(tuple2, ltl::add_pointer)));
+  }
 }
 
 void push_pop_test() {

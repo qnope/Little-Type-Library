@@ -49,6 +49,16 @@ constexpr auto transform_type(Tuple &&tuple, F &&f) {
   return FWD(tuple)(build_tuple);
 }
 
+template <typename Tuple, typename F>
+constexpr auto accumulate_type(Tuple &&tuple, F &&f) {
+  return FWD(tuple)(FWD(f));
+}
+
+template <typename Tuple> constexpr auto accumulate_type(Tuple &&tuple) {
+  auto accumulate = [](auto &&... xs) { return (... + FWD(xs)); };
+  return accumulate_type(FWD(tuple), accumulate);
+}
+
 ////////////////////// Algorithm tuple
 template <typename... Ts, typename T>
 constexpr auto contains_type(const tuple_t<Ts...> &tuple,
