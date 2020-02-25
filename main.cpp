@@ -264,8 +264,16 @@ void tuple_test_algo() {
   {
     ltl::type_list_t<int, int, double, unsigned char> tuple;
     ltl::type_list_t<int *, int *, double *, unsigned char *> ptrs;
-    typed_static_assert(type_from(ptrs) ==
-                        type_from(ltl::transform(tuple, ltl::add_pointer)));
+    typed_static_assert(type_from(ptrs) == type_from(ltl::transform_type(
+                                               tuple, ltl::add_pointer)));
+  }
+
+  {
+    ltl::tuple_t<int, int *, double, int, double *, char, char, char *> tuple;
+    typed_static_assert(
+        (type_from(ltl::unique_type(tuple)) ==
+         ltl::type_v<
+             ltl::type_list_t<int, int *, double, double *, char, char *>>));
   }
 }
 
@@ -610,18 +618,20 @@ void test_find_range() {
   }
 }
 
-template <typename T, requires_f(ltl::IsFloatingPoint<T>)> auto f(T) {
+template <typename T, requires_f(ltl::IsFloatingPoint<T>)> constexpr auto f(T) {
   return 0;
 }
 
-template <typename T, requires_f(ltl::IsIntegral<T>)> auto f(T) { return 1; }
+template <typename T, requires_f(ltl::IsIntegral<T>)> constexpr auto f(T) {
+  return 1;
+}
 
 void test_concept() {
-  assert(f(5) == 1);
-  assert(f(5.0) == 0);
-  assert(f(5.0f) == 0);
-  assert(f(5u) == 1);
-  assert(f(5ull) == 1);
+  static_assert(f(5) == 1);
+  static_assert(f(5.0) == 0);
+  static_assert(f(5.0f) == 0);
+  static_assert(f(5u) == 1);
+  static_assert(f(5ull) == 1);
 }
 
 void test_optional() {

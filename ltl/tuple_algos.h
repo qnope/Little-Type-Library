@@ -40,7 +40,7 @@ F for_each(Tuple &&tuple, F &&f) {
 }
 
 template <typename F, typename Tuple>
-constexpr auto transform(Tuple &&tuple, F &&f) {
+constexpr auto transform_type(Tuple &&tuple, F &&f) {
   typed_static_assert(is_tuple_t(tuple));
   auto build_tuple = [&f](auto &&... xs) {
     return ltl::tuple_t<decltype(std::forward<F>(f)(FWD(xs)))...>{
@@ -119,6 +119,29 @@ constexpr auto any_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
 template <typename... Ts, typename P>
 constexpr auto none_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
   return !any_of_type(tuple, p);
+}
+
+template <typename... Ts, typename Result = ltl::type_list_t<>>
+constexpr auto unique_type(const tuple_t<Ts...> &tuple,
+                           Result result = Result{}) {
+  constexpr auto make_tail = [](auto, auto... ts) {
+    return ltl::tuple_t{ts...};
+  };
+  if_constexpr(tuple.isEmpty) { //
+    return result;
+  }
+  else_if_constexpr(is_type_list_t(tuple)) { //
+    auto head = tuple[0_n];
+    if_constexpr(contains_type(result, head)) { //
+      return unique_type(tuple(make_tail), result);
+    }
+    else {
+      return unique_type(tuple(make_tail), result + tuple_t{head});
+    }
+  }
+  else { //
+    return unique_type(ltl::type_list_v<Ts...>);
+  }
 }
 
 template <template <typename...> typename T, typename List>

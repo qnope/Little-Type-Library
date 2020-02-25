@@ -19,7 +19,7 @@ auto match_result(Variant &&variant, Fs... fs) {
     return invoke_result(f, type);
   };
   using result_types =
-      decltype(transform(qualified_types, result_from_function));
+      decltype(transform_type(qualified_types, result_from_function));
 
   using result_type = build_from_type_list<std::variant, result_types>;
   return std::visit(
