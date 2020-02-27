@@ -7,7 +7,7 @@
 
 #include "../lpl/lpl.h"
 
-#define decltype_t(t) typename std::decay_t<decltype(t)>::type
+#define decltype_t(t) ltl::extract_type<decltype(t)>
 
 #define type_from(x) ltl::type_v<decltype(x)>
 #define decay_from(x) ltl::type_v<std::decay_t<decltype(x)>>
@@ -104,6 +104,8 @@ template <typename T>
 [[nodiscard]] constexpr false_t operator!=(type_t<T>, type_t<T>) {
   return {};
 }
+
+template <typename T> using extract_type = typename std::decay_t<T>::type;
 
 ////////////////////// number
 template <int N> struct number_t { constexpr static int value = N; };
