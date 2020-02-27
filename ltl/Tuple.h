@@ -78,11 +78,15 @@ public:
   constexpr tuple_t(Ts... ts) : Value<Is, Ts>{FWD(ts)}... {}
 
   template <typename... _Ts> tuple_t &operator=(const tuple_t<_Ts...> &t) {
+    typed_static_assert_msg(t.length == length,
+                            "Tuple must have the same size");
     (((*this)[number_v<Is>] = t[number_v<Is>]), ...);
     return *this;
   }
 
   template <typename... _Ts> tuple_t &operator=(tuple_t<_Ts...> &&t) {
+    typed_static_assert_msg(t.length == length,
+                            "Tuple must have the same size");
     (((*this)[number_v<Is>] = std::move(t)[number_v<Is>]), ...);
     return *this;
   }
@@ -137,11 +141,15 @@ public:
 
   template <typename... _Ts>
   constexpr bool operator==(const tuple_t<_Ts...> &t) const noexcept {
+    typed_static_assert_msg(t.length == length,
+                            "Tuple must have the same size");
     return (((*this)[number_v<Is>] == t[number_v<Is>]) && ... && true);
   }
 
   template <typename... _Ts>
   constexpr bool operator<(const tuple_t<_Ts...> &t) const noexcept {
+    typed_static_assert_msg(t.length == length,
+                            "Tuple must have the same size");
     bool resultComparison = false;
     auto tester = [&resultComparison](const auto &a, const auto &b) {
       if (a > b) {
