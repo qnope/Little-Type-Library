@@ -17,7 +17,7 @@ struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
 };
 
 template <typename F> struct MapType { F f; };
-template <typename F> auto map(F &&f) {
+template <typename F> constexpr auto map(F &&f) {
   return MapType<std::decay_t<F>>{FWD(f)};
 }
 

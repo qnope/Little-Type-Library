@@ -1021,12 +1021,39 @@ void test_optional_type() {
   auto tuple2 = tuple + ltl::tuple_t{(char *)nullptr};
   auto empty = ltl::find_type(tuple2, ltl::type_v<double *>);
 
-  static_assert(!empty);
-  static_assert(ltl::find_type(tuple2, ltl::type_v<char *>));
+  static_assert(!empty.has_value);
+  static_assert(ltl::find_type(tuple2, ltl::type_v<char *>).has_value);
   static_assert(*ltl::find_type(tuple2, ltl::type_v<char *>) == 4_n);
-  static_assert(ltl::find_if_type(tuple2, ltl::is_pointer));
+  static_assert(ltl::find_if_type(tuple2, ltl::is_pointer).has_value);
   static_assert(*ltl::find_if_type(tuple2, ltl::is_pointer) == 3_n);
-  static_assert(!ltl::find_if_type(tuple2, ltl::is_type(ltl::type_v<char>)));
+  static_assert(
+      !ltl::find_if_type(tuple2, ltl::is_type(ltl::type_v<char>)).has_value);
+
+  auto two = ltl::find_type(tuple2, ltl::type_v<float>);
+
+  constexpr auto plus_3 = ltl::map([](auto n) { return n + 3_n; });
+
+  auto five = two | plus_3;
+  auto empty2 = empty | plus_3;
+
+  static_assert(five.has_value);
+  static_assert(*five == 5_n);
+  static_assert(empty2.has_value == false_v);
+
+  constexpr auto plus_3_if_sup_4 = ltl::map([](auto n) {
+    if constexpr (n > 4_n) {
+      return ltl::optional_type{n + 3_n};
+    } else {
+      return ltl::nullopt_type;
+    }
+  });
+
+  auto empty3 = two >> plus_3_if_sup_4;
+  auto eight = five >> plus_3_if_sup_4;
+
+  static_assert(!empty3.has_value);
+  static_assert(eight.has_value);
+  static_assert(*eight == 8_n);
 }
 
 void test_condition() {

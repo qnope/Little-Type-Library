@@ -12,6 +12,7 @@
 #include "Range/Range.h"
 #include "Range/Taker.h"
 #include "Tuple.h"
+#include "optional_type.h"
 
 #define _LAMBDA_WRITE_AUTO(x, y, ...)                                          \
   auto &&x LPL_WHEN(LPL_IS_NOT_PARENTHESES(y))(                                \
@@ -44,7 +45,8 @@ template <typename It> auto safe_advance(It beg, It end, std::size_t n) {
   return beg;
 }
 
-template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
+template <typename T1, typename T2>
+constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
   using std::begin;
   using std::end;
   [[maybe_unused]] constexpr auto t1 = decay_from(a);
@@ -137,6 +139,15 @@ template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
           "If a is a tuple, you must provide a range provided type", T2);
   }
 
+  else if constexpr (is_optional_type(t1)) {
+    if constexpr (is_map_type(t2)) {
+      if constexpr (a.has_value) {
+        return ltl::optional_type{ltl::invoke(FWD(b).f, *a)};
+      } else
+        return ltl::nullopt_type;
+    }
+  }
+
   else {
     compile_time_error("You must use iterable, optional or range provided type "
                        "for this operator |",
@@ -144,7 +155,8 @@ template <typename T1, typename T2> decltype(auto) operator|(T1 &&a, T2 &&b) {
   }
 }
 
-template <typename T1, typename T2> decltype(auto) operator>>(T1 &&a, T2 &&b) {
+template <typename T1, typename T2>
+constexpr decltype(auto) operator>>(T1 &&a, T2 &&b) {
   using std::begin;
   using std::end;
   [[maybe_unused]] constexpr auto t1 = decay_from(a);
@@ -156,6 +168,17 @@ template <typename T1, typename T2> decltype(auto) operator>>(T1 &&a, T2 &&b) {
     } else
       compile_time_error("If a is an iterable, b must be a map type joinable",
                          T2);
+  }
+
+  else if constexpr (is_optional_type(t1)) {
+    if constexpr (is_map_type(t2)) {
+      if constexpr (a.has_value) {
+        static_assert(is_optional_type(type_from(ltl::invoke(FWD(b).f, *a))),
+                      "With >> notation, function must return optional_type");
+        return ltl::invoke(FWD(b).f, *a);
+      } else
+        return ltl::nullopt_type;
+    }
   }
 }
 

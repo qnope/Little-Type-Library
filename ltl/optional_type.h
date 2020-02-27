@@ -1,16 +1,25 @@
 #pragma once
 
+#include "traits.h"
+
 namespace ltl {
-template <typename T> struct optional_type {
+
+template <typename... Ts> struct optional_type;
+
+template <typename T> struct optional_type<T> {
+  constexpr optional_type() = default;
   constexpr optional_type(T) noexcept {}
-  constexpr operator bool() const noexcept { return true; }
+  static constexpr true_t has_value{};
 
   constexpr auto operator*() const noexcept { return T{}; }
 };
 
-struct optional_empty {
-  constexpr operator bool() const noexcept { return false; }
-};
-constexpr optional_empty nullopt_type;
+template <typename T> optional_type(T)->optional_type<T>;
+
+template <> struct optional_type<> { static constexpr false_t has_value{}; };
+
+constexpr optional_type<> nullopt_type;
+
+LTL_MAKE_IS_KIND(optional_type, is_optional_type, IsOptionalType, typename);
 
 } // namespace ltl
