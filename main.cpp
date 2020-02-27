@@ -890,12 +890,12 @@ void test_functional() {
     int sum(int a, int b, int c) { return a + b + c; }
   };
 
-  test a;
-  assert(ltl::curry(&test::sum, a, 1, 2, 3) == 6);
-  assert(ltl::curry(&test::sum)(a, 1, 2, 3) == 6);
-  assert(ltl::curry(&test::sum, a, 1)(2, 3) == 6);
-  assert(ltl::curry(&test::sum)(a)(1)(2, 3) == 6);
-  assert(ltl::curry(&test::sum)(a)(1)(2)(3) == 6);
+  test t;
+  assert(ltl::curry(&test::sum, t, 1, 2, 3) == 6);
+  assert(ltl::curry(&test::sum)(t, 1, 2, 3) == 6);
+  assert(ltl::curry(&test::sum, t, 1)(2, 3) == 6);
+  assert(ltl::curry(&test::sum)(t)(1)(2, 3) == 6);
+  assert(ltl::curry(&test::sum)(t)(1)(2)(3) == 6);
 
   assert(ltl::curry(&test::sum)(test{})(1)(2)(3) == 6);
 
@@ -1075,7 +1075,7 @@ void test_curry_metaprogramming() {
   constexpr ltl::type_list_t<double *, int *, char, double> list3;
 
   static_assert(
-      ltl::all_of_type(list3, ltl::curry(lift(ltl::contains_type), list)));
+      ltl::all_of_type(list3, ltl::curry(lift(ltl::contains_type))(list)));
   static_assert(
       !ltl::all_of_type(list2, ltl::curry(lift(ltl::contains_type), list)));
 }
