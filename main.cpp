@@ -860,6 +860,8 @@ void test_variant_utils() {
 }
 
 void test_functional() {
+  using namespace std::literals;
+
   auto factorial =
       ltl::fix{[](auto f, auto x) -> int { return x ? x * f(x - 1) : 1; }};
   static_assert(factorial(1) == 1);
@@ -896,6 +898,17 @@ void test_functional() {
   assert(ltl::curry(&test::sum)(a)(1)(2)(3) == 6);
 
   assert(ltl::curry(&test::sum)(test{})(1)(2)(3) == 6);
+
+  auto a = "One"s;
+  auto b = "Two"s;
+
+  auto curry = ltl::curry([](auto a, auto b, auto c, auto d, auto e, auto f) {
+    return a + b + c + d + e + f;
+  });
+  auto one = curry(a);
+  auto four = one(std::move(b), "Three"s, "Four");
+  auto end = four(a, b);
+  assert(end == "OneTwoThreeFourOne");
 }
 
 /// Issues are:
@@ -1055,6 +1068,18 @@ void test_condition() {
   static_assert(!(ltl::NoneOf{8, 9, 10} <= 15));
 }
 
+void test_curry_metaprogramming() {
+  constexpr ltl::type_list_t<int, double, char, int *, double *> list;
+
+  constexpr ltl::type_list_t<int *, double *, char *> list2;
+  constexpr ltl::type_list_t<double *, int *, char, double> list3;
+
+  static_assert(
+      ltl::all_of_type(list3, ltl::curry(lift(ltl::contains_type), list)));
+  static_assert(
+      !ltl::all_of_type(list2, ltl::curry(lift(ltl::contains_type), list)));
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1098,6 +1123,7 @@ int main() {
 
   test_optional_type();
   test_condition();
+  test_curry_metaprogramming();
 
   return 0;
 }

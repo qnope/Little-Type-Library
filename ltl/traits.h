@@ -69,8 +69,7 @@ LPL_MAP(TRAIT, is_same, is_base_of, is_convertible)
   };
 
 // Reference / cv-ness
-LPL_MAP(TRAIT_REFERENCE, is_lvalue_reference, is_rvalue_reference, is_invocable,
-        is_invocable_r, is_nothrow_invocable, is_nothrow_invocable_r)
+LPL_MAP(TRAIT_REFERENCE, is_lvalue_reference, is_rvalue_reference)
 LPL_MAP(TRAIT_CVNESS, is_const, is_volatile, is_array)
 
 #undef TRAIT_REFERENCE
@@ -230,14 +229,15 @@ template <qualifier_enum a, typename T>
 namespace detail {
 template <typename F, typename... Args>
 constexpr auto is_validImpl(Args &&... args)
-    -> decltype(std::declval<F>()(FWD(args)...), true_t{});
+    -> decltype(ltl::invoke(std::declval<F>(), FWD(args)...), void(), true_t{});
 
 template <typename F> constexpr false_t is_validImpl(...);
 } // namespace detail
 
 template <typename F> constexpr auto is_valid(F &&) {
   return [](auto &&... xs) {
-    return decltype(detail::is_validImpl<F>(declval(FWD(xs))...)){};
+    return decltype(detail::is_validImpl<F>(FWD(xs)...)){} || // for f(type_t)
+           decltype(detail::is_validImpl<F>(declval(FWD(xs))...)){};
   };
 }
 
@@ -274,6 +274,11 @@ template <typename T> constexpr auto is_derived_from(type_t<T> type) {
     return is_base_of(type, decay_from(declval(FWD(x))));
   };
 }
+
+constexpr auto is_invocable = [](auto f, auto... args) {
+  auto trait = ltl::is_valid(f);
+  return trait(args...);
+};
 
 template <typename F, typename... Ts>
 constexpr auto invoke_result(type_t<F>, type_t<Ts>...) noexcept {
