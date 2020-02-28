@@ -141,7 +141,7 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
 
   else if constexpr (is_optional_type(t1)) {
     if constexpr (is_map_type(t2)) {
-      if constexpr (a.has_value) {
+      if_constexpr (a.has_value) { //
         return ltl::optional_type{ltl::invoke(FWD(b).f, *a)};
       } else
         return ltl::nullopt_type;
@@ -172,7 +172,7 @@ constexpr decltype(auto) operator>>(T1 &&a, T2 &&b) {
 
   else if constexpr (is_optional_type(t1)) {
     if constexpr (is_map_type(t2)) {
-      if constexpr (a.has_value) {
+      if_constexpr (a.has_value) { //
         static_assert(is_optional_type(type_from(ltl::invoke(FWD(b).f, *a))),
                       "With >> notation, function must return optional_type");
         return ltl::invoke(FWD(b).f, *a);
