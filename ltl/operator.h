@@ -117,8 +117,9 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
       if (a)
         return std::make_optional(ltl::invoke(FWD(b).f, *FWD(a)));
       return decltype(std::make_optional(ltl::invoke(FWD(b).f, *FWD(a)))){};
-    } else
+    } else {
       compile_time_error("If a is an optional, you must provide map type", T2);
+    }
   }
 
   else if constexpr (is_chainable_operation(t1)) {
@@ -141,10 +142,13 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
 
   else if constexpr (is_optional_type(t1)) {
     if constexpr (is_map_type(t2)) {
-      if_constexpr (a.has_value) { //
+      if_constexpr(a.has_value) { //
         return ltl::optional_type{ltl::invoke(FWD(b).f, *a)};
-      } else
-        return ltl::nullopt_type;
+      }
+      else return ltl::nullopt_type;
+    } else {
+      compile_time_error("If a is an optional_type, you must provide map type",
+                         T2);
     }
   }
 
@@ -172,24 +176,31 @@ constexpr decltype(auto) operator>>(T1 &&a, T2 &&b) {
 
   else if constexpr (is_optional_type(t1)) {
     if constexpr (is_map_type(t2)) {
-      if_constexpr (a.has_value) { //
-        static_assert(is_optional_type(type_from(ltl::invoke(FWD(b).f, *a))),
-                      "With >> notation, function must return optional_type");
+      if_constexpr(a.has_value) { //
+        typed_static_assert_msg(
+            is_optional_type(ltl::invoke(FWD(b).f, *a)),
+            "With >> notation, function must return optional_type");
         return ltl::invoke(FWD(b).f, *a);
-      } else
-        return ltl::nullopt_type;
+      }
+      else return ltl::nullopt_type;
+    } else {
+      compile_time_error("If a is an optional_type, you must provide map type",
+                         T2);
     }
   }
-}
 
-template <typename Opt, typename F>
-constexpr auto operator>>(Opt &&opt, MapType<F> f)
-    -> ltl::requires_t<decltype(ltl::invoke(f.f, *FWD(opt))), IsOptional<Opt>> {
-  typed_static_assert_msg(
-      ::ltl::is_optional(ltl::invoke(f.f, *FWD(opt))),
-      "Binding requires the function to return an optional");
-  if (FWD(opt))
-    return ltl::invoke(f.f, *FWD(opt));
-  return std::nullopt;
+  else if constexpr (is_optional(t1)) {
+    if constexpr (is_map_type(t2)) {
+      typed_static_assert_msg(
+          is_optional(ltl::invoke(FWD(b).f, *a)),
+          "With >> notation, function must return optional");
+
+      if (a)
+        return ltl::invoke(FWD(b).f, *FWD(a));
+      return decltype(ltl::invoke(FWD(b).f, *FWD(a))){};
+    } else {
+      compile_time_error("If a is an optional, you must provide map type", T2);
+    }
+  }
 }
 } // namespace ltl
