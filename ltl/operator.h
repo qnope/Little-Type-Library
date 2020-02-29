@@ -113,19 +113,16 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
   }
 
   else if constexpr (is_optional(t1)) {
-    if constexpr (is_map_type(t2)) {
-      if (a)
-        return std::make_optional(ltl::invoke(FWD(b).f, *FWD(a)));
-      return decltype(std::make_optional(ltl::invoke(FWD(b).f, *FWD(a)))){};
-    } else {
-      compile_time_error("If a is an optional, you must provide map type", T2);
-    }
+    static_assert(is_map_type(t2),
+                  "If a is an optional, you must provide map type");
+    if (a)
+      return std::make_optional(ltl::invoke(FWD(b).f, *FWD(a)));
+    return decltype(std::make_optional(ltl::invoke(FWD(b).f, *FWD(a)))){};
   }
 
   else if constexpr (is_chainable_operation(t1)) {
     if constexpr (is_chainable_operation(t2))
       return tuple_t{FWD(a), FWD(b)};
-
     else
       compile_time_error("If a is a range provided type, you must provide "
                          "another range provided type",
@@ -141,15 +138,12 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
   }
 
   else if constexpr (is_optional_type(t1)) {
-    if constexpr (is_map_type(t2)) {
-      if_constexpr(a.has_value) { //
-        return ltl::optional_type{ltl::invoke(FWD(b).f, *a)};
-      }
-      else return ltl::nullopt_type;
-    } else {
-      compile_time_error("If a is an optional_type, you must provide map type",
-                         T2);
+    static_assert(is_map_type(t2),
+                  "If a is an optional_type, you must provide map type");
+    if_constexpr(a.has_value) { //
+      return ltl::optional_type{ltl::invoke(FWD(b).f, *a)};
     }
+    else return ltl::nullopt_type;
   }
 
   else {
@@ -157,7 +151,7 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
                        "for this operator |",
                        T1);
   }
-}
+} // namespace ltl
 
 template <typename T1, typename T2>
 constexpr decltype(auto) operator>>(T1 &&a, T2 &&b) {
@@ -167,40 +161,34 @@ constexpr decltype(auto) operator>>(T1 &&a, T2 &&b) {
   [[maybe_unused]] constexpr auto t2 = decay_from(b);
 
   if constexpr (is_iterable(t1)) {
-    if constexpr (is_map_type(t2)) {
-      return FWD(a) | FWD(b) | join;
-    } else
-      compile_time_error("If a is an iterable, b must be a map type joinable",
-                         T2);
+    static_assert(is_map_type(t2),
+                  "If a is an iterable, b must be a map type joinable");
+    return FWD(a) | FWD(b) | join;
   }
 
   else if constexpr (is_optional_type(t1)) {
-    if constexpr (is_map_type(t2)) {
-      if_constexpr(a.has_value) { //
-        typed_static_assert_msg(
-            is_optional_type(ltl::invoke(FWD(b).f, *a)),
-            "With >> notation, function must return optional_type");
-        return ltl::invoke(FWD(b).f, *a);
-      }
-      else return ltl::nullopt_type;
-    } else {
-      compile_time_error("If a is an optional_type, you must provide map type",
-                         T2);
+    static_assert(is_map_type(t2),
+                  "If a is an optional_type, you must provide map type");
+    if_constexpr(a.has_value) { //
+      typed_static_assert_msg(
+          is_optional_type(ltl::invoke(FWD(b).f, *a)),
+          "With >> notation, function must return optional_type");
+      return ltl::invoke(FWD(b).f, *a);
+    }
+    else {
+      return ltl::nullopt_type;
     }
   }
 
   else if constexpr (is_optional(t1)) {
-    if constexpr (is_map_type(t2)) {
-      typed_static_assert_msg(
-          is_optional(ltl::invoke(FWD(b).f, *a)),
-          "With >> notation, function must return optional");
+    static_assert(is_map_type(t2),
+                  "If a is an optional, you must provide map type");
+    typed_static_assert_msg(is_optional(ltl::invoke(FWD(b).f, *a)),
+                            "With >> notation, function must return optional");
 
-      if (a)
-        return ltl::invoke(FWD(b).f, *FWD(a));
-      return decltype(ltl::invoke(FWD(b).f, *FWD(a))){};
-    } else {
-      compile_time_error("If a is an optional, you must provide map type", T2);
-    }
+    if (a)
+      return ltl::invoke(FWD(b).f, *FWD(a));
+    return decltype(ltl::invoke(FWD(b).f, *FWD(a))){};
   }
 }
 } // namespace ltl
