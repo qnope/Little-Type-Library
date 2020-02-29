@@ -712,10 +712,25 @@ void test_map() {
   auto times = [](auto x) { return [x](auto y) { return y * x; }; };
   assert(ltl::equal(array | map(times(2)), times2Array));
   assert(ltl::equal(array | map(times(8)), times8Array));
-  assert(ltl::equal(array | (map(times(2)) | map(times(2)) | map(times(2))),
-                    times8Array));
+
   assert(
       ltl::equal(array | (filter(_((x), x % 2)) | map(times(2))), oddTimes2));
+
+  // array | tuple
+  assert(ltl::equal(array | (map(times(2)) | map(times(2)) | map(times(2))),
+                    times8Array));
+  // array | (tuple | map)
+  assert(ltl::equal(array | (map(times(2)) | map(times(2))) | map(times(2)),
+                    times8Array));
+
+  // array | (map | tuple)
+  assert(ltl::equal(array | (map(times(2)) | (map(times(2)) | map(times(2)))),
+                    times8Array));
+
+  // array | (tuple | tuple)
+  assert(ltl::equal(array | (map(times(2)) | map(times(2))) |
+                        (map(times(1)) | map(times(2))),
+                    times8Array));
 }
 
 void test_to() {

@@ -121,20 +121,25 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
   }
 
   else if constexpr (is_chainable_operation(t1)) {
-    if constexpr (is_chainable_operation(t2))
+    static_assert(is_chainable_operation(t2) || is_tuple_t(t2),
+                  "If a is a range provided type, you must provide "
+                  "another range provided type");
+    if constexpr (is_chainable_operation(t2)) {
       return tuple_t{FWD(a), FWD(b)};
-    else
-      compile_time_error("If a is a range provided type, you must provide "
-                         "another range provided type",
-                         T2);
+    } else if constexpr (is_tuple_t(t2)) {
+      return FWD(b).push_front(FWD(a));
+    }
   }
 
   else if constexpr (is_tuple_t(t1)) {
-    if constexpr (is_chainable_operation(t2))
+    static_assert(is_chainable_operation(t2) || is_tuple_t(t2),
+                  "If a is a tuple, you must provide a range provided type");
+    if constexpr (is_chainable_operation(t2)) {
       return FWD(a).push_back(FWD(b));
-    else
-      compile_time_error(
-          "If a is a tuple, you must provide a range provided type", T2);
+    } else if constexpr (is_tuple_t(t2)) {
+      return FWD(a) + FWD(b);
+    }
+
   }
 
   else if constexpr (is_optional_type(t1)) {
