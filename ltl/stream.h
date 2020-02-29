@@ -59,6 +59,26 @@ protected:
     }
   }
 
+  typename Trait::pos_type
+  seekoff(typename Trait::off_type off, std::ios_base::seekdir dir,
+          std::ios_base::openmode = std::ios_base::in) override {
+    std::size_t offset;
+    if (dir == std::ios_base::cur)
+      offset = std::distance(m_begin, m_current) + off;
+    else if (dir == std::ios_base::beg)
+      offset = off;
+    else
+      offset = m_container.size() + off;
+    m_current = std::next(m_begin, offset);
+    return offset;
+  }
+
+  typename Trait::pos_type
+  seekpos(typename Trait::pos_type pos,
+          std::ios_base::openmode = std::ios_base::in) override {
+    return seekoff(pos, std::ios_base::beg);
+  }
+
   int sync() override {
     auto is_erasable = IS_VALID((c, beg, cur), c.erase(m_begin, m_current));
 
@@ -122,5 +142,26 @@ using writeonly_streambuf = basic_writeonly_streambuf<Container, char>;
 
 template <typename Container>
 using readonly_streambuf = basic_readonly_streambuf<Container, char>;
+
+struct as_byte {
+  char *begin;
+  std::size_t count;
+
+  template <typename T> as_byte(T &&t) {
+    begin = reinterpret_cast<char *>(
+        const_cast<std::decay_t<T> *>(std::addressof(t)));
+    count = sizeof(std::decay_t<T>);
+  }
+};
+
+std::istream &operator>>(std::istream &stream, as_byte b) {
+  stream.read(b.begin, b.count);
+  return stream;
+}
+
+std::ostream &operator<<(std::ostream &stream, as_byte b) {
+  stream.write(b.begin, b.count);
+  return stream;
+}
 
 } // namespace ltl

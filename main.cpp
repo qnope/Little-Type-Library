@@ -1124,6 +1124,34 @@ void test_curry_metaprogramming() {
       !ltl::all_of_type(list2, ltl::curry(lift(ltl::contains_type), list)));
 }
 
+struct Message {
+  std::size_t size;
+  std::array<char, 252> data;
+
+  friend bool operator==(const Message &a, const Message &b) {
+    return a.size == b.size &&
+           std::equal(a.data.begin(), a.data.begin() + a.size, b.data.begin(),
+                      b.data.begin() + b.size);
+  }
+};
+
+std::ostream &operator<<(std::ostream &stream, const Message &msg) {
+  stream << ltl::as_byte{0x01234567};
+  stream << ltl::as_byte{msg.size};
+  stream.write(msg.data.data(), msg.size);
+  return stream;
+}
+
+std::istream &operator>>(std::istream &stream, Message &msg) {
+  unsigned int header;
+  stream >> ltl::as_byte{header};
+  if (header != 0x01234567)
+    stream.setstate(std::ios_base::failbit);
+  stream >> ltl::as_byte{msg.size};
+  stream.read(msg.data.data(), msg.size);
+  return stream;
+}
+
 void simple_test_stream() {
   using namespace std::literals;
   ltl::writeonly_streambuf<std::string> ostreambuf;
@@ -1168,6 +1196,26 @@ void simple_test_stream() {
 
   istream.read(another, 8);
   assert(another == " another"s);
+}
+
+void stream_test_message() {
+  Message a;
+  ltl::writeonly_streambuf<std::vector<char>> writebuf;
+  std::ostream wstream{&writebuf};
+
+  a.size = 10;
+  std::iota(a.data.begin(), a.data.end(), 0);
+
+  wstream << a;
+
+  auto buf = writebuf.takeContainer();
+
+  ltl::readonly_streambuf<std::vector<char>> readbuf{buf};
+  std::istream rstream(&readbuf);
+
+  Message b;
+  rstream >> b;
+  assert(a == b);
 }
 
 int main() {
@@ -1216,6 +1264,7 @@ int main() {
   test_curry_metaprogramming();
 
   simple_test_stream();
+  stream_test_message();
 
   return 0;
 }
