@@ -17,6 +17,8 @@
 #include "ltl/Range/Value.h"
 #include "ltl/Range/enumerate.h"
 
+#include "ltl/stream.h"
+
 void bool_test() {
   static_assert(false_v == false_v);
   static_assert(false_v != true_v);
@@ -1122,6 +1124,52 @@ void test_curry_metaprogramming() {
       !ltl::all_of_type(list2, ltl::curry(lift(ltl::contains_type), list)));
 }
 
+void simple_test_stream() {
+  using namespace std::literals;
+  ltl::writeonly_streambuf<std::string> ostreambuf;
+  std::ostream ostream(&ostreambuf);
+
+  ostream << 'a' << "b"
+          << " I am a test" << '!';
+
+  auto result = ostreambuf.takeContainer();
+  assert(result == "ab I am a test!");
+  assert(ostreambuf.getContainer() == "");
+  ostream << "I am a second test";
+  assert(ostreambuf.getContainer() == "I am a second test");
+
+  ostream << ' ' << 18 << ' ' << 18.56 << ' ' << std::string("lol")
+          << std::boolalpha << true << false;
+  ostream.write("lol", 3);
+
+  result = ostreambuf.takeContainer();
+  assert(result == "I am a second test 18 18.56 loltruefalselol");
+
+  ltl::readonly_streambuf<std::string> istreambuf(std::move(result));
+  std::istream istream(&istreambuf);
+  char c;
+  std::string s1, s2, s3;
+  double d;
+  int i;
+
+  istream >> c;
+  assert(c == 'I');
+  istream >> s1;
+  assert(s1 == "am");
+  istream >> c;
+  assert(c == 'a');
+  istreambuf.feed(" another");
+
+  istream >> s1 >> s2 >> i >> d >> c >> s3;
+
+  assert(s1 == "second" && s2 == "test" && i == 18 && d == 18.56 && c == 'l' &&
+         s3 == "oltruefalselol");
+  char another[9] = "";
+
+  istream.read(another, 8);
+  assert(another == " another"s);
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1166,6 +1214,8 @@ int main() {
   test_optional_type();
   test_condition();
   test_curry_metaprogramming();
+
+  simple_test_stream();
 
   return 0;
 }
