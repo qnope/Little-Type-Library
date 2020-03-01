@@ -90,7 +90,7 @@ protected:
   }
 
   int sync() override {
-    auto is_erasable = IS_VALID((c, beg, cur), c.erase(m_begin, m_current));
+    auto is_erasable = IS_VALID((c), c.erase(m_begin, m_current));
 
     if_constexpr(is_erasable(m_container)) {
       m_container.erase(m_begin, m_current);

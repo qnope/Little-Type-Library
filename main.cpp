@@ -1150,17 +1150,17 @@ std::istream &operator>>(std::istream &stream, Message &msg) {
   if (s) {
     auto pos = stream.tellg();
     unsigned int header;
+
     stream >> ltl::as_byte{header};
-
-    if (header != 0x01234567) {
-      stream.setstate(std::ios_base::failbit);
-    }
-
     stream >> ltl::as_byte{msg.size};
     stream.read(msg.data.data(), msg.size);
 
-    if (!stream)
+    if (header != 0x01234567 || !stream) {
+      auto state = stream.rdstate();
+      stream.clear();
       stream.seekg(pos);
+      stream.setstate(std::ios_base::failbit | state);
+    }
 
     stream.rdbuf()->pubsync();
   }
@@ -1233,6 +1233,54 @@ void stream_test_message() {
   assert(a == b);
 }
 
+namespace detail {
+auto createMessages() {
+  std::vector<Message> msgs;
+  for (int i = 0; i < 200; ++i) {
+    Message m;
+    m.size = i;
+    for (int j = 0; j < i; ++j) {
+      m.data[j] = j;
+    }
+    msgs.push_back(m);
+  }
+  return msgs;
+}
+
+auto createComplexeBuffer() {
+  ltl::writeonly_streambuf<std::vector<std::byte>> buf;
+  std::ostream stream(&buf);
+  ltl::copy(createMessages(), std::ostream_iterator<Message>{stream});
+  return buf.takeContainer();
+}
+} // namespace detail
+
+void complexe_stream_test_message() {
+  auto msgs = detail::createMessages();
+  auto buffer = detail::createComplexeBuffer();
+  {
+    ltl::readonly_streambuf<std::vector<std::byte>> buf(buffer);
+    std::istream stream(&buf);
+    std::vector decodedMsgs(std::istream_iterator<Message>{stream},
+                            std::istream_iterator<Message>{});
+    assert(ltl::equal(msgs, decodedMsgs));
+  }
+  {
+    std::vector<Message> decodedMsgs;
+    ltl::readonly_streambuf<std::vector<std::byte>> buf{
+        std::vector<std::byte>()};
+
+    for (int i = 0; i < buffer.size(); i += 73) {
+      buf.feed(ltl::Range{buffer.begin() + i, buffer.end()} | ltl::take_n(73));
+      std::istream stream(&buf);
+      std::copy(std::istream_iterator<Message>(stream),
+                std::istream_iterator<Message>{},
+                std::back_inserter(decodedMsgs));
+    }
+    assert(ltl::equal(msgs, decodedMsgs));
+  }
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1280,6 +1328,7 @@ int main() {
 
   simple_test_stream();
   stream_test_message();
+  complexe_stream_test_message();
 
   return 0;
 }
