@@ -4,15 +4,24 @@
 #include <streambuf>
 
 #include "algos.h"
+#include "operator.h"
 #include "traits.h"
 
 namespace ltl {
 using std::begin;
 using std::end;
+
 template <typename Container, typename Char,
           typename Trait = std::char_traits<Char>>
 class basic_readonly_streambuf final
     : public std::basic_streambuf<Char, Trait> {
+
+  using T = std::decay_t<decltype(*begin(std::declval<Container &>()))>;
+  using char_type = typename Trait::char_type;
+  using int_type = typename Trait::int_type;
+  using pos_type = typename Trait::pos_type;
+  using off_type = typename Trait::off_type;
+
 public:
   basic_readonly_streambuf(Container container) noexcept
       : m_container{std::move(container)} {
@@ -35,33 +44,35 @@ protected:
     return std::distance(m_current, m_end);
   }
 
-  std::streamsize xsgetn(typename Trait::char_type *s,
-                         std::streamsize count) override {
-    auto realCount = std::min(showmanyc(), count);
-    std::copy_n(m_current, realCount, s);
-    std::advance(m_current, realCount);
-    return realCount;
+  std::streamsize xsgetn(char_type *s, std::streamsize count) override {
+    if (showmanyc() < count)
+      return 0;
+    auto to_char = map([](auto x) { return static_cast<char_type>(x); });
+    ltl::copy(Range{m_current, m_end} | to_char | take_n(count), s);
+    std::advance(m_current, count);
+    return count;
   }
 
-  typename Trait::int_type uflow() override {
+  int_type underflow() override {
     if (m_current != m_end) {
-      return Trait::to_int_type(*m_current++);
+      return Trait::to_int_type(static_cast<char_type>(*m_current));
     } else {
       return Trait::eof();
     }
   }
 
-  typename Trait::int_type underflow() override {
+  int_type uflow() override {
     if (m_current != m_end) {
-      return Trait::to_int_type(*m_current);
+      auto result = underflow();
+      ++m_current;
+      return result;
     } else {
       return Trait::eof();
     }
   }
 
-  typename Trait::pos_type
-  seekoff(typename Trait::off_type off, std::ios_base::seekdir dir,
-          std::ios_base::openmode = std::ios_base::in) override {
+  pos_type seekoff(off_type off, std::ios_base::seekdir dir,
+                   std::ios_base::openmode = std::ios_base::in) override {
     std::size_t offset;
     if (dir == std::ios_base::cur)
       offset = std::distance(m_begin, m_current) + off;
@@ -73,9 +84,8 @@ protected:
     return offset;
   }
 
-  typename Trait::pos_type
-  seekpos(typename Trait::pos_type pos,
-          std::ios_base::openmode = std::ios_base::in) override {
+  pos_type seekpos(pos_type pos,
+                   std::ios_base::openmode = std::ios_base::in) override {
     return seekoff(pos, std::ios_base::beg);
   }
 
@@ -92,6 +102,13 @@ protected:
       m_container = std::move(newContainer);
     }
     computeIterators();
+    return 0;
+  }
+
+  int_type pbackfail(int_type c = Trait::eof()) override {
+    --m_current;
+    if (c != Trait::eof())
+      *m_current = static_cast<T>(Trait::to_char_type(c));
     return 0;
   }
 
@@ -113,6 +130,10 @@ template <typename Container, typename Char,
           typename Trait = std::char_traits<Char>>
 class basic_writeonly_streambuf final
     : public std::basic_streambuf<Char, Trait> {
+  using T = std::decay_t<decltype(*begin(std::declval<Container &>()))>;
+  using char_type = typename Trait::char_type;
+  using int_type = typename Trait::int_type;
+
 public:
   Container takeContainer() noexcept { return std::move(m_container); }
   const Container &getContainer() const noexcept { return m_container; }
@@ -120,17 +141,17 @@ public:
 protected:
   std::streamsize xsputn(const typename Trait::char_type *s,
                          std::streamsize count) override {
-    const auto beg = s;
-    const auto end = s + count;
+    auto to_underlying_type = map([](auto x) { return static_cast<T>(x); });
     m_container.reserve(m_container.size() + count);
-    std::copy(beg, end, std::back_inserter(m_container));
+    ltl::copy(Range{s, s + count} | to_underlying_type,
+              std::back_inserter(m_container));
     return count;
   }
 
-  typename Trait::int_type
-  overflow(typename Trait::int_type ch = Trait::eof()) override {
-    m_container.push_back(Trait::to_char_type(ch));
-    return ch;
+  int_type overflow(int_type ch = Trait::eof()) override {
+    if (ch != Trait::eof())
+      m_container.push_back(static_cast<T>(Trait::to_char_type(ch)));
+    return 0;
   }
 
 private:

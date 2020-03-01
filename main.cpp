@@ -1136,19 +1136,34 @@ struct Message {
 };
 
 std::ostream &operator<<(std::ostream &stream, const Message &msg) {
-  stream << ltl::as_byte{0x01234567};
-  stream << ltl::as_byte{msg.size};
-  stream.write(msg.data.data(), msg.size);
+  std::ostream::sentry s{stream};
+  if (s) {
+    stream << ltl::as_byte{0x01234567};
+    stream << ltl::as_byte{msg.size};
+    stream.write(msg.data.data(), msg.size);
+  }
   return stream;
 }
 
 std::istream &operator>>(std::istream &stream, Message &msg) {
-  unsigned int header;
-  stream >> ltl::as_byte{header};
-  if (header != 0x01234567)
-    stream.setstate(std::ios_base::failbit);
-  stream >> ltl::as_byte{msg.size};
-  stream.read(msg.data.data(), msg.size);
+  std::istream::sentry s{stream, true};
+  if (s) {
+    auto pos = stream.tellg();
+    unsigned int header;
+    stream >> ltl::as_byte{header};
+
+    if (header != 0x01234567) {
+      stream.setstate(std::ios_base::failbit);
+    }
+
+    stream >> ltl::as_byte{msg.size};
+    stream.read(msg.data.data(), msg.size);
+
+    if (!stream)
+      stream.seekg(pos);
+
+    stream.rdbuf()->pubsync();
+  }
   return stream;
 }
 
