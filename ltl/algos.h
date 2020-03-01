@@ -4,6 +4,7 @@
 #include <numeric>
 #include <optional>
 
+#include "concept.h"
 #include "traits.h"
 
 namespace ltl {
@@ -66,13 +67,323 @@ namespace ltl {
     return std::make_optional(it);                                             \
   }
 
-// Version for finds
-LPL_MAP(ALGO_FIND_VALUE, find, find_if, find_if_not, adjacent_find)
-LPL_MAP(ALGO_FIND_RANGE, find_first_of, find_end, search)
+#define MAKE_CALLER(f)                                                         \
+  [&f](auto &&... xs) { return ltl::invoke(std::forward<F>(f), FWD(xs)...); }
+
+using std::begin;
+using std::end;
 
 // Non modifying
-LPL_MAP(ALGO_MONO_ITERATOR, all_of, any_of, none_of, count, count_if, for_each,
-        mismatch)
+template <typename C, typename F> auto all_of(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::all_of(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename F> auto any_of(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::any_of(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename F> auto none_of(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::none_of(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename F, requires_f(IsIterable<C>)>
+auto for_each(C &&c, F &&f) {
+  typed_static_assert_msg(is_iterable(FWD(c)), "C must be iterable");
+  return std::for_each(begin(FWD(c)), end(FWD(c)), MAKE_CALLER(f));
+}
+
+template <typename It, typename Size, typename F>
+auto for_each_n(It it, Size n, F &&f) {
+  return std::for_each_n(it, n, MAKE_CALLER(f));
+}
+
+template <typename C, typename V> auto count(const C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::count(begin(c), end(c), v);
+}
+
+template <typename C, typename F> auto count_if(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::count_if(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C1, typename C2> auto mismatch(C1 &c1, C2 &c2) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  auto it = std::mismatch(begin(c1), end(c1), begin(c2), end(c2));
+  if (it.first == end(c1) || it.second == end(c2))
+    return decltype(std::make_optional(it)){};
+  return std::make_optional(it);
+}
+
+template <typename C1, typename C2, typename F>
+auto mismatch(C1 &c1, C2 &c2, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  auto it =
+      std::mismatch(begin(c1), end(c1), begin(c2), end(c2), MAKE_CALLER(f));
+  if (it.first == end(c1) || it.second == end(c2))
+    return decltype(std::make_optional(it)){};
+  return std::make_optional(it);
+}
+
+template <typename C, typename V> auto find(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find(begin(c), end(c), v);
+  if (it != end(c)) {
+    return std::make_optional(it);
+  }
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C, typename V> auto find_ptr(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find(begin(c), end(c), v);
+  if (it != end(c)) {
+    return std::addressof(*it);
+  }
+  return decltype(std::addressof(*it)){nullptr};
+}
+
+template <typename C, typename V> auto find_value(const C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find(begin(c), end(c), v);
+  if (it != end(c)) {
+    return std::make_optional(*it);
+  }
+  return decltype(std::make_optional(*it)){};
+}
+
+template <typename C, typename F> auto find_if(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find_if(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::make_optional(it);
+  }
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C, typename F> auto find_if_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find_if(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::addressof(*it);
+  }
+  return decltype(std::addressof(*it)){nullptr};
+}
+
+template <typename C, typename F> auto find_if_value(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find_if(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::make_optional(*it);
+  }
+  return decltype(std::make_optional(*it)){};
+}
+
+template <typename C, typename F> auto find_if_not(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find_if_not(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::make_optional(it);
+  }
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C, typename F> auto find_if_not_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find_if_not(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::addressof(*it);
+  }
+  return decltype(std::addressof(*it)){nullptr};
+}
+
+template <typename C, typename F> auto find_if_not_value(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::find_if_not(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::make_optional(*it);
+  }
+  return decltype(std::make_optional(*it)){};
+}
+
+template <typename C1, typename C2> auto find_end(C1 &c1, C2 &c2) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  auto it = std::find_end(begin(c1), end(c1), begin(c2), end(c2));
+  if (it != end(c1))
+    return std::make_optional(it);
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C1, typename C2, typename F>
+auto find_end(C1 &c1, C2 &c2, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  auto it =
+      std::find_end(begin(c1), end(c1), begin(c2), end(c2), MAKE_CALLER(f));
+  if (it != end(c1))
+    return std::make_optional(it);
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C1, typename C2> auto find_first_of(C1 &c1, C2 &c2) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  auto it = std::find_first_of(begin(c1), end(c1), begin(c2), end(c2));
+  if (it != end(c1))
+    return std::make_optional(it);
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C1, typename C2, typename F>
+auto find_first_of(const C1 &c1, const C2 &c2, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  auto it = std::find_first_of(begin(c1), end(c1), begin(c2), end(c2),
+                               MAKE_CALLER(f));
+  if (it != end(c1))
+    return std::make_optional(it);
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C> auto adjacent_find(C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::adjacent_find(begin(c), end(c));
+  if (it != end(c)) {
+    return std::make_optional(it);
+  }
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C> auto adjacent_find_ptr(C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::adjacent_find(begin(c), end(c));
+  if (it != end(c)) {
+    return std::addressof(*it);
+  }
+  return decltype(std::addressof(*it)){nullptr};
+}
+
+template <typename C> auto adjacent_find_value(const C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::adjacent_find(begin(c), end(c));
+  if (it != end(c)) {
+    return std::make_optional(*it);
+  }
+  return decltype(std::make_optional(*it)){};
+}
+
+template <typename C, typename F> auto adjacent_find(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::adjacent_find(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::make_optional(it);
+  }
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C, typename F> auto adjacent_find_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::adjacent_find(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::addressof(*it);
+  }
+  return decltype(std::addressof(*it)){nullptr};
+}
+
+template <typename C, typename F> auto adjacent_find_value(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::adjacent_find(begin(c), end(c), MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::make_optional(*it);
+  }
+  return decltype(std::make_optional(*it)){};
+}
+
+template <typename C1, typename C2> auto search(C1 &c1, C2 &c2) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  auto it = std::find_first_of(begin(c1), end(c1), begin(c2), end(c2));
+  if (it != end(c1))
+    return std::make_optional(it);
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C1, typename C2, typename F>
+auto search(C1 &c1, C2 &c2, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  auto it = std::search(begin(c1), end(c1), begin(c2), end(c2), MAKE_CALLER(f));
+  if (it != end(c1))
+    return std::make_optional(it);
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C, typename Size, typename V>
+auto search_n(C &c, Size count, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::search_n(begin(c), end(c), count, v);
+  if (it != end(c)) {
+    return std::make_optional(it);
+  }
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C, typename Size, typename V>
+auto search_n_ptr(C &c, Size count, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::search_n(begin(c), end(c), count, v);
+  if (it != end(c)) {
+    return std::addressof(*it);
+  }
+  return decltype(std::addressof(*it)){nullptr};
+}
+
+template <typename C, typename Size, typename V>
+auto search_n_value(const C &c, Size count, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::search_n(begin(c), end(c), count, v);
+  if (it != end(c)) {
+    return std::make_optional(*it);
+  }
+  return decltype(std::make_optional(*it)){};
+}
+
+template <typename C, typename Size, typename V, typename F>
+auto search_n(C &c, Size count, const V &v, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::search_n(begin(c), end(c), count, v, MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::make_optional(it);
+  }
+  return decltype(std::make_optional(it)){};
+}
+
+template <typename C, typename Size, typename V, typename F>
+auto search_n_ptr(C &c, Size count, const V &v, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::search_n(begin(c), end(c), count, v, MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::addressof(*it);
+  }
+  return decltype(std::addressof(*it)){nullptr};
+}
+
+template <typename C, typename Size, typename V, typename F>
+auto search_n_value(const C &c, Size count, const V &v, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+
+  auto it = std::search_n(begin(c), end(c), count, v, MAKE_CALLER(f));
+  if (it != end(c)) {
+    return std::make_optional(*it);
+  }
+  return decltype(std::make_optional(*it)){};
+}
 
 // Modifying
 LPL_MAP(ALGO_MONO_ITERATOR, copy, copy_if, copy_backward, move, move_backward,
