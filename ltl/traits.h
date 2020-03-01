@@ -2,8 +2,6 @@
 
 #include "ltl.h"
 
-#include <any>
-
 #define qualifier_from(x) ltl::qualifier_v<ltl::getQualifierEnum(type_from(x))>
 
 namespace ltl {
@@ -227,6 +225,10 @@ template <qualifier_enum a, typename T>
 ///////////////////////// is_valid
 
 namespace detail {
+template <typename F>
+constexpr auto is_validImpl()
+    -> decltype(ltl::invoke(std::declval<F>()), void(), true_t{});
+
 template <typename F, typename... Args>
 constexpr auto is_validImpl(Args &&... args)
     -> decltype(ltl::invoke(std::declval<F>(), FWD(args)...), void(), true_t{});
@@ -275,9 +277,9 @@ template <typename T> constexpr auto is_derived_from(type_t<T> type) {
   };
 }
 
-constexpr auto is_invocable = [](auto f, auto... args) {
-  auto trait = ltl::is_valid(f);
-  return trait(args...);
+constexpr auto is_invocable = [](auto &&f, auto &&... args) {
+  auto trait = ltl::is_valid(FWD(f));
+  return trait(FWD(args)...);
 };
 
 template <typename F, typename... Ts>
@@ -297,6 +299,14 @@ template <qualifier_enum q> constexpr auto add_qualifier(qualifier_t<q>) {
 using std::begin;
 using std::end;
 
+struct any_trait_t {
+  constexpr any_trait_t() noexcept = default;
+  template <typename T> constexpr any_trait_t(T &&) noexcept {}
+};
+
+constexpr any_trait_t any_trait_v;
+
 constexpr auto is_iterable = IS_VALID((x), begin(x), end(x));
-constexpr auto is_generic_callable = IS_VALID((x), x(std::any{}));
+constexpr auto is_generic_callable = IS_VALID((x), x(any_trait_v));
+
 } // namespace ltl
