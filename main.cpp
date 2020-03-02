@@ -1,10 +1,10 @@
 #include <any>
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <functional>
 #include <string>
 #include <unordered_map>
-#include <cstddef>
 
 #include "ltl/StrongType.h"
 #include "ltl/VariantUtils.h"
@@ -1264,7 +1264,7 @@ void complexe_stream_test_message() {
     ltl::readonly_streambuf<std::vector<std::byte>> buf(buffer);
     std::istream stream(&buf);
     std::vector<Message> decodedMsgs(std::istream_iterator<Message>{stream},
-                            std::istream_iterator<Message>{});
+                                     std::istream_iterator<Message>{});
     assert(ltl::equal(msgs, decodedMsgs));
   }
   {
@@ -1272,7 +1272,7 @@ void complexe_stream_test_message() {
     ltl::readonly_streambuf<std::vector<std::byte>> buf{
         std::vector<std::byte>()};
 
-    for (uint i = 0; i < buffer.size(); i += 73) {
+    for (std::uint32_t i = 0; i < buffer.size(); i += 73) {
       buf.feed(ltl::Range{buffer.begin() + i, buffer.end()} | ltl::take_n(73));
       std::istream stream(&buf);
       std::copy(std::istream_iterator<Message>(stream),
