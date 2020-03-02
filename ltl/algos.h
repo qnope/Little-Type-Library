@@ -95,11 +95,6 @@ auto for_each(C &&c, F &&f) {
   return std::for_each(begin(FWD(c)), end(FWD(c)), MAKE_CALLER(f));
 }
 
-template <typename It, typename Size, typename F>
-auto for_each_n(It it, Size n, F &&f) {
-  return std::for_each_n(it, n, MAKE_CALLER(f));
-}
-
 template <typename C, typename V> auto count(const C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   return std::count(begin(c), end(c), v);
