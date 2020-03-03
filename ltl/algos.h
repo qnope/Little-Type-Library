@@ -380,15 +380,137 @@ auto search_n_value(const C &c, Size count, const V &v, F &&f) {
   return decltype(std::make_optional(*it)){};
 }
 
-// Modifying
-LPL_MAP(ALGO_MONO_ITERATOR, copy, copy_if, copy_backward, move, move_backward,
-        fill, transform, generate)
+template <typename C, typename It> auto copy(const C &c, It &&it) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::copy(begin(c), end(c), FWD(it));
+}
 
-LPL_MAP(ALGO_MONO_ITERATOR, remove, remove_if, remove_copy, remove_copy_if,
-        replace, replace_if, replace_copy, replace_copy_if)
+template <typename C, typename It, typename F>
+auto copy_if(const C &c, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::copy_if(begin(c), end(c), FWD(it), MAKE_CALLER(f));
+}
 
-LPL_MAP(ALGO_MONO_ITERATOR, swap_ranges, reverse, reverse_copy, shuffle, sample,
-        unique, unique_copy)
+template <typename C, typename It> auto copy_backward(const C &c, It &&it) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::copy_backward(begin(c), end(c), FWD(it));
+}
+
+template <typename C, typename It> auto move(const C &c, It &&it) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::move(begin(c), end(c), FWD(it));
+}
+
+template <typename C, typename It> auto move_backward(const C &c, It &&it) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::move_backward(begin(c), end(c), FWD(it));
+}
+
+template <typename C, typename V> void fill(const C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  std::fill(begin(c), end(c), v);
+}
+
+template <typename C, typename It, typename F>
+auto transform(const C &c, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::transform(begin(c), end(c), FWD(it), MAKE_CALLER(f));
+}
+
+template <typename C, typename G> auto generate(const C &c, G &&g) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::generate(begin(c), end(c), FWD(g));
+}
+
+template <typename C, typename V> auto remove(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::remove(begin(c), end(c), v);
+}
+
+template <typename C, typename F> auto remove_if(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::remove_if(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename It, typename T>
+auto remove_copy(const C &c, It &&it, const T &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::remove_copy(begin(c), end(c), FWD(it), v);
+}
+
+template <typename C, typename It, typename F>
+auto remove_copy_if(const C &c, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::remove_copy_if(begin(c), end(c), FWD(it), MAKE_CALLER(f));
+}
+
+template <typename C, typename V> auto replace(C &c, const V &o, const V &n) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::replace(begin(c), end(c), o, n);
+}
+
+template <typename C, typename F, typename V>
+auto replace_if(C &c, F &&f, const V &n) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::replace_if(begin(c), end(c), MAKE_CALLER(f), n);
+}
+
+template <typename C, typename It, typename V>
+auto replace_copy(C &c, It &&it, const V &o, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::replace_copy(begin(c), end(c), FWD(it), o, v);
+}
+
+template <typename C, typename It, typename F, typename V>
+auto replace_copy_if(C &c, It &&it, F &&f, const V &n) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::replace_copy_if(begin(c), end(c), FWD(it), MAKE_CALLER(f), n);
+}
+
+template <typename C> auto reverse(C &c) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  std::reverse(begin(c), end(c));
+}
+
+template <typename C, typename It> auto reverse_copy(const C &c, It &&it) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::reverse_copy(begin(c), end(c), FWD(it));
+}
+
+template <typename C, typename It, typename Size, typename G>
+auto sample(const C &c, It &&it, Size size, G &&g) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+
+  return std::sample(begin(c), end(c), FWD(it), size, FWD(g));
+}
+
+template <typename C> auto unique(C &c) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::unique(begin(c), end(c));
+}
+
+template <typename C, typename F> auto unique(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::unique(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename It> auto unique_copy(const C &c, It &&it) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::unique_copy(begin(c), end(c), FWD(it));
+}
+
+template <typename C, typename It, typename F>
+auto unique_copy(const C &c, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::unique_copy(begin(c), end(c), FWD(it), MAKE_CALLER(f));
+}
 
 // Partitioning
 LPL_MAP(ALGO_MONO_ITERATOR, is_partitioned, partition, partition_copy,
