@@ -574,10 +574,15 @@ void test_algos() {
   ltl::reverse(odds);
   assert(ltl::equal(reverseOdds, odds));
 
-  auto &oddsRef = ltl::sort(odds);
+  decltype(auto) oddsRef = ltl::sort(odds);
+  decltype(auto) oddsNonRef = ltl::sort(std::as_const(odds));
   assert(&oddsRef == &odds);
   assert(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
+  assert(ltl::equal(oddsNonRef, std::array<int, 5>{3, 5, 7, 9, 11}));
 
+  assert(&oddsRef != &oddsNonRef);
+  static_assert(ltl::type_v<std::array<int, 5>> == type_from(oddsNonRef));
+  static_assert(ltl::type_v<std::array<int, 5> &> == type_from(oddsRef));
   decltype(auto) v = ltl::sort(std::vector{5, 4, 6, 9, 8, 7});
   assert(ltl::equal(v, std::vector{4, 5, 6, 7, 8, 9}));
   static_assert(type_from(v) == ltl::type_v<std::vector<int>>);

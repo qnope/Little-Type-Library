@@ -562,8 +562,14 @@ namespace detail {
 template <typename C> decltype(auto) copy_if_needed(C &&c) {
   if_constexpr(is_const(FWD(c))) {
     std::decay_t<C> newC;
-    newC.reserve(FWD(c).size());
-    copy(FWD(c), std::back_inserter(newC));
+    constexpr auto isReservable = IS_VALID((x, size), x.reserve(size));
+    if_constexpr(isReservable(newC, FWD(c).size())) {
+      newC.reserve(FWD(c).size());
+      copy(FWD(c), std::back_inserter(newC));
+    }
+    else {
+      copy(FWD(c), begin(newC));
+    }
     return newC;
   }
   else_if_constexpr(is_rvalue_reference(FWD(c))) {
