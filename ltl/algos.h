@@ -489,6 +489,12 @@ auto sample(const C &c, It &&it, Size size, G &&g) {
   return std::sample(begin(c), end(c), FWD(it), size, FWD(g));
 }
 
+template <typename C, typename G> auto shuffle(C &c, G &&g) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::shuffle(begin(c), end(c), FWD(g));
+}
+
 template <typename C> auto unique(C &c) {
   typed_static_assert_msg(is_iterable(c) && !is_const(c),
                           "C must be iterable and not const");
@@ -512,31 +518,97 @@ auto unique_copy(const C &c, It &&it, F &&f) {
   return std::unique_copy(begin(c), end(c), FWD(it), MAKE_CALLER(f));
 }
 
+template <typename C, typename F> auto is_partitioned(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::is_partitioned(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename F> auto partition(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::partition(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename ItTrue, typename ItFalse, typename F>
+auto partition_copy(const C &c, ItTrue &&itTrue, ItFalse &&itFalse, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::partition_copy(begin(c), end(c), FWD(itTrue), FWD(itFalse),
+                             MAKE_CALLER(f));
+}
+
+template <typename C, typename F> auto stable_partition(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::stable_partition(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename F> auto partition_point(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::partition_point(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C> auto is_sorted(const C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::is_sorted(begin(c), end(c));
+}
+
+template <typename C, typename F> auto is_sorted(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::is_sorted(begin(c), end(c), MAKE_CALLER(f));
+}
+
+namespace detail {
+template <typename C> decltype(auto) copy_if_needed(C &&c) {
+  if_constexpr(is_const(FWD(c))) {
+    std::decay_t<C> newC;
+    newC.reserve(FWD(c).size());
+    copy(FWD(c), std::back_inserter(newC));
+    return newC;
+  }
+  else_if_constexpr(is_rvalue_reference(FWD(c))) {
+    return static_cast<std::decay_t<C>>(FWD(c));
+  }
+  else {
+    return FWD(c);
+  }
+}
+} // namespace detail
+
+template <typename C> decltype(auto) sort(C &&c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  decltype(auto) cToSort = detail::copy_if_needed(FWD(c));
+  std::sort(begin(cToSort), end(cToSort));
+  return cToSort;
+}
+
+template <typename C, typename F> decltype(auto) sort(C &&c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  decltype(auto) cToSort = detail::copy_if_needed(FWD(c));
+  std::sort(begin(cToSort), end(cToSort), MAKE_CALLER(f));
+  return cToSort;
+}
+
+template <typename C> decltype(auto) stable_sort(C &&c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  decltype(auto) cToSort = detail::copy_if_needed(FWD(c));
+  std::stable_sort(begin(cToSort), end(cToSort));
+  return cToSort;
+}
+
+template <typename C, typename F> decltype(auto) stable_sort(C &&c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  decltype(auto) cToSort = detail::copy_if_needed(FWD(c));
+  std::stable_sort(begin(cToSort), end(cToSort), MAKE_CALLER(f));
+  return cToSort;
+}
+
 // Partitioning
 LPL_MAP(ALGO_MONO_ITERATOR, is_partitioned, partition, partition_copy,
         stable_partition, partition_point)
 
 // Sorting
 LPL_MAP(ALGO_MONO_ITERATOR, is_sorted, is_sorted_until)
-
-// Sorting
-template <typename C, typename... P> C sort(C &&c, P &&... p) {
-  typed_static_assert_msg(is_iterable(FWD(c)) && !is_const(FWD(c)),
-                          "C must not be const and must be iterable");
-  using std::begin;
-  using std::end;
-  std::sort(begin(c), end(c), FWD(p)...);
-  return FWD(c);
-}
-
-template <typename C, typename... P> C stable_sort(C &&c, P &&... p) {
-  typed_static_assert_msg(is_iterable(FWD(c)) && !is_const(FWD(c)),
-                          "C must not be const and must be iterable");
-  using std::begin;
-  using std::end;
-  std::stable_sort(begin(c), end(c), FWD(p)...);
-  return FWD(c);
-}
 
 // binary search operations
 LPL_MAP(ALGO_MONO_ITERATOR, lower_bound, upper_bound, binary_search,

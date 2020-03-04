@@ -28,6 +28,9 @@ constexpr bool IsIntegral = decltype(is_integral(std::declval<T>()))::value;
 template <typename T, typename... Ts>
 constexpr bool IsSame = (true_v && ... && (ltl::type_v<T> == ltl::type_v<Ts>));
 
+template <typename T>
+constexpr bool IsRValueReference = std::is_rvalue_reference_v<T &&>;
+
 } // namespace ltl
 
 #define requires_f(x) ::ltl::requires_t<bool, (x)> = true
