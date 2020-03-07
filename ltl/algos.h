@@ -14,6 +14,7 @@ namespace ltl {
 
 using std::begin;
 using std::end;
+using std::size;
 
 // Non modifying
 template <typename C, typename F> auto all_of(const C &c, F &&f) {
@@ -626,7 +627,8 @@ template <typename C, typename F> auto lower_bound_ptr(C &c, F &&f) {
   return std::addressof(*it);
 }
 
-template <typename C, typename V> auto lower_bound_value(C &c, const V &v) {
+template <typename C, typename V>
+auto lower_bound_value(const C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   auto it = std::lower_bound(begin(c), end(c), v);
   if (it == end(c)) {
@@ -635,7 +637,7 @@ template <typename C, typename V> auto lower_bound_value(C &c, const V &v) {
   return std::make_optional(*it);
 }
 
-template <typename C, typename F> auto lower_bound_value(C &c, F &&f) {
+template <typename C, typename F> auto lower_bound_value(const C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   auto it = std::lower_bound(begin(c), end(c), MAKE_CALLER(f));
   if (it == end(c)) {
@@ -680,7 +682,8 @@ template <typename C, typename F> auto upper_bound_ptr(C &c, F &&f) {
   return std::addressof(*it);
 }
 
-template <typename C, typename V> auto upper_bound_value(C &c, const V &v) {
+template <typename C, typename V>
+auto upper_bound_value(const C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   auto it = std::upper_bound(begin(c), end(c), v);
   if (it == end(c)) {
@@ -689,7 +692,7 @@ template <typename C, typename V> auto upper_bound_value(C &c, const V &v) {
   return std::make_optional(*it);
 }
 
-template <typename C, typename F> auto upper_bound_value(C &c, F &&f) {
+template <typename C, typename F> auto upper_bound_value(const C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   auto it = std::upper_bound(begin(c), end(c), MAKE_CALLER(f));
   if (it == end(c)) {
@@ -734,7 +737,8 @@ template <typename C, typename F> auto binary_search_ptr(C &c, F &&f) {
   return std::addressof(*it);
 }
 
-template <typename C, typename V> auto binary_search_value(C &c, const V &v) {
+template <typename C, typename V>
+auto binary_search_value(const C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   auto it = std::binary_search(begin(c), end(c), v);
   if (it == end(c)) {
@@ -743,7 +747,7 @@ template <typename C, typename V> auto binary_search_value(C &c, const V &v) {
   return std::make_optional(*it);
 }
 
-template <typename C, typename F> auto binary_search_value(C &c, F &&f) {
+template <typename C, typename F> auto binary_search_value(const C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   auto it = std::binary_search(begin(c), end(c), MAKE_CALLER(f));
   if (it == end(c)) {
@@ -788,7 +792,8 @@ template <typename C, typename F> auto equal_range_ptr(C &c, F &&f) {
   return std::addressof(*it);
 }
 
-template <typename C, typename V> auto equal_range_value(C &c, const V &v) {
+template <typename C, typename V>
+auto equal_range_value(const C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   auto it = std::equal_range(begin(c), end(c), v);
   if (it == end(c)) {
@@ -797,7 +802,7 @@ template <typename C, typename V> auto equal_range_value(C &c, const V &v) {
   return std::make_optional(*it);
 }
 
-template <typename C, typename F> auto equal_range_value(C &c, F &&f) {
+template <typename C, typename F> auto equal_range_value(const C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   auto it = std::equal_range(begin(c), end(c), MAKE_CALLER(f));
   if (it == end(c)) {
@@ -1248,9 +1253,6 @@ auto partial_sum(const C &c, It &&it, F &&f) {
 
 template <typename C> auto computeMean(const C &c) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  using std::begin;
-  using std::end;
-  using std::size;
 
   if (c.empty()) {
     return std::optional<decltype(
