@@ -9,65 +9,6 @@
 #include "traits.h"
 
 namespace ltl {
-#define ALGO_MONO_ITERATOR(name)                                               \
-  template <typename C, typename... As> auto name(C &&c, As &&... as) {        \
-    typed_static_assert_msg(is_iterable(FWD(c)), "C must be iterable");        \
-    using std::begin;                                                          \
-    using std::end;                                                            \
-    return std::name(begin(FWD(c)), end(FWD(c)), FWD(as)...);                  \
-  }
-
-#define ALGO_DOUBLE_ITERATOR(name)                                             \
-  template <typename C1, typename C2, typename... As>                          \
-  auto name(C1 &&c1, C2 &&c2, As &&... as) {                                   \
-    typed_static_assert_msg(is_iterable(FWD(c1)) && is_iterable(FWD(c2)),      \
-                            "C1 and C2 must be iterable");                     \
-    using std::begin;                                                          \
-    using std::end;                                                            \
-    return std::name(begin(FWD(c1)), end(FWD(c1)), begin(FWD(c2)),             \
-                     end(FWD(c2)), FWD(as)...);                                \
-  }
-
-// Version for finds
-#define ALGO_FIND_VALUE(name)                                                  \
-  template <typename C, typename... As> auto name(C &&c, As &&... as) {        \
-    typed_static_assert_msg(is_iterable(FWD(c)), "C must be iterable");        \
-    using std::begin;                                                          \
-    using std::end;                                                            \
-    auto it = std::name(begin(FWD(c)), end(FWD(c)), FWD(as)...);               \
-    if (it == end(FWD(c)))                                                     \
-      return decltype(std::make_optional(it)){};                               \
-    return std::make_optional(it);                                             \
-  }                                                                            \
-  template <typename C, typename... As>                                        \
-  auto LPL_CAT(name, _value)(C && c, As && ... as) {                           \
-    auto opt = name(FWD(c), FWD(as)...);                                       \
-    if (!opt)                                                                  \
-      return decltype(std::make_optional(**opt)){};                            \
-    return std::make_optional(**opt);                                          \
-  }                                                                            \
-  template <typename C, typename... As>                                        \
-  auto LPL_CAT(name, _ptr)(C && c, As && ... as) {                             \
-    auto opt = name(FWD(c), FWD(as)...);                                       \
-    if (!opt)                                                                  \
-      return decltype(std::addressof(**opt)){};                                \
-    return std::addressof(**opt);                                              \
-  }
-
-#define ALGO_FIND_RANGE(name)                                                  \
-  template <typename C1, typename C2, typename... As>                          \
-  auto name(C1 &&c1, C2 &&c2, As &&... as) {                                   \
-    typed_static_assert_msg(is_iterable(FWD(c1)) && is_iterable(FWD(c2)),      \
-                            "C1 and C2 must be iterable");                     \
-    using std::begin;                                                          \
-    using std::end;                                                            \
-    auto it = std::name(begin(FWD(c1)), end(FWD(c1)), begin(FWD(c2)),          \
-                        end(FWD(c2)), FWD(as)...);                             \
-    if (it == std::end(FWD(c1)))                                               \
-      return decltype(std::make_optional(it)){};                               \
-    return std::make_optional(it);                                             \
-  }
-
 #define MAKE_CALLER(f)                                                         \
   [&f](auto &&... xs) { return ltl::invoke(std::forward<F>(f), FWD(xs)...); }
 
@@ -627,42 +568,218 @@ auto nth_element(C &c, It &&nth, F &&f) {
 
 template <typename C, typename V> auto lower_bound(C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  return std::lower_bound(begin(c), end(c), v);
+  auto it = std::lower_bound(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::make_optional(it)){};
+  }
+  return std::make_optional(it);
 }
 
 template <typename C, typename F> auto lower_bound(C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  return std::lower_bound(begin(c), end(c), MAKE_CALLER(f));
+  auto it = std::lower_bound(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::make_optional(it)){};
+  }
+  return std::make_optional(it);
+}
+
+template <typename C, typename V> auto lower_bound_ptr(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::lower_bound(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::addressof(*it)){};
+  }
+  return std::addressof(*it);
+}
+
+template <typename C, typename F> auto lower_bound_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::lower_bound(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::addressof(*it)){};
+  }
+  return std::addressof(*it);
+}
+
+template <typename C, typename V> auto lower_bound_value(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::lower_bound(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::make_optional(*it)){};
+  }
+  return std::make_optional(*it);
+}
+
+template <typename C, typename F> auto lower_bound_value(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::lower_bound(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::make_optional(*it)){};
+  }
+  return std::make_optional(*it);
 }
 
 template <typename C, typename V> auto upper_bound(C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  return std::upper_bound(begin(c), end(c), v);
+  auto it = std::upper_bound(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::make_optional(it)){};
+  }
+  return std::make_optional(it);
 }
 
 template <typename C, typename F> auto upper_bound(C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  return std::upper_bound(begin(c), end(c), MAKE_CALLER(f));
+  auto it = std::upper_bound(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::make_optional(it)){};
+  }
+  return std::make_optional(it);
+}
+
+template <typename C, typename V> auto upper_bound_ptr(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::upper_bound(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::addressof(*it)){};
+  }
+  return std::addressof(*it);
+}
+
+template <typename C, typename F> auto upper_bound_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::upper_bound(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::addressof(*it)){};
+  }
+  return std::addressof(*it);
+}
+
+template <typename C, typename V> auto upper_bound_value(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::upper_bound(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::make_optional(*it)){};
+  }
+  return std::make_optional(*it);
+}
+
+template <typename C, typename F> auto upper_bound_value(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::upper_bound(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::make_optional(*it)){};
+  }
+  return std::make_optional(*it);
 }
 
 template <typename C, typename V> auto binary_search(C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  return std::binary_search(begin(c), end(c), v);
+  auto it = std::binary_search(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::make_optional(it)){};
+  }
+  return std::make_optional(it);
 }
 
 template <typename C, typename F> auto binary_search(C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  return std::binary_search(begin(c), end(c), MAKE_CALLER(f));
+  auto it = std::binary_search(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::make_optional(it)){};
+  }
+  return std::make_optional(it);
+}
+
+template <typename C, typename V> auto binary_search_ptr(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::binary_search(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::addressof(*it)){};
+  }
+  return std::addressof(*it);
+}
+
+template <typename C, typename F> auto binary_search_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::binary_search(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::addressof(*it)){};
+  }
+  return std::addressof(*it);
+}
+
+template <typename C, typename V> auto binary_search_value(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::binary_search(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::make_optional(*it)){};
+  }
+  return std::make_optional(*it);
+}
+
+template <typename C, typename F> auto binary_search_value(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::binary_search(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::make_optional(*it)){};
+  }
+  return std::make_optional(*it);
 }
 
 template <typename C, typename V> auto equal_range(C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  return std::equal_range(begin(c), end(c), v);
+  auto it = std::equal_range(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::make_optional(it)){};
+  }
+  return std::make_optional(it);
 }
 
 template <typename C, typename F> auto equal_range(C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  return std::equal_range(begin(c), end(c), MAKE_CALLER(f));
+  auto it = std::equal_range(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::make_optional(it)){};
+  }
+  return std::make_optional(it);
+}
+
+template <typename C, typename V> auto equal_range_ptr(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::equal_range(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::addressof(*it)){};
+  }
+  return std::addressof(*it);
+}
+
+template <typename C, typename F> auto equal_range_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::equal_range(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::addressof(*it)){};
+  }
+  return std::addressof(*it);
+}
+
+template <typename C, typename V> auto equal_range_value(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::equal_range(begin(c), end(c), v);
+  if (it == end(c)) {
+    return decltype(std::make_optional(*it)){};
+  }
+  return std::make_optional(*it);
+}
+
+template <typename C, typename F> auto equal_range_value(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::equal_range(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c)) {
+    return decltype(std::make_optional(*it)){};
+  }
+  return std::make_optional(*it);
 }
 
 template <typename C1, typename C2, typename It>
@@ -973,26 +1090,80 @@ template <typename C, typename F> auto minmax_element_value(const C &c, F &&f) {
   return std::make_optional(tuple_t{*pair.first, *pair.second});
 }
 
-// max / min
-LPL_MAP(ALGO_MONO_ITERATOR, max_element, min_element, minmax_element)
+template <typename C1, typename C2> auto equal(const C1 &c1, const C2 &c2) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::equal(begin(c1), end(c1), begin(c2), end(c2));
+}
 
-// comparison
-LPL_MAP(ALGO_DOUBLE_ITERATOR, equal, lexicographical_compare)
+template <typename C1, typename C2, typename F>
+auto equal(const C1 &c1, const C2 &c2, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::equal(begin(c1), end(c1), begin(c2), end(c2), MAKE_CALLER(f));
+}
 
-// permutation
-ALGO_DOUBLE_ITERATOR(is_permutation)
-LPL_MAP(ALGO_MONO_ITERATOR, next_permutation, prev_permutation)
+template <typename C1, typename C2>
+auto lexicographical_compare(const C1 &c1, const C2 &c2) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::lexicographical_compare(begin(c1), end(c1), begin(c2), end(c2));
+}
 
-// numeric operations
-LPL_MAP(ALGO_MONO_ITERATOR, iota, inner_product, adjacent_difference,
-        partial_sum)
+template <typename C1, typename C2, typename F>
+auto lexicographical_compare(const C1 &c1, const C2 &c2, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::lexicographical_compare(begin(c1), end(c1), begin(c2), end(c2),
+                                      MAKE_CALLER(f));
+}
 
-#undef ALGO_MONO_ITERATOR
-#undef ALGO_DOUBLE_ITERATOR
-#undef ALGO_FIND_RANGE
-#undef ALGO_FIND_VALUE
+template <typename C1, typename C2>
+auto is_permutation(const C1 &c1, const C2 &c2) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::is_permutation(begin(c1), end(c1), begin(c2), end(c2));
+}
 
-template <class C, class T> constexpr T accumulate(const C &c, T init) {
+template <typename C1, typename C2, typename F>
+auto is_permutation(const C1 &c1, const C2 &c2, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::is_permutation(begin(c1), end(c1), begin(c2), end(c2),
+                             MAKE_CALLER(f));
+}
+
+template <typename C> auto next_permutation(C &c) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::next_permutation(begin(c), end(c));
+}
+
+template <typename C, typename F> auto next_permutation(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::next_permutation(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C> auto prev_permutation(C &c) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::prev_permutation(begin(c), end(c));
+}
+
+template <typename C, typename F> auto prev_permutation(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::prev_permutation(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename V> auto iota(C &c, V &&v) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::iota(begin(c), end(c), FWD(v));
+}
+
+template <typename C, typename T> constexpr T accumulate(const C &c, T init) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   for (const auto &e : c) {
     init = std::move(init) + e;
@@ -1000,13 +1171,55 @@ template <class C, class T> constexpr T accumulate(const C &c, T init) {
   return init;
 }
 
-template <class C, class T, class BinaryOperation>
-constexpr T accumulate(const C &c, T init, BinaryOperation op) {
+template <typename C, typename T, typename BinaryOperation>
+constexpr T accumulate(const C &c, T init, BinaryOperation &&op) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   for (const auto &e : c) {
-    init = op(std::move(init), e);
+    init = ltl::invoke(FWD(op), std::move(init), e);
   }
   return init;
+}
+
+template <typename C, typename It, typename T>
+auto inner_product(const C &c, It &&it, T &&init) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::inner_product(begin(c), end(c), FWD(it), FWD(init));
+}
+
+template <typename C, typename It, typename T, typename F1, typename F2>
+auto inner_product(const C &c, It &&it, T &&init, F1 &&f1, F2 &&f2) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::inner_product(
+      begin(c), end(c), FWD(it), FWD(init),
+      [&f1](auto &&... xs) {
+        return ltl::invoke(std::forward<F1>(f1), FWD(xs)...);
+      },
+      [&f2](auto &&... xs) {
+        return ltl::invoke(std::forward<F2>(f2), FWD(xs)...);
+      });
+}
+
+template <typename C, typename It>
+auto adjacent_difference(const C &c, It &&it) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::adjacent_difference(begin(c), end(c), FWD(it));
+}
+
+template <typename C, typename It, typename F>
+auto adjacent_difference(const C &c, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::adjacent_difference(begin(c), end(c), FWD(it), MAKE_CALLER(f));
+}
+
+template <typename C, typename It> auto partial_sum(const C &c, It &&it) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::partial_sum(begin(c), end(c), FWD(it));
+}
+
+template <typename C, typename It, typename F>
+auto partial_sum(const C &c, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::partial_sum(begin(c), end(c), FWD(it), MAKE_CALLER(f));
 }
 
 template <typename C> auto computeMean(const C &c) {
