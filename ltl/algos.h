@@ -50,21 +50,45 @@ template <typename C, typename F> auto count_if(const C &c, F &&f) {
 template <typename C1, typename C2> auto mismatch(C1 &c1, C2 &c2) {
   typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
                           "C1 and C2 must be iterable");
-  auto it = std::mismatch(begin(c1), end(c1), begin(c2), end(c2));
-  if (it.first == end(c1) || it.second == end(c2))
-    return decltype(std::make_optional(it)){};
-  return std::make_optional(it);
+  auto [it1, it2] = std::mismatch(begin(c1), end(c1), begin(c2), end(c2));
+
+  if (it1 == end(c1) && it2 == end(c2))
+    return decltype(std::make_optional(
+        tuple_t{std::make_optional(it1), std::make_optional(it2)})){};
+
+  if (it1 == end(c1))
+    return std::make_optional(
+        tuple_t{decltype(std::make_optional(it1)){}, std::make_optional(it2)});
+
+  if (it2 == end(c2))
+    return decltype(std::make_optional(std::make_optional(it1),
+                                       decltype(std::make_optional(it2)){})){};
+
+  return std::make_optional(
+      tuple_t{std::make_optional(it1), std::make_optional(it2)});
 }
 
 template <typename C1, typename C2, typename F>
 auto mismatch(C1 &c1, C2 &c2, F &&f) {
   typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
                           "C1 and C2 must be iterable");
-  auto it =
+  auto [it1, it2] =
       std::mismatch(begin(c1), end(c1), begin(c2), end(c2), MAKE_CALLER(f));
-  if (it.first == end(c1) || it.second == end(c2))
-    return decltype(std::make_optional(it)){};
-  return std::make_optional(it);
+
+  if (it1 == end(c1) && it2 == end(c2))
+    return decltype(std::make_optional(
+        tuple_t{std::make_optional(it1), std::make_optional(it2)})){};
+
+  if (it1 == end(c1))
+    return std::make_optional(
+        tuple_t{decltype(std::make_optional(it1)){}, std::make_optional(it2)});
+
+  if (it2 == end(c2))
+    return decltype(std::make_optional(std::make_optional(it1),
+                                       decltype(std::make_optional(it2)){})){};
+
+  return std::make_optional(
+      tuple_t{std::make_optional(it1), std::make_optional(it2)});
 }
 
 template <typename C, typename V> auto find(C &c, const V &v) {
