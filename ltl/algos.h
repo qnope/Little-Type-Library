@@ -4,6 +4,7 @@
 #include <numeric>
 #include <optional>
 
+#include "Tuple.h"
 #include "concept.h"
 #include "traits.h"
 
@@ -406,8 +407,9 @@ template <typename C, typename It> auto move_backward(const C &c, It &&it) {
   return std::move_backward(begin(c), end(c), FWD(it));
 }
 
-template <typename C, typename V> void fill(const C &c, const V &v) {
-  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+template <typename C, typename V> void fill(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
   std::fill(begin(c), end(c), v);
 }
 
@@ -417,8 +419,9 @@ auto transform(const C &c, It &&it, F &&f) {
   return std::transform(begin(c), end(c), FWD(it), MAKE_CALLER(f));
 }
 
-template <typename C, typename G> auto generate(const C &c, G &&g) {
-  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+template <typename C, typename G> auto generate(C &c, G &&g) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
   return std::generate(begin(c), end(c), FWD(g));
 }
 
@@ -460,13 +463,13 @@ auto replace_if(C &c, F &&f, const V &n) {
 }
 
 template <typename C, typename It, typename V>
-auto replace_copy(C &c, It &&it, const V &o, const V &v) {
+auto replace_copy(const C &c, It &&it, const V &o, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   return std::replace_copy(begin(c), end(c), FWD(it), o, v);
 }
 
 template <typename C, typename It, typename F, typename V>
-auto replace_copy_if(C &c, It &&it, F &&f, const V &n) {
+auto replace_copy_if(const C &c, It &&it, F &&f, const V &n) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   return std::replace_copy_if(begin(c), end(c), FWD(it), MAKE_CALLER(f), n);
 }
@@ -609,28 +612,366 @@ template <typename C, typename F> decltype(auto) stable_sort(C &&c, F &&f) {
   return cToSort;
 }
 
-// Partitioning
-LPL_MAP(ALGO_MONO_ITERATOR, is_partitioned, partition, partition_copy,
-        stable_partition, partition_point)
+template <typename C, typename It> auto nth_element(C &c, It &&nth) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::nth_element(begin(c), FWD(nth), end(c));
+}
 
-// Sorting
-LPL_MAP(ALGO_MONO_ITERATOR, is_sorted, is_sorted_until)
+template <typename C, typename It, typename F>
+auto nth_element(C &c, It &&nth, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::nth_element(begin(c), FWD(nth), end(c), MAKE_CALLER(f));
+}
 
-// binary search operations
-LPL_MAP(ALGO_MONO_ITERATOR, lower_bound, upper_bound, binary_search,
-        equal_range)
+template <typename C, typename V> auto lower_bound(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::lower_bound(begin(c), end(c), v);
+}
 
-// Other operations
-ALGO_DOUBLE_ITERATOR(merge)
-ALGO_MONO_ITERATOR(inplace_merge)
+template <typename C, typename F> auto lower_bound(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::lower_bound(begin(c), end(c), MAKE_CALLER(f));
+}
 
-// set operations
-LPL_MAP(ALGO_DOUBLE_ITERATOR, includes, set_difference, set_intersection,
-        set_symmetric_difference, set_union)
+template <typename C, typename V> auto upper_bound(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::upper_bound(begin(c), end(c), v);
+}
 
-// heap operation
-LPL_MAP(ALGO_MONO_ITERATOR, is_heap, is_heap_until, make_heap, push_heap,
-        pop_heap, sort_heap)
+template <typename C, typename F> auto upper_bound(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::upper_bound(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename V> auto binary_search(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::binary_search(begin(c), end(c), v);
+}
+
+template <typename C, typename F> auto binary_search(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::binary_search(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C, typename V> auto equal_range(C &c, const V &v) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::equal_range(begin(c), end(c), v);
+}
+
+template <typename C, typename F> auto equal_range(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  return std::equal_range(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C1, typename C2, typename It>
+auto merge(const C1 &c1, const C2 &c2, It &&it) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::merge(begin(c1), end(c1), begin(c2), end(c2), FWD(it));
+}
+
+template <typename C1, typename C2, typename It, typename F>
+auto merge(const C1 &c1, const C2 &c2, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::merge(begin(c1), end(c1), begin(c2), end(c2), FWD(it),
+                    MAKE_CALLER(f));
+}
+
+template <typename C, typename It> auto inplace_merge(C &c, It &&nth) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::inplace_merge(begin(c), FWD(nth), end(c));
+}
+
+template <typename C, typename It, typename F>
+auto inplace_merge(C &c, It &&nth, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be iterable and not const");
+  return std::inplace_merge(begin(c), FWD(nth), end(c), MAKE_CALLER(f));
+}
+
+template <typename C1, typename C2> auto includes(const C1 &c1, const C2 &c2) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::includes(begin(c1), end(c1), begin(c2), end(c2));
+}
+
+template <typename C1, typename C2, typename F>
+auto includes(const C1 &c1, const C2 &c2, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::includes(begin(c1), end(c1), begin(c2), end(c2), MAKE_CALLER(f));
+}
+
+template <typename C1, typename C2, typename It>
+auto set_difference(const C1 &c1, const C2 &c2, It &&it) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::set_difference(begin(c1), end(c1), begin(c2), end(c2), FWD(it));
+}
+
+template <typename C1, typename C2, typename It, typename F>
+auto set_difference(const C1 &c1, const C2 &c2, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::set_difference(begin(c1), end(c1), begin(c2), end(c2), FWD(it),
+                             MAKE_CALLER(f));
+}
+
+template <typename C1, typename C2, typename It>
+auto set_intersection(const C1 &c1, const C2 &c2, It &&it) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::set_intersection(begin(c1), end(c1), begin(c2), end(c2), FWD(it));
+}
+
+template <typename C1, typename C2, typename It, typename F>
+auto set_intersection(const C1 &c1, const C2 &c2, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::set_intersection(begin(c1), end(c1), begin(c2), end(c2), FWD(it),
+                               MAKE_CALLER(f));
+}
+
+template <typename C1, typename C2, typename It>
+auto set_symmetric_difference(const C1 &c1, const C2 &c2, It &&it) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::set_symmetric_difference(begin(c1), end(c1), begin(c2), end(c2),
+                                       FWD(it));
+}
+
+template <typename C1, typename C2, typename It, typename F>
+auto set_symmetric_difference(const C1 &c1, const C2 &c2, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::set_symmetric_difference(begin(c1), end(c1), begin(c2), end(c2),
+                                       FWD(it), MAKE_CALLER(f));
+}
+
+template <typename C1, typename C2, typename It>
+auto set_union(const C1 &c1, const C2 &c2, It &&it) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::set_union(begin(c1), end(c1), begin(c2), end(c2), FWD(it));
+}
+
+template <typename C1, typename C2, typename It, typename F>
+auto set_union(const C1 &c1, const C2 &c2, It &&it, F &&f) {
+  typed_static_assert_msg(is_iterable(c1) && is_iterable(c2),
+                          "C1 and C2 must be iterable");
+  return std::set_union(begin(c1), end(c1), begin(c2), end(c2), FWD(it),
+                        MAKE_CALLER(f));
+}
+
+template <typename C> auto is_heap(const C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be an iterable");
+  return std::is_heap(begin(c), end(c));
+}
+
+template <typename C, typename F> auto is_heap(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be an iterable");
+  return std::is_heap(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C> auto make_heap(C &c) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be an iterable and not const");
+  return std::make_heap(begin(c), end(c));
+}
+
+template <typename C, typename F> auto make_heap(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be an iterable and not const");
+  return std::make_heap(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C> auto push_heap(C &c) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be an iterable and not const");
+  return std::push_heap(begin(c), end(c));
+}
+
+template <typename C, typename F> auto push_heap(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be an iterable and not const");
+  return std::push_heap(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C> auto pop_heap(C &c) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be an iterable and not const");
+  return std::pop_heap(begin(c), end(c));
+}
+
+template <typename C, typename F> auto pop_heap(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be an iterable and not const");
+  return std::pop_heap(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C> auto sort_heap(C &c) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be an iterable and not const");
+  return std::sort_heap(begin(c), end(c));
+}
+
+template <typename C, typename F> auto sort_heap(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c) && !is_const(c),
+                          "C must be an iterable and not const");
+  return std::sort_heap(begin(c), end(c), MAKE_CALLER(f));
+}
+
+template <typename C> auto max_element(C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::max_element(begin(c), end(c));
+  if (it == end(c))
+    return decltype(std::make_optional(it)){};
+  return std::make_optional(it);
+}
+
+template <typename C, typename F> auto max_element(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::max_element(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c))
+    return decltype(std::make_optional(it)){};
+  return std::make_optional(it);
+}
+
+template <typename C> auto max_element_ptr(C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::max_element(begin(c), end(c));
+  if (it == end(c))
+    return decltype(std::addressof(*it)){};
+  return std::addressof(*it);
+}
+
+template <typename C, typename F> auto max_element_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::max_element(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c))
+    return decltype(std::addressof(*it)){};
+  return std::addressof(*it);
+}
+
+template <typename C> auto max_element_value(const C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::max_element(begin(c), end(c));
+  if (it == end(c))
+    return decltype(std::make_optional(*it)){};
+  return std::make_optional(*it);
+}
+
+template <typename C, typename F> auto max_element_value(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::max_element(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c))
+    return decltype(std::make_optional(*it)){};
+  return std::make_optional(*it);
+}
+
+template <typename C> auto min_element(C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::min_element(begin(c), end(c));
+  if (it == end(c))
+    return decltype(std::make_optional(it)){};
+  return std::make_optional(it);
+}
+
+template <typename C, typename F> auto min_element(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::min_element(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c))
+    return decltype(std::make_optional(it)){};
+  return std::make_optional(it);
+}
+
+template <typename C> auto min_element_ptr(C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::min_element(begin(c), end(c));
+  if (it == end(c))
+    return decltype(std::addressof(*it)){};
+  return std::addressof(*it);
+}
+
+template <typename C, typename F> auto min_element_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::min_element(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c))
+    return decltype(std::addressof(*it)){};
+  return std::addressof(*it);
+}
+
+template <typename C> auto min_element_value(const C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::min_element(begin(c), end(c));
+  if (it == end(c))
+    return decltype(std::make_optional(*it)){};
+  return std::make_optional(*it);
+}
+
+template <typename C, typename F> auto min_element_value(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto it = std::min_element(begin(c), end(c), MAKE_CALLER(f));
+  if (it == end(c))
+    return decltype(std::make_optional(*it)){};
+  return std::make_optional(*it);
+}
+
+template <typename C> auto minmax_element(C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto pair = std::minmax_element(begin(c), end(c));
+  if (pair.first == end(c))
+    return decltype(std::make_optional(tuple_t{pair.first, pair.second})){};
+  return std::make_optional(tuple_t{pair.first, pair.second});
+}
+
+template <typename C, typename F> auto minmax_element(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto pair = std::minmax_element(begin(c), end(c), MAKE_CALLER(f));
+  if (pair.first == end(c))
+    return decltype(std::make_optional(tuple_t{pair.first, pair.second})){};
+  return std::make_optional(tuple_t{pair.first, pair.second});
+}
+
+template <typename C> auto minmax_element_ptr(C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto pair = std::minmax_element(begin(c), end(c));
+  if (pair.first == end(c))
+    return decltype(std::make_optional(
+        tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)})){};
+  return std::make_optional(
+      tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)});
+}
+
+template <typename C, typename F> auto minmax_element_ptr(C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto pair = std::minmax_element(begin(c), end(c), MAKE_CALLER(f));
+  if (pair.first == end(c))
+    return decltype(std::make_optional(
+        tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)})){};
+  return std::make_optional(
+      tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)});
+}
+
+template <typename C> auto minmax_element_value(const C &c) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto pair = std::minmax_element(begin(c), end(c));
+  if (pair.first == end(c))
+    return decltype(std::make_optional(tuple_t{*pair.first, *pair.second})){};
+  return std::make_optional(tuple_t{*pair.first, *pair.second});
+}
+
+template <typename C, typename F> auto minmax_element_value(const C &c, F &&f) {
+  typed_static_assert_msg(is_iterable(c), "C must be iterable");
+  auto pair = std::minmax_element(begin(c), end(c), MAKE_CALLER(f));
+  if (pair.first == end(c))
+    return decltype(std::make_optional(tuple_t{*pair.first, *pair.second})){};
+  return std::make_optional(tuple_t{*pair.first, *pair.second});
+}
 
 // max / min
 LPL_MAP(ALGO_MONO_ITERATOR, max_element, min_element, minmax_element)
@@ -722,39 +1063,6 @@ template <typename C, typename K> auto take_map(C &c, K &&k) {
   auto result = std::make_optional(std::move(it->second));
   c.erase(it);
   return result;
-}
-
-template <typename C, typename... P>
-auto min_element_value(const C &c, P &&... p) {
-  using std::begin;
-  using std::end;
-  if (c.empty()) {
-    return std::decay_t<decltype(*begin(c))>{};
-  }
-  return *min_element(c, FWD(p)...);
-}
-
-template <typename C, typename... P>
-auto max_element_value(const C &c, P &&... p) {
-  using std::begin;
-  using std::end;
-  if (c.empty()) {
-    return std::decay_t<decltype(*begin(c))>{};
-  }
-  return *max_element(c, FWD(p)...);
-}
-
-template <typename C, typename... P>
-auto minmax_element_value(const C &c, P &&... p) {
-  using std::begin;
-  using std::end;
-  using underlying = std::decay_t<decltype(*begin(c))>;
-  using T = std::pair<underlying, underlying>;
-  if (c.empty()) {
-    return T{};
-  }
-  auto [min, max] = minmax_element(c, FWD(p)...);
-  return T{*min, *max};
 }
 
 } // namespace ltl

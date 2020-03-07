@@ -589,7 +589,7 @@ void test_algos() {
 
   assert(3 == ltl::min_element_value(odds));
   assert(11 == ltl::max_element_value(odds));
-  assert((std::pair{3, 11} == ltl::minmax_element_value(odds)));
+  assert((ltl::tuple_t{3, 11} == ltl::minmax_element_value(odds)));
   assert(0 == ltl::min_element_value(std::vector<int>{}));
   assert(0 == ltl::max_element_value(std::vector<int>{}));
 }
@@ -702,7 +702,7 @@ void test_filter() {
   auto oddsSuperiorThan5 = array | oddSuperiorThan5Filter;
   assert(odds.size() == 6 && evens.size() == 7 &&
          oddsSuperiorThan5.size() == 3);
-  auto [min, max] = ltl::minmax_element(oddsSuperiorThan5);
+  auto [min, max] = *ltl::minmax_element(oddsSuperiorThan5);
   assert(*min == 7 && *max == 11);
   assert(&*min == &array[7] && max.operator->().operator->() == &array[11]);
   assert((min + 2) == max);
