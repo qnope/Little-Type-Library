@@ -1259,4 +1259,6 @@ template <typename C, typename K> auto take_map(C &c, K &&k) {
   return result;
 }
 
+#undef MAKE_CALLER
+
 } // namespace ltl

@@ -2,6 +2,7 @@
 
 #include "concept.h"
 
+#include <algorithm>
 #include <deque>
 #include <list>
 #include <vector>
@@ -25,7 +26,9 @@
 
 namespace ltl {
 constexpr auto is_chainable_operation = [](auto type) {
-  return is_filter_type(type) || is_map_type(type) || type == type_v<TakerType>;
+  return is_filter_type(type) || is_map_type(type) ||
+         is_take_while_type(type) || is_drop_while_type(type) ||
+         type == type_v<TakeNType> || type == type_v<DropNType>;
 };
 // To vector, deque, list
 struct to_vector_t {};
@@ -84,9 +87,26 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
                    MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
     }
 
-    else if constexpr (t2 == type_v<TakerType>) {
+    else if constexpr (t2 == type_v<TakeNType>) {
       auto sentinelEnd = safe_advance(beginIt, endIt, b.n);
       return Range{beginIt, sentinelEnd};
+    }
+
+    else if constexpr (is_take_while_type(t2)) {
+      auto sentinelEnd = std::find_if_not(
+          beginIt, endIt, [&b](auto &&x) { return ltl::invoke(b.f, FWD(x)); });
+      return Range{beginIt, sentinelEnd};
+    }
+
+    else if constexpr (t2 == type_v<DropNType>) {
+      auto sentinelBegin = safe_advance(beginIt, endIt, b.n);
+      return Range{sentinelBegin, endIt};
+    }
+
+    else if constexpr (is_drop_while_type(t2)) {
+      auto sentinelBegin = std::find_if_not(
+          beginIt, endIt, [&b](auto &&x) { return ltl::invoke(b.f, FWD(x)); });
+      return Range{sentinelBegin, endIt};
     }
 
     else if constexpr (is_tuple_t(t2)) {

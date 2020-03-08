@@ -785,6 +785,12 @@ void test_integer_list() {
   std::array values = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
   assert(ltl::equal(ltl::valueRange(5) | ltl::take_n(10), values));
   assert(ltl::equal(ltl::valueRange(5, 10), values | ltl::take_n(5)));
+  assert(ltl::equal(
+      ltl::valueRange<uint32_t>() | ltl::drop_n(5) | ltl::take_n(10), values));
+  assert(ltl::equal(ltl::valueRange<uint32_t>() |
+                        ltl::drop_while(_((x), x < 5)) |
+                        ltl::take_while(_((x), x < 15)),
+                    values));
 }
 
 void test_zip() {
