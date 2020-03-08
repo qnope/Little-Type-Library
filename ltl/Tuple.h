@@ -231,7 +231,9 @@ public:
   }
 
   [[nodiscard]] constexpr auto pop_back() const & {
-    auto extracter = [this](auto... numbers) { return extract(numbers...); };
+    auto extracter = [this](auto... numbers) {
+      return this->extract(numbers...);
+    };
     constexpr auto numbers = build_index_sequence(length - 1_n);
     return numbers(extracter);
   }

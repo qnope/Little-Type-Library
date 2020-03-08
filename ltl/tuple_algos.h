@@ -134,7 +134,7 @@ constexpr auto none_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
 template <typename... Ts, typename Result = ltl::type_list_t<>>
 constexpr auto unique_type(const tuple_t<Ts...> &tuple,
                            Result result = Result{}) {
-  constexpr auto make_tail = [](auto, auto... ts) {
+  [[maybe_unused]] constexpr auto make_tail = [](auto, auto... ts) {
     return ltl::tuple_t{ts...};
   };
   if_constexpr(tuple.isEmpty) { //
