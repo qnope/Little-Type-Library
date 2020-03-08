@@ -320,6 +320,7 @@ template <typename N>[[nodiscard]] constexpr auto build_index_sequence(N n) {
   return tuple_t<>::build_index_sequence(0_n, n); // does not compile
 }
 
+/*
 namespace detail {
 template <typename... Xs, typename... Ys>
 constexpr auto concatTypes(type_list_t<Xs...>, type_list_t<Ys...>) {
@@ -327,20 +328,33 @@ constexpr auto concatTypes(type_list_t<Xs...>, type_list_t<Ys...>) {
 }
 } // namespace detail
 
+
 template <typename T1, typename T2, requires_f(IsTuple<T1> &&IsTuple<T2>)>
 constexpr auto operator+(T1 &&t1, T2 &&t2) {
-  constexpr auto types_1 = std::decay_t<T1>::getTypes();
-  constexpr auto types_2 = std::decay_t<T2>::getTypes();
+    constexpr auto types_1 = std::decay_t<T1>::getTypes();
+    constexpr auto types_2 = std::decay_t<T2>::getTypes();
 
-  constexpr auto types = detail::concatTypes(types_1, types_2);
+    constexpr auto types = detail::concatTypes(types_1, types_2);
 
-  constexpr auto indices1 = build_index_sequence(types_1.length);
-  constexpr auto indices2 = build_index_sequence(types_2.length);
+    constexpr auto indices1 = build_index_sequence(types_1.length);
+    constexpr auto indices2 = build_index_sequence(types_2.length);
+
+    return indices1([indices2, &t1, &t2](auto... n1s) {
+        return indices2([&t1, &t2, n1s...](auto... n2s) {
+            return decltype_t(types){std::forward<T1>(t1)[n1s]...,
+                                     std::forward<T2>(t2)[n2s]...};
+        });
+    });
+}*/
+
+template <typename... T1, typename... T2>
+constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
+  constexpr auto indices1 = build_index_sequence(t1.length);
+  constexpr auto indices2 = build_index_sequence(t2.length);
 
   return indices1([indices2, &t1, &t2](auto... n1s) {
     return indices2([&t1, &t2, n1s...](auto... n2s) {
-      return decltype_t(types){std::forward<T1>(t1)[n1s]...,
-                               std::forward<T2>(t2)[n2s]...};
+      return tuple_t<T1..., T2...>{t1[n1s]..., t2[n2s]...};
     });
   });
 }
