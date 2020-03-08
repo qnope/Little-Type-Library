@@ -78,10 +78,7 @@ template <bool v>[[nodiscard]] constexpr bool_t<!v> operator!(bool_t<v>) {
 }
 
 ///////////////////////// type
-template <typename T> struct type_t {
-  using type = T;
-  constexpr type_t() = default;
-};
+template <typename T> struct type_t { using type = T; };
 
 template <typename T> constexpr type_t<T> type_v{};
 

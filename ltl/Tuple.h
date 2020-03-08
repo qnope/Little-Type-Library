@@ -349,8 +349,8 @@ constexpr auto operator+(T1 &&t1, T2 &&t2) {
 
 template <typename... T1, typename... T2>
 constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
-  constexpr auto indices1 = build_index_sequence(t1.length);
-  constexpr auto indices2 = build_index_sequence(t2.length);
+  constexpr auto indices1 = build_index_sequence(number_v<sizeof...(T1)>);
+  constexpr auto indices2 = build_index_sequence(number_v<sizeof...(T2)>);
 
   return indices1([indices2, &t1, &t2](auto... n1s) {
     return indices2([&t1, &t2, n1s...](auto... n2s) {
