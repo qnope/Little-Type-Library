@@ -701,59 +701,14 @@ template <typename C, typename F> auto upper_bound_value(const C &c, F &&f) {
   return std::make_optional(*it);
 }
 
-template <typename C, typename V> auto binary_search(C &c, const V &v) {
+template <typename C, typename V> auto binary_search(const C &c, const V &v) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  auto it = std::binary_search(begin(c), end(c), v);
-  if (it == end(c)) {
-    return decltype(std::make_optional(it)){};
-  }
-  return std::make_optional(it);
+  return std::binary_search(begin(c), end(c), v);
 }
 
-template <typename C, typename F> auto binary_search(C &c, F &&f) {
+template <typename C, typename F> auto binary_search(const C &c, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  auto it = std::binary_search(begin(c), end(c), MAKE_CALLER(f));
-  if (it == end(c)) {
-    return decltype(std::make_optional(it)){};
-  }
-  return std::make_optional(it);
-}
-
-template <typename C, typename V> auto binary_search_ptr(C &c, const V &v) {
-  typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  auto it = std::binary_search(begin(c), end(c), v);
-  if (it == end(c)) {
-    return decltype(std::addressof(*it)){};
-  }
-  return std::addressof(*it);
-}
-
-template <typename C, typename F> auto binary_search_ptr(C &c, F &&f) {
-  typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  auto it = std::binary_search(begin(c), end(c), MAKE_CALLER(f));
-  if (it == end(c)) {
-    return decltype(std::addressof(*it)){};
-  }
-  return std::addressof(*it);
-}
-
-template <typename C, typename V>
-auto binary_search_value(const C &c, const V &v) {
-  typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  auto it = std::binary_search(begin(c), end(c), v);
-  if (it == end(c)) {
-    return decltype(std::make_optional(*it)){};
-  }
-  return std::make_optional(*it);
-}
-
-template <typename C, typename F> auto binary_search_value(const C &c, F &&f) {
-  typed_static_assert_msg(is_iterable(c), "C must be iterable");
-  auto it = std::binary_search(begin(c), end(c), MAKE_CALLER(f));
-  if (it == end(c)) {
-    return decltype(std::make_optional(*it)){};
-  }
-  return std::make_optional(*it);
+  return std::binary_search(begin(c), end(c), MAKE_CALLER(f));
 }
 
 template <typename C, typename V> auto equal_range(C &c, const V &v) {
