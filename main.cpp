@@ -590,8 +590,8 @@ void test_algos() {
   assert(3 == ltl::min_element_value(odds));
   assert(11 == ltl::max_element_value(odds));
   assert((ltl::tuple_t{3, 11} == ltl::minmax_element_value(odds)));
-  assert(0 == ltl::min_element_value(std::vector<int>{}));
-  assert(0 == ltl::max_element_value(std::vector<int>{}));
+  assert(std::nullopt == ltl::min_element_value(std::vector<int>{}));
+  assert(std::nullopt == ltl::max_element_value(std::vector<int>{}));
 }
 
 void test_find_range() {
