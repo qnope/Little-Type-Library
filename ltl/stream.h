@@ -39,6 +39,11 @@ public:
     std::advance(m_current, number);
   }
 
+  void clear() {
+    m_container = Container{};
+    computeIterators{};
+  }
+
 protected:
   std::streamsize showmanyc() override {
     return std::distance(m_current, m_end);
