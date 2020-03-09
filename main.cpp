@@ -787,7 +787,7 @@ void test_integer_list() {
   assert(ltl::equal(ltl::valueRange(5, 10), values | ltl::take_n(5)));
   assert(ltl::equal(
       ltl::valueRange<uint32_t>() | ltl::drop_n(5) | ltl::take_n(10), values));
-   assert(ltl::equal(ltl::valueRange<uint32_t>() |
+  assert(ltl::equal(ltl::valueRange<uint32_t>() |
                         ltl::drop_while(_((x), x < 5)) |
                         ltl::take_while(_((x), x < 15)),
                     values));
