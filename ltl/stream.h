@@ -41,7 +41,7 @@ public:
 
   void clear() {
     m_container = Container{};
-    computeIterators{};
+    computeIterators();
   }
 
 protected:
