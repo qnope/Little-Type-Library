@@ -6,8 +6,8 @@
 
 namespace ltl {
 template <typename It>
-class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing> {
-  friend BaseIterator<JoinIterator, It, Nothing>;
+class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false> {
+  friend BaseIterator<JoinIterator, It, Nothing, false>;
 
 public:
   using Container = typename std::iterator_traits<It>::reference;
@@ -17,10 +17,10 @@ public:
   using reference = typename std::iterator_traits<ContainerIterator>::reference;
   DECLARE_EVERYTHING_BUT_REFERENCE
 
-  using BaseIterator<JoinIterator<It>, It, Nothing>::BaseIterator;
+  using BaseIterator<JoinIterator<It>, It, Nothing, false>::BaseIterator;
 
   JoinIterator(It it, It sentinelBegin, It sentinelEnd)
-      : BaseIterator<JoinIterator<It>, It, Nothing>{
+      : BaseIterator<JoinIterator<It>, It, Nothing, false>{
             std::move(it), std::move(sentinelBegin), std::move(sentinelEnd),
             Nothing{}} {
     do {
@@ -57,6 +57,15 @@ public:
 
   reference operator*() const { return *m_containerIterator; }
   pointer operator->() const { return *m_containerIterator; }
+
+  friend std::size_t operator-(const JoinIterator &b, JoinIterator a) {
+    std::size_t res = 0;
+    while(a != b) {
+      ++res;
+      ++a;
+    }
+    return res;
+  }
 
 private:
   void assignContainerValues() {

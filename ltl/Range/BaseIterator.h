@@ -18,7 +18,7 @@ namespace ltl {
 struct IncrementTag {};
 struct DecrementTag {};
 
-template <typename DerivedIt, typename It, typename Function>
+template <typename DerivedIt, typename It, typename Function, bool CreateMinusOperator = true>
 class BaseIterator : public PostIncrementable<DerivedIt>,
                      public PostDecrementable<DerivedIt>,
                      public Comparable<DerivedIt>,
@@ -91,14 +91,20 @@ public:
     return it;
   }
 
+  template<bool createMinus = CreateMinusOperator, typename = std::enable_if_t<createMinus>>
   friend std::size_t operator-(const DerivedIt &b, DerivedIt a) noexcept {
-    std::size_t d{0};
-    while (a != b) {
-      ++d;
-      ++a;
+    constexpr auto isDifferenciable = IS_VALID((x, y), x - y);
+    if_constexpr(isDifferenciable(b.m_it, a.m_it)) {
+      return b.m_it - a.m_it;
     }
-    return d;
-  }
+    else {
+      std::size_t d{0};
+      while (a != b) {
+        ++d;
+        ++a;
+      }
+      return d;
+    }  }
 
 protected:
   It m_it{};

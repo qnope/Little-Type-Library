@@ -25,10 +25,14 @@
                                             (), ()))) { return expr; }
 
 namespace ltl {
+// reverse iterator
+struct reverse_t {};
+constexpr reverse_t reversed;
+
 constexpr auto is_chainable_operation = [](auto type) {
   return is_filter_type(type) || is_map_type(type) ||
          is_take_while_type(type) || is_drop_while_type(type) ||
-         type == type_v<TakeNType> || type == type_v<DropNType>;
+         type == type_v<TakeNType> || type == type_v<DropNType> || type == type_v<join_t> || type == type_v<reverse_t>;
 };
 // To vector, deque, list
 struct to_vector_t {};
@@ -38,9 +42,7 @@ constexpr to_vector_t to_vector{};
 constexpr to_deque_t to_deque{};
 constexpr to_list_t to_list{};
 
-// reverse iterator
-struct reverse_t {};
-constexpr reverse_t reversed;
+
 
 template <typename It> auto safe_advance(It beg, It end, std::size_t n) {
   while (n-- && beg != end)
@@ -94,7 +96,7 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
 
     else if constexpr (is_take_while_type(t2)) {
       auto sentinelEnd = std::find_if_not(
-          beginIt, endIt, [&b](auto &&x) { return ltl::invoke(b.f, FWD(x)); });
+          beginIt, endIt, [&b](auto &&x) { return ltl::invoke(::std::forward<T2>(b).f, FWD(x)); });
       return Range{beginIt, sentinelEnd};
     }
 
@@ -105,7 +107,9 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
 
     else if constexpr (is_drop_while_type(t2)) {
       auto sentinelBegin = std::find_if_not(
-          beginIt, endIt, [&b](auto &&x) { return ltl::invoke(b.f, FWD(x)); });
+          beginIt, endIt, [&b](auto &&x) {
+            return ltl::invoke(::std::forward<T2>(b).f, FWD(x));
+          });
       return Range{sentinelBegin, endIt};
     }
 
