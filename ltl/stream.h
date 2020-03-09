@@ -175,12 +175,12 @@ struct as_byte {
   }
 };
 
-std::istream &operator>>(std::istream &stream, as_byte b) {
+inline std::istream &operator>>(std::istream &stream, as_byte b) {
   stream.read(b.begin, b.count);
   return stream;
 }
 
-std::ostream &operator<<(std::ostream &stream, as_byte b) {
+inline std::ostream &operator<<(std::ostream &stream, as_byte b) {
   stream.write(b.begin, b.count);
   return stream;
 }
