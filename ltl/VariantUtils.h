@@ -99,7 +99,7 @@ public:
   }
 
   template <typename F, typename... Variants>
-  friend decltype(auto) visit_recursif(F &&f, Variants &&... variants) {
+  friend decltype(auto) recursive_visit(F &&f, Variants &&... variants) {
     std::visit(
         [&f](auto &&... xs) {
           auto unwrap = [](auto &x) -> decltype(auto) {

@@ -1320,25 +1320,25 @@ void test_variant_recursive() {
   firstR.v = R{8};
   r = std::move(firstR);
 
-  visit_recursif(overloader{[](auto &&) { assert(false); }, [](int) {}}, i);
-  visit_recursif(overloader{[](auto &&) { assert(false); }, [](double) {}}, d);
-  visit_recursif(overloader{[](auto &&) { assert(false); }, [](std::string) {}},
-                 s);
-  visit_recursif(overloader{[](auto &&) { assert(false); },
-                            [](R &r) {
-                              visit_recursif(
-                                  overloader{[](auto &&) { assert(false); },
-                                             [](R &r) {
-                                               visit_recursif(
-                                                   overloader{[](auto &&) {
-                                                                assert(false);
-                                                              },
-                                                              [](int) {}},
-                                                   r.v);
-                                             }},
-                                  r.v);
-                            }},
-                 r);
+  recursive_visit(overloader{[](auto &&) { assert(false); }, [](int) {}}, i);
+  recursive_visit(overloader{[](auto &&) { assert(false); }, [](double) {}}, d);
+  recursive_visit(
+      overloader{[](auto &&) { assert(false); }, [](std::string) {}}, s);
+  recursive_visit(overloader{[](auto &&) { assert(false); },
+                             [](R &r) {
+                               recursive_visit(
+                                   overloader{[](auto &&) { assert(false); },
+                                              [](R &r) {
+                                                recursive_visit(
+                                                    overloader{[](auto &&) {
+                                                                 assert(false);
+                                                               },
+                                                               [](int) {}},
+                                                    r.v);
+                                              }},
+                                   r.v);
+                             }},
+                  r);
 }
 
 int main() {
