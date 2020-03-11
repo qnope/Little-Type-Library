@@ -28,6 +28,10 @@ constexpr decltype(auto) apply(Tuple &&tuple,
   return FWD(tuple)(FWD(f));
 }
 
+constexpr auto get_tail = [](auto &&, auto &&... ts) {
+  return ltl::tuple_t{FWD(ts)...};
+};
+
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
 F for_each(Tuple &&tuple, F &&f) {
   typed_static_assert(is_tuple_t(tuple));
@@ -134,23 +138,39 @@ constexpr auto none_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
 template <typename... Ts, typename Result = ltl::type_list_t<>>
 constexpr auto unique_type(const tuple_t<Ts...> &tuple,
                            Result result = Result{}) {
-  [[maybe_unused]] constexpr auto make_tail = [](auto, auto... ts) {
-    return ltl::tuple_t{ts...};
-  };
   if_constexpr(tuple.isEmpty) { //
     return result;
   }
   else_if_constexpr(is_type_list_t(tuple)) { //
     auto head = tuple[0_n];
     if_constexpr(contains_type(result, head)) { //
-      return unique_type(tuple(make_tail), result);
+      return unique_type(tuple(get_tail), result);
     }
     else {
-      return unique_type(tuple(make_tail), result + tuple_t{head});
+      return unique_type(tuple(get_tail), result + tuple_t{head});
     }
   }
   else { //
     return unique_type(ltl::type_list_v<Ts...>);
+  }
+}
+
+template <typename... Ts, typename P>
+constexpr auto filter_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
+  if_constexpr(tuple.isEmpty) { //
+    return ltl::type_list_v<>;
+  }
+  else_if_constexpr(is_type_list_t(tuple)) { //
+    auto head = tuple[0_n];
+    if_constexpr(p(head)) {
+      return ltl::tuple_t{head} + filter_type(tuple(get_tail), p);
+    }
+    else {
+      return filter_type(tuple(get_tail), p);
+    }
+  }
+  else {
+    return filter_type(ltl::type_list_v<Ts...>, p);
   }
 }
 

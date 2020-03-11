@@ -291,6 +291,14 @@ void tuple_test_algo() {
     static_assert(type_from(ltl::accumulate_type(tuple2, accumulator)) ==
                   type_from(ltl::transform_type(tuple2, ltl::add_pointer)));
   }
+
+  {
+    constexpr auto list = ltl::tuple_t<int, double, char *, const char *,
+                                       double *, double, void *>{};
+    auto listp = ltl::filter_type(list, ltl::is_pointer);
+    static_assert(ltl::type_list_v<char *, const char *, double *, void *> ==
+                  decltype(listp){});
+  }
 }
 
 void push_pop_test() {
@@ -1295,6 +1303,44 @@ void complexe_stream_test_message() {
   }
 }
 
+void test_variant_recursive() {
+  using namespace ltl;
+
+  using Variant =
+      recursive_variant<int, double, std::string, recursive_wrapper<struct R>>;
+  struct R {
+    Variant v;
+  };
+
+  Variant i = 5;
+  Variant d = 5.0;
+  Variant s = std::string{"Test"};
+  Variant r = 0;
+  R firstR{8};
+  firstR.v = R{8};
+  r = std::move(firstR);
+
+  visit_recursif(overloader{[](auto &&) { assert(false); }, [](int) {}}, i);
+  visit_recursif(overloader{[](auto &&) { assert(false); }, [](double) {}}, d);
+  visit_recursif(overloader{[](auto &&) { assert(false); }, [](std::string) {}},
+                 s);
+  visit_recursif(overloader{[](auto &&) { assert(false); },
+                            [](R &r) {
+                              visit_recursif(
+                                  overloader{[](auto &&) { assert(false); },
+                                             [](R &r) {
+                                               visit_recursif(
+                                                   overloader{[](auto &&) {
+                                                                assert(false);
+                                                              },
+                                                              [](int) {}},
+                                                   r.v);
+                                             }},
+                                  r.v);
+                            }},
+                 r);
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1343,6 +1389,8 @@ int main() {
   simple_test_stream();
   stream_test_message();
   complexe_stream_test_message();
+
+  test_variant_recursive();
 
   return 0;
 }
