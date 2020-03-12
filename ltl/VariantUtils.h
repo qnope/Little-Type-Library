@@ -39,8 +39,8 @@ public:
   static constexpr auto type = type_v<T>;
 
 public:
-  template <typename _T>
-  recursive_wrapper(_T &&t) noexcept : m_ptr{std::make_unique<T>(FWD(t))} {}
+  recursive_wrapper(T &&t) noexcept
+      : m_ptr{std::make_unique<T>(std::move(t))} {}
 
   recursive_wrapper(const recursive_wrapper &other) = delete;
   recursive_wrapper(recursive_wrapper &&other) noexcept = default;
@@ -67,24 +67,9 @@ LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, IsRecursiveWrapper,
                  typename);
 
 template <typename... Ts> class recursive_variant {
-  constexpr static auto extract_type_from_recursive_wrapper = [](auto x) {
-    return decltype_t(x)::type;
-  };
-
-  constexpr static auto all_types = type_list_v<Ts...>;
-  constexpr static auto recursive_types =
-      decltype(transform_type(filter_type(all_types, is_recursive_wrapper),
-                              extract_type_from_recursive_wrapper)){};
-
 public:
   template <typename T> recursive_variant(T &&v) noexcept {
-    constexpr auto type = decay_from(v);
-    if_constexpr(contains_type(recursive_types, type)) {
-      m_variant = recursive_wrapper<decltype_t(type)>{FWD(v)};
-    }
-    else {
-      m_variant = FWD(v);
-    }
+    m_variant = FWD(v);
   }
 
   recursive_variant(const recursive_variant &) = delete;
