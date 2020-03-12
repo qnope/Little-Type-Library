@@ -48,7 +48,7 @@ public:
   recursive_wrapper &operator=(const recursive_wrapper &) = delete;
   recursive_wrapper &operator=(recursive_wrapper &&other) noexcept = default;
 
-  recursive_wrapper &operator=(T v) {
+  recursive_wrapper &operator=(T &&v) {
     m_ptr = std::make_unique<T>(std::move(v));
     return *this;
   }
@@ -80,6 +80,11 @@ public:
   recursive_variant &operator=(const recursive_variant &) = delete;
   recursive_variant &operator=(recursive_variant &&v) noexcept {
     m_variant = std::move(v.m_variant);
+    return *this;
+  }
+
+  template <typename T> recursive_variant &operator=(T &&v) {
+    m_variant = FWD(v);
     return *this;
   }
 
