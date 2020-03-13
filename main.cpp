@@ -1107,6 +1107,11 @@ void test_condition() {
   static_assert(ltl::AllOf{7, 8, 10} != 9);
   static_assert(!(ltl::AllOf{7, 8, 10} != 8));
 
+  static_assert(8 < ltl::AllOf{9, 10, 11, 12});
+
+  static_assert(ltl::AllOf{true, true, true});
+  static_assert(!ltl::AllOf{true, true, false});
+
   static_assert(ltl::AnyOf{8, 9, 10} < 19);
   static_assert(!(ltl::AnyOf{8, 9, 10} < 7));
   static_assert(ltl::AnyOf{8, 9, 10} > 9);
@@ -1120,6 +1125,10 @@ void test_condition() {
   static_assert(ltl::AnyOf{8, 9, 10} <= 10);
   static_assert(!(ltl::AnyOf{8, 9, 10} <= 5));
 
+  static_assert(ltl::AnyOf{true, true, true});
+  static_assert(ltl::AnyOf{false, true, false});
+  static_assert(!ltl::AnyOf{false, false, false});
+
   static_assert(ltl::NoneOf{8, 9, 10} < 8);
   static_assert(!(ltl::NoneOf{8, 9, 10} < 9));
   static_assert(ltl::NoneOf{8, 9, 10} > 10);
@@ -1132,6 +1141,9 @@ void test_condition() {
   static_assert(!(ltl::NoneOf{8, 9, 10} >= 10));
   static_assert(ltl::NoneOf{8, 9, 10} <= 6);
   static_assert(!(ltl::NoneOf{8, 9, 10} <= 15));
+
+  static_assert(ltl::NoneOf{false, false, false});
+  static_assert (!ltl::NoneOf{true, false, false} );
 }
 
 void test_curry_metaprogramming() {
