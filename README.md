@@ -10,23 +10,24 @@ The library is tested on :
 
 This library works under C++ 17.
 ## The different sub-library
-+ Type library:  
++ [Type library](Type.md):  
   1. Variable carrying type
   2. Compile time computation
   3. Compile time programming in the same way of run time programming
-+ Traits library
++ [Traits library](Traits.md)
   1. Traits like ordinary function
   2. Concept like
   3. Macro to generate your own traits for your templated types
-+ Tuple library
++ [Tuple library](Tuple.md)
   1. Tuple like array with square brackets notation
   2. Type manipulation with type list
   3. For each for tuples
-+ Functional library
++ [Functional library](Functional.md)
   1. Range like operators
   2. Range like algorithms that works with member functions
   3. **List** and **Maybe** monads
-+ Other utilities
+  4. Currying
++ [Other utilities](Other.md)
   1. Condition helpers (`AllOf`, `AnyOf`, `NoneOf`)
   2. Streambuf for write into an array thanks to standard streams
   3. Strong types
