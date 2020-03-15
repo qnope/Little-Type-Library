@@ -51,7 +51,7 @@ template <typename... Fs> constexpr auto composeImpl(ltl::tuple_t<Fs...> fs) {
   else {
     return [f = std::move(f),
             tails = std::move(tails)](auto &&... xs) -> decltype(auto) {
-      return f(composeImpl(tails)(FWD(xs)...));
+      return ltl::invoke(f, composeImpl(tails)(FWD(xs)...));
     };
   }
 }
