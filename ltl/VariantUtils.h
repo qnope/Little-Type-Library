@@ -7,7 +7,8 @@
 #include <variant>
 
 namespace ltl {
-template <typename V, typename... Fs> decltype(auto) match(V &&v, Fs &&... fs) {
+template <typename V, typename... Fs>
+decltype(auto) match(V &&v, Fs &&... fs) {
   return ::std::visit(overloader{FWD(fs)...}, FWD(v));
 }
 
@@ -15,32 +16,27 @@ template <typename Variant, typename... Fs>
 auto match_result(Variant &&variant, Fs... fs) {
   constexpr auto qualified_types = types_from(variant);
   overloader function{fs...};
-  constexpr auto result_from_function = [f = type_from(function)](auto type) {
-    return invoke_result(f, type);
-  };
-  using result_types =
-      decltype(transform_type(qualified_types, result_from_function));
+  constexpr auto result_from_function = [f = type_from(function)](auto type) { return invoke_result(f, type); };
+  using result_types = decltype(transform_type(qualified_types, result_from_function));
 
   using result_type = build_from_type_list<std::variant, result_types>;
-  return std::visit(
-      [&function](auto &&x) -> result_type { return function(FWD(x)); },
-      FWD(variant));
+  return std::visit([&function](auto &&x) -> result_type { return function(FWD(x)); }, FWD(variant));
 }
 
 template <typename F, typename Variant>
 constexpr auto is_callable_from(F &&f, Variant &&variant) {
-  auto is_f_invocable = is_valid(FWD(f));
+  auto is_f_invocable = IS_VALID((x), FWD(f)(std::declval<decltype_t(x)>()));
   constexpr auto qualified_types = types_from(variant);
   return all_of_type(qualified_types, is_f_invocable);
 }
 
-template <typename T> class recursive_wrapper {
+template <typename T>
+class recursive_wrapper {
 public:
   static constexpr auto type = type_v<T>;
 
 public:
-  recursive_wrapper(T &&t) noexcept
-      : m_ptr{std::make_unique<T>(std::move(t))} {}
+  recursive_wrapper(T &&t) noexcept : m_ptr{std::make_unique<T>(std::move(t))} {}
 
   recursive_wrapper(const recursive_wrapper &other) = delete;
   recursive_wrapper(recursive_wrapper &&other) noexcept = default;
@@ -63,19 +59,18 @@ private:
   std::unique_ptr<T> m_ptr;
 };
 
-LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, IsRecursiveWrapper,
-                 typename);
+LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, IsRecursiveWrapper, typename);
 
-template <typename... Ts> class recursive_variant {
+template <typename... Ts>
+class recursive_variant {
 public:
-  template <typename T> recursive_variant(T &&v) noexcept {
+  template <typename T>
+  recursive_variant(T &&v) noexcept {
     m_variant = FWD(v);
   }
 
   recursive_variant(const recursive_variant &) = delete;
-  recursive_variant(recursive_variant &&v) noexcept {
-    m_variant = std::move(v.m_variant);
-  }
+  recursive_variant(recursive_variant &&v) noexcept { m_variant = std::move(v.m_variant); }
 
   recursive_variant &operator=(const recursive_variant &) = delete;
   recursive_variant &operator=(recursive_variant &&v) noexcept {
@@ -83,7 +78,8 @@ public:
     return *this;
   }
 
-  template <typename T> recursive_variant &operator=(T &&v) {
+  template <typename T>
+  recursive_variant &operator=(T &&v) {
     m_variant = FWD(v);
     return *this;
   }

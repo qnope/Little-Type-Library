@@ -42,7 +42,7 @@ template <int I, typename T> struct Value {
     return *this;
   }
 
-  constexpr safe_add_rvalue_reference<T> operator[](ltl::number_t<I>) &&
+  constexpr T operator[](ltl::number_t<I>) &&
       noexcept {
     return static_cast<safe_add_rvalue_reference<T>>(m_value);
   }
@@ -124,7 +124,7 @@ public:
   template <int N>
       [[nodiscard]] constexpr decltype(auto) get(number_t<N> n) && noexcept {
     typed_static_assert(n < length);
-    return std::move((*this)[n]);
+    return std::move(*this)[n];
   }
 
   template <int N>[[nodiscard]] constexpr decltype(auto) get() & noexcept {
@@ -184,14 +184,12 @@ public:
 
   template <int... Is>
   [[nodiscard]] constexpr auto extract(number_t<Is>... ns) const &noexcept {
-    constexpr auto types = getTypes();
-    return tuple_t<decltype_t(types[ns])...>{this->get(ns)...};
+    return tuple_t<decltype(std::move(*const_cast<tuple_t*>(this))[ns])...>{(*this)[ns]...};
   }
 
   template <int... Is>
       [[nodiscard]] constexpr auto extract(number_t<Is>... ns) && noexcept {
-    constexpr auto types = getTypes();
-    return tuple_t<decltype_t(types[ns])...>{std::move(*this).get(ns)...};
+    return tuple_t<decltype(std::move(*const_cast<tuple_t*>(this))[ns])...>{std::move(*this)[ns]...};
   }
 
   template <typename T>

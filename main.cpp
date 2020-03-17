@@ -142,7 +142,6 @@ void tuple_test() {
   const auto [a4, b4, c4, d4] = std::as_const(tuple);
   const auto &[a5, b5, c5, d5] = tuple;
   const auto &[a6, b6, c6, d6] = std::as_const(tuple);
-  auto &&[a8, b8, c8, d8] = std::move(tuple);
   auto [a7, b7, c7, d7] = std::move(tuple);
   assert(a == tuple[0_n]);
   assert(b == tuple[1_n]);
@@ -178,11 +177,6 @@ void tuple_test() {
   assert(b7 == b);
   assert(c7 == c);
   assert(d7 == d);
-
-  assert(&a8 == &tuple[0_n]);
-  assert(&b8 == &tuple[1_n]);
-  assert(&c8 == &tuple[2_n]);
-  assert(&d8 == &tuple[3_n]);
 
   int ta, tb, td;
   double tc;
@@ -356,8 +350,8 @@ void tuple_reference_test() {
   static_assert(type_from(testBracket[2_n]) == ltl::type_v<int &>);
 
   static_assert(type_from(std::move(testBracket)[1_n]) == ltl::type_v<int &>);
-  static_assert(type_from(std::move(testBracket)[0_n]) == ltl::type_v<int &&>);
-  static_assert(type_from(std::move(testBracket)[2_n]) == ltl::type_v<int &&>);
+  static_assert(type_from(std::move(testBracket)[0_n]) == ltl::type_v<int>);
+  static_assert(type_from(std::move(testBracket)[2_n]) == ltl::type_v<int>);
 }
 
 void test_is_valid() {
@@ -1406,3 +1400,10 @@ int main() {
 
   return 0;
 }
+/*
+int main() {
+  auto tuple = ltl::tuple_t<int, double, char, char*, char**, double*, double***, void*, std::string, std::vector<std::string>, std::unordered_map<std::string, std::unordered_map<int, double>>, std::vector<std::string*>, double****, void const ***, char ** const *, int const *>{};
+
+  auto tuple2 = tuple.pop_front();
+  return 0;
+}*/

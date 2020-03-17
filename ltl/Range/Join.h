@@ -23,6 +23,8 @@ public:
       : BaseIterator<JoinIterator<It>, It, Nothing, false>{
             std::move(it), std::move(sentinelBegin), std::move(sentinelEnd),
             Nothing{}} {
+    if (this->m_it == this->m_sentinelEnd)
+      return;
     do {
       assignContainerValues();
     } while (m_containerIterator == m_sentinelEndContainer &&

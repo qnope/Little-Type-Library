@@ -20,7 +20,12 @@ template <typename... Ts> class AllOf : public Comparable<AllOf<Ts...>> {
 public:
   constexpr AllOf(Ts &&... ts) noexcept : m_values{FWD(ts)...} {}
 
-  LPL_MAP(OP, <, <=, >, >=, ==, !=)
+  OP(<)
+  OP(<=)
+  OP(>)
+  OP(>=)
+  OP(==)
+  OP(!=)
 
   constexpr operator bool() const noexcept {
     return (*this) == true;
@@ -50,7 +55,12 @@ template <typename... Ts> class AnyOf : public Comparable<AnyOf<Ts...>> {
 public:
   constexpr AnyOf(Ts &&... ts) noexcept : m_values{FWD(ts)...} {}
 
-  LPL_MAP(OP, <, <=, >, >=, ==, !=)
+  OP(<)
+  OP(<=)
+  OP(>)
+  OP(>=)
+  OP(==)
+  OP(!=)
 
   constexpr operator bool() const noexcept {
     return (*this) == true;
@@ -80,8 +90,12 @@ template <typename... Ts> class NoneOf : public Comparable<AllOf<Ts...>> {
 public:
   constexpr NoneOf(Ts &&... ts) noexcept : m_values{FWD(ts)...} {}
 
-  LPL_MAP(OP, <, <=, >, >=, ==, !=)
-
+  OP(<)
+  OP(<=)
+  OP(>)
+  OP(>=)
+  OP(==)
+  OP(!=)
   constexpr operator bool() const noexcept {
     return (*this) == true;
   }

@@ -69,7 +69,10 @@ template <bool v> constexpr bool_t<v> bool_v{};
     return {};                                                                 \
   }
 
-LPL_MAP(OP, ==, !=, &&, ||)
+OP(==)
+OP(!=)
+OP(&&)
+OP(||)
 
 #undef OP
 
@@ -125,7 +128,16 @@ template <char... _digits>[[nodiscard]] constexpr int digits_to_int() {
                                                            number_t<N2>) {     \
     return {};                                                                 \
   }
-LPL_MAP(OP, +, -, *, /, %, &, |, ^, <<, >>)
+OP(+)
+OP(-)
+OP(*)
+OP(/)
+OP(%)
+OP(&)
+OP(|)
+OP(^)
+OP(<<)
+OP(>>)
 #undef OP
 
 #define OP(op)                                                                 \
@@ -134,8 +146,12 @@ LPL_MAP(OP, +, -, *, /, %, &, |, ^, <<, >>)
                                                          number_t<N2>) {       \
     return {};                                                                 \
   }
-
-LPL_MAP(OP, ==, !=, <, <=, >, >=)
+OP(==)
+OP(!=)
+OP(<)
+OP(<=)
+OP(>)
+OP(>=)
 #undef OP
 
 #define OP(op)                                                                 \
@@ -143,7 +159,9 @@ LPL_MAP(OP, ==, !=, <, <=, >, >=)
   [[nodiscard]] constexpr number_t<(op N)> operator op(number_t<N>) {          \
     return {};                                                                 \
   }
-LPL_MAP(OP, ~, +, -)
+OP(~)
+OP(+)
+OP(-)
 #undef OP
 } // namespace ltl
 

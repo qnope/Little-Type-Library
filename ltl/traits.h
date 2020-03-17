@@ -10,68 +10,99 @@ template <typename T> std::add_rvalue_reference_t<T> declval(type_t<T>);
 template <typename T> std::add_rvalue_reference_t<T> declval(T &&);
 
 #define TRAIT(name)                                                            \
-  constexpr auto name = [](auto &&... xs) constexpr noexcept {                 \
+  [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                 \
     return bool_v<std::LPL_CAT(name, _v) <                                     \
                   std::decay_t<decltype(declval(FWD(xs)))>...>> ;              \
   };
 
 // Primary type categories
-LPL_MAP(TRAIT, is_void, is_null_pointer, is_integral, is_floating_point,
-        is_enum, is_union, is_class, is_function, is_pointer,
-        is_member_object_pointer, is_member_function_pointer)
+TRAIT(is_void)
+TRAIT(is_null_pointer)
+TRAIT(is_integral)
+TRAIT(is_floating_point)
+TRAIT(is_enum)
+TRAIT(is_union)
+TRAIT(is_class)
+TRAIT(is_function)
+TRAIT(is_pointer)
+TRAIT(is_member_object_pointer)
+TRAIT(is_member_function_pointer)
 
 // Composite type categories
-LPL_MAP(TRAIT, is_fundamental, is_arithmetic, is_scalar, is_object, is_compound,
-        is_member_pointer)
+TRAIT(is_fundamental)
+TRAIT(is_arithmetic)
+TRAIT(is_scalar)
+TRAIT(is_object)
+TRAIT(is_compound)
+TRAIT(is_member_pointer)
 
 // Type properties
-LPL_MAP(TRAIT, is_trivial, is_trivially_copyable, is_standard_layout,
-        /*has_unique_object_representations,*/ is_empty, is_polymorphic,
-        is_abstract, is_final, is_aggregate, is_signed, is_unsigned)
+TRAIT(is_trivial)
+TRAIT(is_trivially_copyable)
+TRAIT(is_standard_layout)
+TRAIT(is_empty)
+TRAIT(is_polymorphic)
+TRAIT(is_abstract)
+TRAIT(is_final)
+TRAIT(is_aggregate)
+TRAIT(is_signed)
+TRAIT(is_unsigned)
 
 // Supported operations
-LPL_MAP(TRAIT, is_default_constructible, is_trivially_default_constructible,
-        is_nothrow_default_constructible, is_copy_constructible,
-        is_trivially_copy_constructible, is_nothrow_copy_constructible,
-        is_move_constructible, is_trivially_move_constructible,
-        is_nothrow_move_constructible)
+TRAIT(is_default_constructible)
+TRAIT(is_trivially_default_constructible)
+TRAIT(is_nothrow_default_constructible)
+TRAIT(is_copy_constructible)
+TRAIT(is_trivially_copy_constructible)
+TRAIT(is_nothrow_copy_constructible)
+TRAIT(is_move_constructible)
+TRAIT(is_trivially_move_constructible)
+TRAIT(is_nothrow_move_constructible)
 
-LPL_MAP(TRAIT, is_copy_assignable, is_trivially_copy_assignable,
-        is_nothrow_copy_assignable, is_move_assignable,
-        is_trivially_move_assignable, is_nothrow_move_assignable)
+TRAIT(is_copy_assignable)
+TRAIT(is_trivially_copy_assignable)
+TRAIT(is_nothrow_copy_assignable)
+TRAIT(is_move_assignable)
+TRAIT(is_trivially_move_assignable)
+TRAIT(is_nothrow_move_assignable)
 
-LPL_MAP(TRAIT, is_assignable, is_trivially_assignable, is_nothrow_assignable,
-        is_swappable_with, is_nothrow_swappable_with)
+TRAIT(is_assignable)
+TRAIT(is_trivially_assignable)
+TRAIT(is_nothrow_assignable)
+TRAIT(is_swappable_with)
+TRAIT(is_nothrow_swappable_with)
 
-LPL_MAP(TRAIT, is_destructible, is_trivially_destructible,
-        is_nothrow_destructible, has_virtual_destructor, is_swappable,
-        is_nothrow_swappable)
+TRAIT(is_trivially_destructible)
+TRAIT(is_nothrow_destructible)
+TRAIT(has_virtual_destructor)
+TRAIT(is_swappable)
+TRAIT(is_nothrow_swappable)
 
-LPL_MAP(TRAIT, is_constructible, is_trivially_constructible,
-        is_nothrow_constructible)
+TRAIT(is_trivially_constructible)
+TRAIT(is_nothrow_constructible)
 
-// Type relationships
-LPL_MAP(TRAIT, is_same, is_base_of, is_convertible)
+TRAIT(is_base_of)
+TRAIT(is_convertible)
 
 #undef TRAIT
 
 #define TRAIT_REFERENCE(name)                                                  \
-  constexpr auto name = [](auto &&... xs) constexpr noexcept {                 \
+  [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                 \
     return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...>> ;   \
   };
 
 #define TRAIT_CVNESS(name)                                                     \
-  constexpr auto name = [](auto &&x) constexpr {                               \
+  [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr {                               \
     return bool_v<std::LPL_CAT(name, _v) <                                     \
                   std::remove_reference_t<decltype(declval(FWD(x)))>>> ;       \
   };
 
 // Reference / cv-ness
-LPL_MAP(TRAIT_REFERENCE, is_lvalue_reference, is_rvalue_reference)
-LPL_MAP(TRAIT_CVNESS, is_const, is_volatile, is_array)
-
-#undef TRAIT_REFERENCE
-#undef TRAIT_CVNESS
+TRAIT_REFERENCE(is_lvalue_reference)
+TRAIT_REFERENCE(is_rvalue_reference)
+TRAIT_CVNESS(is_const)
+TRAIT_CVNESS(is_volatile)
+TRAIT_CVNESS(is_array)
 
 #define TRAIT(name)                                                            \
   template <typename T>                                                        \
@@ -87,31 +118,40 @@ extent(type_t<T>, number_t<N> = number_t<N>{}) {
   return {};
 }
 
-LPL_MAP(TRAIT, alignment_of, rank)
+TRAIT(alignment_of)
+TRAIT(rank)
 
 #undef TRAIT
 
 #define TRAIT(name)                                                            \
-  constexpr auto name = [](auto x) constexpr noexcept {                        \
+  [[maybe_unused]] constexpr auto name = [](auto x) constexpr noexcept {                        \
     return type_v<std::LPL_CAT(name, _t) < decltype_t(x)>> ;                   \
   };
 
 // const-volatibility specifiers
-LPL_MAP(TRAIT, remove_cv, remove_const, remove_volatile, add_cv, add_const,
-        add_volatile)
+TRAIT(remove_cv)
+TRAIT(remove_const)
+TRAIT(remove_volatile)
+TRAIT(add_cv)
+TRAIT(add_const)
+TRAIT(add_volatile)
 
 // references
-LPL_MAP(TRAIT, remove_reference, add_lvalue_reference, add_rvalue_reference)
+TRAIT(remove_reference)
+TRAIT(add_lvalue_reference)
+TRAIT(add_rvalue_reference)
 
 // pointers
-LPL_MAP(TRAIT, remove_pointer, add_pointer)
+TRAIT(remove_pointer)
+TRAIT(add_pointer)
 
 // Sign modifiers
-LPL_MAP(TRAIT, make_signed, make_unsigned)
+TRAIT(make_signed)
+TRAIT(make_unsigned)
 
 // Arrays
-LPL_MAP(TRAIT, remove_extent, remove_all_extents)
-
+TRAIT(remove_extent)
+TRAIT(remove_all_extents)
 TRAIT(decay)
 #undef TRAIT
 
@@ -258,11 +298,11 @@ template <typename F> constexpr auto is_valid(F &&) {
   constexpr ltl::false_t LPL_CAT(name, Impl)(...);                             \
   template <templateType... Ts>                                                \
   constexpr ltl::true_t LPL_CAT(name, Impl)(const type<Ts...> &);              \
-  constexpr auto name = [](auto &&x) constexpr noexcept {                      \
+  [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr noexcept {                      \
     return decltype(LPL_CAT(name, Impl)(declval(FWD(x)))){};                   \
   };                                                                           \
   template <typename T>                                                        \
-  constexpr bool conceptName = decltype(name(std::declval<T>()))::value
+  [[maybe_unused]] constexpr bool conceptName = decltype(name(std::declval<T>()))::value
 
 LTL_MAKE_IS_KIND(number_t, is_number_t, IsNumber, int);
 LTL_MAKE_IS_KIND(bool_t, is_bool_t, IsBool, bool);
