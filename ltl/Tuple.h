@@ -273,18 +273,16 @@ public:
   }
 
 private:
-  template <int N1, int N2, typename List = tuple_t<>>
-  [[nodiscard]] static constexpr auto
-  build_index_sequence_helper(number_t<N1> n1, number_t<N2> n2,
-                              const List list = List{}) {
-    typed_static_assert_msg(n1 <= n2, "n1 must be lesser or equal to n2");
-    if constexpr (n1 == n2) {
-      return list;
-    }
+  template<int N, int... Ns>
+  [[nodiscard]] static constexpr auto build_index_sequence_helper(number_t<N>, std::integer_sequence<int, Ns...>) {
+    return tuple_t<number_t<N + Ns>...>{};
+  }
 
-    else {
-      return build_index_sequence_helper(n1 + 1_n, n2, list.push_back(n1));
-    }
+  template <int N1, int N2>
+  [[nodiscard]] static constexpr auto
+  build_index_sequence_helper(number_t<N1> n1, number_t<N2> n2) {
+    typed_static_assert_msg(n1 <= n2, "n1 must be lesser or equal to n2");
+    return build_index_sequence_helper(n1, std::make_integer_sequence<int, N2 - N1>{});
   }
 };
 
