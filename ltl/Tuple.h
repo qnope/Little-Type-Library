@@ -18,7 +18,7 @@ using safe_add_rvalue_reference =
     std::conditional_t<std::is_reference_v<T>, T,
                        std::add_rvalue_reference_t<T>>;
 
-template <std::size_t I, typename T> struct Value {
+template <int I, typename T> struct Value {
   constexpr Value() noexcept : m_value{} {}
   constexpr Value(T &&t) noexcept : m_value{FWD(t)} {}
   constexpr Value(const Value &v) noexcept : m_value{v.m_value} {}
@@ -62,10 +62,10 @@ template <std::size_t I, typename T> struct Value {
 
 template <typename...> class tuple_t;
 
-template <std::size_t... Is, typename... Ts>
-class tuple_t<std::index_sequence<Is...>, Ts...>
+template <int... Is, typename... Ts>
+class tuple_t<std::integer_sequence<int, Is...>, Ts...>
     : public Value<Is, Ts>...,
-      public Comparable<tuple_t<std::index_sequence<Is...>, Ts...>> {
+      public Comparable<tuple_t<std::integer_sequence<int, Is...>, Ts...>> {
 public:
   using Value<Is, Ts>::operator[]...;
 
@@ -171,9 +171,9 @@ public:
 } // namespace detail
 
 template <typename... Ts>
-class tuple_t : public detail::tuple_t<std::index_sequence_for<Ts...>, Ts...> {
+class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...> {
 public:
-  using super = detail::tuple_t<std::index_sequence_for<Ts...>, Ts...>;
+  using super = detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...>;
 
   using super::isEmpty;
   using super::length;
