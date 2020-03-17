@@ -135,39 +135,47 @@ constexpr auto none_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
   return !any_of_type(tuple, p);
 }
 
-template <typename... Ts, typename Result = ltl::type_list_t<>>
-constexpr auto unique_type(const tuple_t<Ts...> &tuple,
-                           Result result = Result{}) {
-  if_constexpr(tuple.isEmpty) { //
-    return result;
+namespace detail {
+template <typename T> struct unique_wrapper_t {};
+template <typename T> constexpr unique_wrapper_t<T> unique_wrapper_v{};
+
+template <typename... Ts, typename T>
+constexpr auto operator+(type_list_t<Ts...> list, unique_wrapper_t<type_t<T>>) {
+  constexpr auto type = type_v<T>;
+  if_constexpr(contains_type(list, type)) { //
+    return list;
   }
-  else_if_constexpr(is_type_list_t(tuple)) { //
-    auto head = tuple[0_n];
-    if_constexpr(contains_type(result, head)) { //
-      return unique_type(tuple(get_tail), result);
-    }
-    else {
-      return unique_type(tuple(get_tail), result + tuple_t{head});
-    }
+  else {
+    return type_list_v<Ts..., T>;
+  }
+}
+
+} // namespace detail
+
+template <typename... Ts>
+constexpr auto unique_type(const tuple_t<Ts...> &tuple) {
+  if_constexpr(is_type_list_t(tuple)) { //
+    return (type_list_v<> + ... + (detail::unique_wrapper_v<Ts>));
   }
   else { //
     return unique_type(ltl::type_list_v<Ts...>);
   }
 }
 
+namespace detail {
+template <typename T> constexpr auto optional_maker(T t, true_t) {
+  return ltl::tuple_t{t};
+}
+
+template <typename T> constexpr auto optional_maker(T, false_t) {
+  return ltl::tuple_t<>{};
+}
+} // namespace detail
+
 template <typename... Ts, typename P>
 constexpr auto filter_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
-  if_constexpr(tuple.isEmpty) { //
-    return ltl::type_list_v<>;
-  }
-  else_if_constexpr(is_type_list_t(tuple)) { //
-    auto head = tuple[0_n];
-    if_constexpr(p(head)) {
-      return ltl::tuple_t{head} + filter_type(tuple(get_tail), p);
-    }
-    else {
-      return filter_type(tuple(get_tail), p);
-    }
+  if_constexpr(is_type_list_t(tuple)) { //
+    return (ltl::type_list_v<> + ... + (detail::optional_maker(Ts{}, p(Ts{}))));
   }
   else {
     return filter_type(ltl::type_list_v<Ts...>, p);

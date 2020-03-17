@@ -23,13 +23,8 @@ template <typename F> fix(F)->fix<F>;
 
 template <typename F, typename... Args>
 constexpr auto report_call(F f, Args... xs) {
-  return [f = std::move(f),
-          xs = tuple_t{std::move(xs)...}](auto &&... _ys) -> decltype(auto) {
-    auto ys = tuple_t<decltype(_ys)...>(FWD(_ys)...);
-    auto args = xs + std::move(ys);
-    return args([f](auto &&... args) -> decltype(auto) {
-      return ltl::invoke(f, FWD(args)...);
-    });
+  return [f = std::move(f), xs...](auto &&... _ys) -> decltype(auto) {
+    return ltl::invoke(f, xs..., FWD(_ys)...);
   };
 }
 

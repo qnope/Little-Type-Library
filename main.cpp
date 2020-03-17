@@ -292,6 +292,8 @@ void tuple_test_algo() {
     auto listp = ltl::filter_type(list, ltl::is_pointer);
     static_assert(ltl::type_list_v<char *, const char *, double *, void *> ==
                   decltype(listp){});
+    constexpr auto empty = ltl::tuple_t<>{};
+    static_assert(empty == ltl::filter_type(empty, ltl::is_pointer));
   }
 }
 
@@ -920,7 +922,7 @@ void test_functional() {
   assert(ltl::curry(divisor)(1000)(10)(5)(5) == 4);
 
   struct test {
-    int sum(int a, int b, int c) { return a + b + c; }
+    int sum(int a, int b, int c) const { return a + b + c; }
   };
 
   test t;
@@ -1137,7 +1139,7 @@ void test_condition() {
   static_assert(!(ltl::NoneOf{8, 9, 10} <= 15));
 
   static_assert(ltl::NoneOf{false, false, false});
-  static_assert (!ltl::NoneOf{true, false, false} );
+  static_assert(!ltl::NoneOf{true, false, false});
 }
 
 void test_curry_metaprogramming() {
@@ -1402,7 +1404,11 @@ int main() {
 }
 /*
 int main() {
-  auto tuple = ltl::tuple_t<int, double, char, char*, char**, double*, double***, void*, std::string, std::vector<std::string>, std::unordered_map<std::string, std::unordered_map<int, double>>, std::vector<std::string*>, double****, void const ***, char ** const *, int const *>{};
+  auto tuple = ltl::tuple_t<int, double, char, char*, char**, double*,
+double***, void*, std::string, std::vector<std::string>,
+std::unordered_map<std::string, std::unordered_map<int, double>>,
+std::vector<std::string*>, double****, void const ***, char ** const *, int
+const *>{};
 
   auto tuple2 = tuple.pop_front();
   return 0;

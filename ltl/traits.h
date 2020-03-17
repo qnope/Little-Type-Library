@@ -10,7 +10,8 @@ template <typename T> std::add_rvalue_reference_t<T> declval(type_t<T>);
 template <typename T> std::add_rvalue_reference_t<T> declval(T &&);
 
 #define TRAIT(name)                                                            \
-  [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                 \
+  [[maybe_unused]] constexpr auto name =                                       \
+      [](auto &&... xs) constexpr noexcept {                                   \
     return bool_v<std::LPL_CAT(name, _v) <                                     \
                   std::decay_t<decltype(declval(FWD(xs)))>...>> ;              \
   };
@@ -87,12 +88,13 @@ TRAIT(is_convertible)
 #undef TRAIT
 
 #define TRAIT_REFERENCE(name)                                                  \
-  [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                 \
+  [[maybe_unused]] constexpr auto name =                                       \
+      [](auto &&... xs) constexpr noexcept {                                   \
     return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...>> ;   \
   };
 
 #define TRAIT_CVNESS(name)                                                     \
-  [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr {                               \
+  [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr {              \
     return bool_v<std::LPL_CAT(name, _v) <                                     \
                   std::remove_reference_t<decltype(declval(FWD(x)))>>> ;       \
   };
@@ -124,7 +126,7 @@ TRAIT(rank)
 #undef TRAIT
 
 #define TRAIT(name)                                                            \
-  [[maybe_unused]] constexpr auto name = [](auto x) constexpr noexcept {                        \
+  [[maybe_unused]] constexpr auto name = [](auto x) constexpr noexcept {       \
     return type_v<std::LPL_CAT(name, _t) < decltype_t(x)>> ;                   \
   };
 
@@ -298,11 +300,12 @@ template <typename F> constexpr auto is_valid(F &&) {
   constexpr ltl::false_t LPL_CAT(name, Impl)(...);                             \
   template <templateType... Ts>                                                \
   constexpr ltl::true_t LPL_CAT(name, Impl)(const type<Ts...> &);              \
-  [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr noexcept {                      \
+  [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr noexcept {     \
     return decltype(LPL_CAT(name, Impl)(declval(FWD(x)))){};                   \
   };                                                                           \
   template <typename T>                                                        \
-  [[maybe_unused]] constexpr bool conceptName = decltype(name(std::declval<T>()))::value
+  [[maybe_unused]] constexpr bool conceptName =                                \
+      decltype(name(std::declval<T>()))::value
 
 LTL_MAKE_IS_KIND(number_t, is_number_t, IsNumber, int);
 LTL_MAKE_IS_KIND(bool_t, is_bool_t, IsBool, bool);
