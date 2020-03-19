@@ -21,6 +21,8 @@
 
 #include "ltl/stream.h"
 
+#include "ltl/TypedTuple.h"
+
 void bool_test() {
   static_assert(false_v == false_v);
   static_assert(false_v != true_v);
@@ -294,6 +296,13 @@ void tuple_test_algo() {
                   decltype(listp){});
     constexpr auto empty = ltl::tuple_t<>{};
     static_assert(empty == ltl::filter_type(empty, ltl::is_pointer));
+  }
+
+  {
+    constexpr auto list1 = ltl::tuple_t<int, int, double, char>{};
+    constexpr auto list2 = ltl::tuple_t<double, int, char, double*>{};
+    static_assert(!ltl::is_unique_type(list1));
+    static_assert(ltl::is_unique_type(list2));
   }
 }
 
@@ -1349,6 +1358,13 @@ void test_variant_recursive() {
                   r);
 }
 
+void test_typed_tuple() {
+  ltl::TypedTuple<int, double, int*> tuple;
+  static_assert(type_from(tuple.get<int>()) == ltl::type_v<int&>);
+  static_assert(type_from(tuple.get<double>()) == ltl::type_v<double&>);
+  static_assert (type_from(std::as_const(tuple).get<int*>()) == ltl::type_v<int * const&> );
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1399,6 +1415,7 @@ int main() {
   complexe_stream_test_message();
 
   test_variant_recursive();
+  test_typed_tuple();
 
   return 0;
 }

@@ -162,6 +162,16 @@ constexpr auto unique_type(const tuple_t<Ts...> &tuple) {
   }
 }
 
+template<typename ...Ts>
+constexpr auto is_unique_type(const tuple_t<Ts...> &tuple) {
+  if_constexpr(is_type_list_t(tuple)) { //
+    return (true_v && ... && (count_type(tuple, Ts{}) == 1_n));
+  }
+  else {//
+    return is_unique_type(ltl::type_list_v<Ts...>);
+  }
+}
+
 namespace detail {
 template <typename T> constexpr auto optional_maker(T t, true_t) {
   return ltl::tuple_t{t};

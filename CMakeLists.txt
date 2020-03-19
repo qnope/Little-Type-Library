@@ -34,6 +34,7 @@ set(HEADERS
     ltl/tuple_algos.h
     ltl/optional_type.h
     ltl/condition.h
+	ltl/TypedTuple.h
     lpl/lpl.h
     ${HEADERS_RANGE}
     )
