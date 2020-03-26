@@ -10,7 +10,7 @@
 #include "NullableFunction.h"
 
 #define DECLARE_EVERYTHING_BUT_REFERENCE                                       \
-  using pointer = AsPointer<reference>;                                        \
+  using pointer = ::ltl::AsPointer<reference>;                                        \
   using value_type = std::decay_t<reference>;                                  \
   using difference_type = std::size_t;                                         \
   using iterator_category = std::random_access_iterator_tag;
