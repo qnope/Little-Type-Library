@@ -14,7 +14,7 @@ template <typename F> struct NullableFunction {
   NullableFunction(F f) : m_ptr{new (&m_memory) F{std::move(f)}} {}
   NullableFunction(const NullableFunction &f) {
     if (f.m_ptr)
-      m_ptr.reset(new (&m_memory) F{std::move(*f.m_ptr)});
+      m_ptr.reset(new (&m_memory) F{*f.m_ptr});
   }
 
   NullableFunction &operator=(NullableFunction f) {

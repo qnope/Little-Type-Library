@@ -301,8 +301,8 @@ void tuple_test_algo() {
   {
     constexpr auto list1 = ltl::tuple_t<int, int, double, char>{};
     constexpr auto list2 = ltl::tuple_t<double, int, char, double*>{};
-    static_assert(!ltl::is_unique_type(list1));
-    static_assert(ltl::is_unique_type(list2));
+    typed_static_assert(!ltl::is_unique_type(list1));
+    typed_static_assert(ltl::is_unique_type(list2));
   }
 }
 

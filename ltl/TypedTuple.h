@@ -7,7 +7,7 @@ namespace ltl {
 template<typename ...Ts>
 class TypedTuple : public tuple_t<Ts...> {
   static constexpr auto types = type_list_v<Ts...>;
-  static_assert (is_unique_type(types), "Types must appear only once" );
+  typed_static_assert_msg (is_unique_type(types), "Types must appear only once" );
 
 public:
   using tuple_t<Ts...>::tuple_t;
