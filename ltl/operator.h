@@ -32,7 +32,8 @@ constexpr reverse_t reversed;
 constexpr auto is_chainable_operation = [](auto type) {
   return is_filter_type(type) || is_map_type(type) ||
          is_take_while_type(type) || is_drop_while_type(type) ||
-         type == type_v<TakeNType> || type == type_v<DropNType> || type == type_v<join_t> || type == type_v<reverse_t>;
+         type == type_v<TakeNType> || type == type_v<DropNType> ||
+         type == type_v<join_t> || type == type_v<reverse_t>;
 };
 // To vector, deque, list
 struct to_vector_t {};
@@ -41,8 +42,6 @@ struct to_list_t {};
 constexpr to_vector_t to_vector{};
 constexpr to_deque_t to_deque{};
 constexpr to_list_t to_list{};
-
-
 
 template <typename It> auto safe_advance(It beg, It end, std::size_t n) {
   while (n-- && beg != end)
@@ -57,7 +56,18 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
   [[maybe_unused]] constexpr auto t1 = decay_from(a);
   [[maybe_unused]] constexpr auto t2 = decay_from(b);
 
-  if constexpr (is_iterable(t1)) {
+  if constexpr (is_iterable(t1) && is_rvalue_reference(type_from(a)) &&
+                !is_range(t1)) {
+    if constexpr (!is_owning_range(t1)) {
+      return OwningRange<T1, T2>{FWD(a), FWD(b)};
+    } else {
+      static_assert(is_chainable_operation(t2),
+                    "T2 must be a chainable operation");
+      return FWD(a).template add_operation<T2>(FWD(b));
+    }
+  }
+
+  else if constexpr (is_iterable(t1)) {
     using value =
         typename std::iterator_traits<decltype(begin(FWD(a)))>::value_type;
 
@@ -95,8 +105,9 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
     }
 
     else if constexpr (is_take_while_type(t2)) {
-      auto sentinelEnd = std::find_if_not(
-          beginIt, endIt, [&b](auto &&x) { return ltl::invoke(::std::forward<T2>(b).f, FWD(x)); });
+      auto sentinelEnd = std::find_if_not(beginIt, endIt, [&b](auto &&x) {
+        return ltl::invoke(::std::forward<T2>(b).f, FWD(x));
+      });
       return Range{beginIt, sentinelEnd};
     }
 
@@ -106,10 +117,9 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
     }
 
     else if constexpr (is_drop_while_type(t2)) {
-      auto sentinelBegin = std::find_if_not(
-          beginIt, endIt, [&b](auto &&x) {
-            return ltl::invoke(::std::forward<T2>(b).f, FWD(x));
-          });
+      auto sentinelBegin = std::find_if_not(beginIt, endIt, [&b](auto &&x) {
+        return ltl::invoke(::std::forward<T2>(b).f, FWD(x));
+      });
       return Range{sentinelBegin, endIt};
     }
 
@@ -163,7 +173,6 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
     } else if constexpr (is_tuple_t(t2)) {
       return FWD(a) + FWD(b);
     }
-
   }
 
   else if constexpr (is_optional_type(t1)) {

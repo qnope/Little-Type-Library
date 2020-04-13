@@ -300,7 +300,7 @@ void tuple_test_algo() {
 
   {
     constexpr auto list1 = ltl::tuple_t<int, int, double, char>{};
-    constexpr auto list2 = ltl::tuple_t<double, int, char, double*>{};
+    constexpr auto list2 = ltl::tuple_t<double, int, char, double *>{};
     typed_static_assert(!ltl::is_unique_type(list1));
     typed_static_assert(ltl::is_unique_type(list2));
   }
@@ -809,7 +809,7 @@ void test_integer_list() {
 void test_zip() {
   using namespace std::literals;
   using ltl::tuple_t;
-  const std::array strings = {"1"s, "2"s, "3"s, "4"s, "5"s};
+  std::array strings = {"1"s, "2"s, "3"s, "4"s, "5"s};
   const std::array strings2 = {"One"s, "Two"s, "Three"s, "Four"s, "Five"s};
   std::array integers = {1, 2, 3, 4, 5};
 
@@ -821,12 +821,16 @@ void test_zip() {
   }
 
   for (auto [index, t] :
-       ltl::enumerate(ltl::zip(integers, strings, strings2))) {
+       ltl::enumerate(ltl::zip(integers, strings, std::as_const(strings2)))) {
     auto [i, s, s2] = t;
+    static_assert(type_from(s) == ltl::type_v<std::string &>);
+    static_assert(type_from(s2) == ltl::type_v<const std::string &>);
     assert(&i == &integers[index]);
     assert(&s == &strings[index]);
     assert(&s2 == &strings2[index]);
   }
+
+  assert(ltl::equal(strings, std::array{"1"s, "2"s, "3"s, "4"s, "5"s}));
 }
 
 void test_default_view() {
@@ -865,17 +869,17 @@ void test_variant_utils() {
   ltl::match(
       variant, [](double) { assert(true); }, [](int) { assert(false); });
 
-  auto result = ltl::match_result(
-      variant, [](int x) { return static_cast<double>(x); },
-      [](double x) { return static_cast<int>(x); });
+  //  auto result = ltl::match_result(
+  //      variant, [](int x) { return static_cast<double>(x); },
+  //      [](double x) { return static_cast<int>(x); });
 
-  static_assert(type_from(result) == ltl::type_v<std::variant<double, int>>);
-  static_assert(type_from(result) != ltl::type_v<std::variant<int, double>>);
-  ltl::match(
-      result, [](int) { assert(true); }, [](double) { assert(false); });
-  result = 5.0;
-  ltl::match(
-      result, [](double) { assert(true); }, [](int) { assert(false); });
+  //  static_assert(type_from(result) == ltl::type_v<std::variant<double,
+  //  int>>); static_assert(type_from(result) != ltl::type_v<std::variant<int,
+  //  double>>); ltl::match(
+  //      result, [](int) { assert(true); }, [](double) { assert(false); });
+  //  result = 5.0;
+  //  ltl::match(
+  //      result, [](double) { assert(true); }, [](int) { assert(false); });
 
   {
     std::variant<int, double, std::string> variant;
@@ -1359,10 +1363,48 @@ void test_variant_recursive() {
 }
 
 void test_typed_tuple() {
-  ltl::TypedTuple<int, double, int*> tuple;
-  static_assert(type_from(tuple.get<int>()) == ltl::type_v<int&>);
-  static_assert(type_from(tuple.get<double>()) == ltl::type_v<double&>);
-  static_assert (type_from(std::as_const(tuple).get<int*>()) == ltl::type_v<int * const&> );
+  ltl::TypedTuple<int, double, int *> tuple;
+  static_assert(type_from(tuple.get<int>()) == ltl::type_v<int &>);
+  static_assert(type_from(tuple.get<double>()) == ltl::type_v<double &>);
+  static_assert(type_from(std::as_const(tuple).get<int *>()) ==
+                ltl::type_v<int *const &>);
+}
+
+void test_rvalue() {
+  auto returnStrings = []() -> std::vector<std::string> {
+    return {"1", "2", "3", "not a digit", "lol", "4", "5", "less", "9"};
+  };
+
+  auto enumerated = ltl::enumerate(returnStrings());
+
+  static_assert(type_from(enumerated[0][1_n]) ==
+                ltl::type_v<const std::string &>);
+  assert(size(enumerated) == 9);
+
+  assert(ltl::equal(enumerated,
+                    std::array{ltl::tuple_t{0u, "1"}, ltl::tuple_t{1u, "2"},
+                               ltl::tuple_t{2u, "3"},
+                               ltl::tuple_t{3u, "not a digit"},
+                               ltl::tuple_t{4u, "lol"}, ltl::tuple_t{5u, "4"},
+                               ltl::tuple_t{6u, "5"}, ltl::tuple_t{7u, "less"},
+                               ltl::tuple_t{8u, "9"}}));
+
+  auto isDigit = ltl::filter(_((x), std::isdigit(x[0])));
+  auto toInt = ltl::map(_((x), std::atoi(x.c_str())));
+
+  auto listOfNumber = returnStrings() | isDigit | toInt;
+
+  assert(ltl::accumulate(listOfNumber, 0) == 1 + 2 + 3 + 4 + 5 + 9);
+  assert(size(listOfNumber) == 6);
+
+  auto identity = ltl::map([](auto &x) -> decltype(x) { return (x); });
+  auto listOfChar = returnStrings() >> identity;
+  assert(listOfChar[5] == 't');
+  assert(size(listOfChar) == 24);
+
+  auto listOfCharDigit = (returnStrings() | isDigit) >> identity;
+  assert(ltl::equal(listOfCharDigit, std::array{'1', '2', '3', '4', '5', '9'}));
+  assert(size(listOfCharDigit) == size(listOfNumber));
 }
 
 int main() {
@@ -1416,6 +1458,8 @@ int main() {
 
   test_variant_recursive();
   test_typed_tuple();
+
+  test_rvalue();
 
   return 0;
 }

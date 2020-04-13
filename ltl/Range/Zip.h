@@ -33,6 +33,42 @@ struct ZipIterator
   }
 };
 
+namespace details {
+using std::begin;
+using std::end;
+
+template <typename... Containers>
+auto build_begin_zip_iterator(Containers &&... containers) {
+  return ZipIterator<decltype(begin(FWD(containers)))...>{
+      tuple_t{begin(FWD(containers))...}, tuple_t{begin(FWD(containers))...},
+      tuple_t{end(FWD(containers))...}, Nothing{}};
+}
+
+template <typename... Containers>
+auto build_end_zip_iterator(Containers &&... containers) {
+  return ZipIterator<decltype(end(FWD(containers)))...>{
+      tuple_t{end(FWD(containers))...}};
+}
+} // namespace details
+
+template <typename... Containers>
+class ZipRange : public AbstractRange<ZipRange<Containers...>> {
+public:
+  ZipRange(Containers... containers) noexcept
+      : m_containers{FWD(containers)...} {}
+
+  auto begin() const noexcept {
+    return std::move(m_containers)(lift(details::build_begin_zip_iterator));
+  }
+
+  auto end() const noexcept {
+    return std::move(m_containers)(lift(details::build_end_zip_iterator));
+  }
+
+private:
+  ltl::tuple_t<Containers...> m_containers;
+};
+
 template <typename... Containers> auto zip(Containers &&... containers) {
   constexpr auto types = type_list_v<Containers...>;
   using std::size;
@@ -44,12 +80,7 @@ template <typename... Containers> auto zip(Containers &&... containers) {
     return (true && ... && (size(FWD(c1)) == size(FWD(cs))));
   }));
 
-  return Range{ZipIterator<decltype(std::begin(FWD(containers)))...>{
-                   tuple_t{std::begin(FWD(containers))...},
-                   tuple_t{std::begin(FWD(containers))...},
-                   tuple_t{std::end(FWD(containers))...}, Nothing{}},
-               ZipIterator<decltype(std::begin(FWD(containers)))...>{
-                   tuple_t{std::end(FWD(containers))...}}};
+  return ZipRange<Containers...>{FWD(containers)...};
 }
 
 } // namespace ltl
