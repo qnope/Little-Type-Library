@@ -10,17 +10,15 @@
 #include "NullableFunction.h"
 
 #define DECLARE_EVERYTHING_BUT_REFERENCE                                       \
-  using pointer = ::ltl::AsPointer<reference>;                                        \
+  using pointer = ::ltl::AsPointer<reference>;                                 \
   using value_type = std::decay_t<reference>;                                  \
   using difference_type = std::size_t;                                         \
   using iterator_category = std::random_access_iterator_tag;
 
 namespace ltl {
 
-struct IncrementTag {};
-struct DecrementTag {};
-
-template <typename DerivedIt, typename It, typename Function, bool CreateMinusOperator = true>
+template <typename DerivedIt, typename It, typename Function,
+          bool CreateMinusOperator = true>
 class BaseIterator : public PostIncrementable<DerivedIt>,
                      public PostDecrementable<DerivedIt>,
                      public Comparable<DerivedIt>,
@@ -93,12 +91,11 @@ public:
     return it;
   }
 
-  template<bool createMinus = CreateMinusOperator, typename = std::enable_if_t<createMinus>>
+  template <bool createMinus = CreateMinusOperator,
+            typename = std::enable_if_t<createMinus>>
   friend std::size_t operator-(const DerivedIt &b, DerivedIt a) noexcept {
     constexpr auto isDifferenciable = IS_VALID((x, y), x - y);
-    if_constexpr(isDifferenciable(b.m_it, a.m_it)) {
-      return b.m_it - a.m_it;
-    }
+    if_constexpr(isDifferenciable(b.m_it, a.m_it)) { return b.m_it - a.m_it; }
     else {
       std::size_t d{0};
       while (a != b) {
@@ -106,7 +103,8 @@ public:
         ++a;
       }
       return d;
-    }  }
+    }
+  }
 
 protected:
   It m_it{};

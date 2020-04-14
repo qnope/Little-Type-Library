@@ -16,6 +16,7 @@ set(HEADERS_RANGE
     ltl/Range/Join.h
     ltl/Range/enumerate.h
     ltl/Range/DefaultView.h
+	ltl/Range/GroupBy.h
     )
 
 set(HEADERS

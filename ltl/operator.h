@@ -8,11 +8,11 @@
 #include <vector>
 
 #include "Range/Filter.h"
+#include "Range/GroupBy.h"
 #include "Range/Join.h"
 #include "Range/Map.h"
 #include "Range/Range.h"
 #include "Range/Taker.h"
-#include "Tuple.h"
 #include "optional_type.h"
 
 #define _LAMBDA_WRITE_AUTO(x, y, ...)                                          \
@@ -97,6 +97,13 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
       return Range{MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{
                        beginIt, beginIt, endIt, FWD(b).f},
                    MapIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
+    }
+
+    else if constexpr (is_group_by_type(t2)) {
+      return Range{
+          GroupByIterator<it, std::decay_t<decltype(FWD(b).f)>>{
+              beginIt, beginIt, endIt, FWD(b).f},
+          GroupByIterator<it, std::decay_t<decltype(FWD(b).f)>>{endIt}};
     }
 
     else if constexpr (t2 == type_v<TakeNType>) {

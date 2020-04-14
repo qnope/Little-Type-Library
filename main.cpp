@@ -1407,6 +1407,54 @@ void test_rvalue() {
   assert(size(listOfCharDigit) == size(listOfNumber));
 }
 
+void test_group_by() {
+  enum class PlayerGenre { MALE, FEMALE };
+  struct Player {
+    std::string team;
+    std::string name;
+    PlayerGenre genre;
+  };
+
+  std::vector<Player> players = {{"FRA", "Antoine", PlayerGenre::MALE},
+                                 {"FRA", "Boris", PlayerGenre::MALE},
+                                 {"FRA", "Ludi", PlayerGenre::FEMALE},
+                                 {"FRA", "Baptou", PlayerGenre::MALE},
+                                 {"ENG", "Rowena", PlayerGenre::FEMALE},
+                                 {"ENG", "Hermione", PlayerGenre::FEMALE},
+                                 {"ENG", "John", PlayerGenre::MALE},
+                                 {"POR", "Christiano", PlayerGenre::MALE},
+                                 {"POR", "Jose", PlayerGenre::MALE},
+                                 {"POR", "Raul", PlayerGenre::MALE},
+                                 {"JPN", "Stef", PlayerGenre::MALE},
+                                 {"JPN", "Hishiro", PlayerGenre::FEMALE},
+                                 {"JPN", "Kariu", PlayerGenre::FEMALE},
+                                 {"JPN", "An", PlayerGenre::FEMALE}};
+
+  auto group_by_team = ltl::group_by(&Player::team);
+  auto groupped_by_team = players | group_by_team;
+
+  assert(size(groupped_by_team) == 4);
+  assert(size(groupped_by_team[2][1_n]) == 3);
+  assert(size((*((groupped_by_team.begin() + 2) - 1))[1_n]) == 3);
+  assert(size((*((groupped_by_team.begin() + 2) - 2))[1_n]) == 4);
+  assert(std::addressof(groupped_by_team[3][0_n]) ==
+         std::addressof(players[10].team));
+  assert(std::addressof(groupped_by_team[3][1_n][2]) ==
+         std::addressof(players[12]));
+
+  auto onlyFemale = ltl::filter(_((x), x.genre == PlayerGenre::FEMALE));
+  auto femaleTeams = players | onlyFemale | group_by_team;
+
+  static_assert(type_from(femaleTeams[0][0_n]) == ltl::type_v<std::string &>);
+  static_assert(type_from(femaleTeams[0][1_n][0]) == ltl::type_v<Player &>);
+
+  assert(size(femaleTeams) == 3);
+  assert(size(femaleTeams[1][1_n]) == 2);
+  assert(std::addressof(femaleTeams[2][1_n][2]) == std::addressof(players[13]));
+  assert(std::addressof((*(((femaleTeams.begin() + 2) - 1) - 1))[1_n][0]) ==
+         std::addressof(players[2]));
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1460,6 +1508,8 @@ int main() {
   test_typed_tuple();
 
   test_rvalue();
+
+  test_group_by();
 
   return 0;
 }
