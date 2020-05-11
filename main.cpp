@@ -1482,6 +1482,12 @@ void test_zip_tuple() {
   assert(sumD == 10.0 + 3.0 + 1.0 + 10.0);
 }
 
+void test_scanl_tuple() {
+  auto list = ltl::number_list_v<0, 1, 2, 3, 4, 5, 6>;
+  auto scanned = ltl::partial_sum(_((x, y), x + y), list);
+  typed_static_assert((scanned == ltl::number_list_v<0, 1, 3, 6, 10, 15, 21>));
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1539,17 +1545,7 @@ int main() {
   test_group_by();
 
   test_zip_tuple();
+  test_scanl_tuple();
 
   return 0;
 }
-/*
-int main() {
-  auto tuple = ltl::tuple_t<int, double, char, char*, char**, double*,
-double***, void*, std::string, std::vector<std::string>,
-std::unordered_map<std::string, std::unordered_map<int, double>>,
-std::vector<std::string*>, double****, void const ***, char ** const *, int
-const *>{};
-
-  auto tuple2 = tuple.pop_front();
-  return 0;
-}*/

@@ -4,9 +4,9 @@
 #include <numeric>
 #include <optional>
 
-#include "invoke.h"
 #include "Tuple.h"
 #include "concept.h"
+#include "invoke.h"
 #include "traits.h"
 
 namespace ltl {
@@ -1196,12 +1196,13 @@ auto adjacent_difference(const C &c, It &&it, F &&f) {
   return std::adjacent_difference(begin(c), end(c), FWD(it), MAKE_CALLER(f));
 }
 
-template <typename C, typename It> auto partial_sum(const C &c, It &&it) {
+template <typename C, typename It, requires_f(IsIterable<C>)>
+auto partial_sum(const C &c, It &&it) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   return std::partial_sum(begin(c), end(c), FWD(it));
 }
 
-template <typename C, typename It, typename F>
+template <typename C, typename It, typename F, requires_f(IsIterable<C>)>
 auto partial_sum(const C &c, It &&it, F &&f) {
   typed_static_assert_msg(is_iterable(c), "C must be iterable");
   return std::partial_sum(begin(c), end(c), FWD(it), MAKE_CALLER(f));

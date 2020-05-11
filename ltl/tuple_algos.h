@@ -198,7 +198,7 @@ constexpr void zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
   auto indexer = tuple.make_indexer();
   typed_static_assert_msg(((ltl::is_tuple_t(tuples)) && ... && true_v),
                           "All tuples must be tuples");
-  typed_static_assert_msg((... + (tuples.length == indexer.length)),
+  typed_static_assert_msg((... && (tuples.length == indexer.length)),
                           "All tuples must be of the same length");
   for_each(indexer, [&f, &tuple, &tuples...](auto indices) {
     std::forward<F>(f)(tuple[indices], tuples[indices]...);
@@ -208,6 +208,40 @@ constexpr void zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
 template <typename F, typename T, requires_f(ltl::IsTuple<T>)>
 constexpr void enumerate_with(F &&f, T &&tuple) {
   zip_with(FWD(f), tuple.make_indexer(), FWD(tuple));
+}
+
+namespace detail {
+template <typename F, typename T> struct scanl_wrapper {
+  scanl_wrapper(F f, T t) : f{f}, t{t} {}
+  F f;
+  T t;
+};
+
+template <typename F, typename T, typename N>
+constexpr auto operator+(scanl_wrapper<F, T> wrapper, N &&newElement) {
+  auto last = wrapper.t[wrapper.t.length - 1_n];
+  auto newTuple = wrapper.t.push_back(wrapper.f(last, FWD(newElement)));
+  return scanl_wrapper{wrapper.f, newTuple};
+}
+} // namespace detail
+
+template <typename F, typename T, typename Tuple>
+constexpr auto scanl([[maybe_unused]] F f, T init, Tuple &&tuple) {
+  if_constexpr(tuple.isEmpty) { //
+    return ltl::tuple_t<T>{std::move(init)};
+  }
+  else {
+    return FWD(tuple)([f, init = std::move(init)](auto &&... xs) {
+      return (detail::scanl_wrapper{f, ltl::tuple_t<T>{std::move(init)}} + ... +
+              (FWD(xs)))
+          .t;
+    });
+  }
+}
+
+template <typename F, typename Tuple, requires_f(ltl::IsTuple<Tuple>)>
+constexpr auto partial_sum(F f, Tuple &&tuple) {
+  return scanl(std::move(f), 0_n, std::move(tuple)).pop_front();
 }
 
 template <template <typename...> typename T, typename List>
