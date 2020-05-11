@@ -1455,6 +1455,33 @@ void test_group_by() {
          std::addressof(players[2]));
 }
 
+void test_zip_tuple() {
+  ltl::tuple_t<int, double> a{1, 3.0};
+  ltl::tuple_t<int, double> b{4, 10.0};
+  auto indexer = a.make_indexer();
+
+  typed_static_assert((indexer == ltl::number_list_v<0, 1>));
+
+  int sumI = 0;
+  double sumD = 0.0;
+
+  ltl::zip_with(ltl::overloader{[&sumI](int a, int b) { sumI += a + b; },
+                                [&sumD](double a, double b) { sumD += a + b; }},
+                a, b);
+
+  assert(sumI == 5);
+  assert(sumD == 10.0 + 3.0);
+
+  ltl::enumerate_with(
+      ltl::overloader{
+          [&sumI](auto i, int x) { sumI += i.value + x; },
+          [&sumD](auto i, double x) { sumD += double(i.value) + x; }},
+      b);
+
+  assert(sumI == 5 + 4);
+  assert(sumD == 10.0 + 3.0 + 1.0 + 10.0);
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1510,6 +1537,8 @@ int main() {
   test_rvalue();
 
   test_group_by();
+
+  test_zip_tuple();
 
   return 0;
 }

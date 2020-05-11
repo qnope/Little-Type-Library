@@ -162,12 +162,12 @@ constexpr auto unique_type(const tuple_t<Ts...> &tuple) {
   }
 }
 
-template<typename ...Ts>
+template <typename... Ts>
 constexpr auto is_unique_type(const tuple_t<Ts...> &tuple) {
   if_constexpr(is_type_list_t(tuple)) { //
     return (true_v && ... && (count_type(tuple, Ts{}) == 1_n));
   }
-  else {//
+  else { //
     return is_unique_type(ltl::type_list_v<Ts...>);
   }
 }
@@ -190,6 +190,24 @@ constexpr auto filter_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
   else {
     return filter_type(ltl::type_list_v<Ts...>, p);
   }
+}
+
+template <typename F, typename T, typename... Tuples,
+          requires_f(ltl::IsTuple<T>)>
+constexpr void zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
+  auto indexer = tuple.make_indexer();
+  typed_static_assert_msg(((ltl::is_tuple_t(tuples)) && ... && true_v),
+                          "All tuples must be tuples");
+  typed_static_assert_msg((... + (tuples.length == indexer.length)),
+                          "All tuples must be of the same length");
+  for_each(indexer, [&f, &tuple, &tuples...](auto indices) {
+    std::forward<F>(f)(tuple[indices], tuples[indices]...);
+  });
+}
+
+template <typename F, typename T, requires_f(ltl::IsTuple<T>)>
+constexpr void enumerate_with(F &&f, T &&tuple) {
+  zip_with(FWD(f), tuple.make_indexer(), FWD(tuple));
 }
 
 template <template <typename...> typename T, typename List>

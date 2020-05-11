@@ -13,6 +13,7 @@
 #include "Range/Map.h"
 #include "Range/Range.h"
 #include "Range/Taker.h"
+#include "condition.h"
 #include "optional_type.h"
 
 #define _LAMBDA_WRITE_AUTO(x, y, ...)                                          \
@@ -43,11 +44,34 @@ constexpr to_vector_t to_vector{};
 constexpr to_deque_t to_deque{};
 constexpr to_list_t to_list{};
 
+constexpr auto is_container_builder = [](auto type) {
+  return type ==
+         AnyOf{type_v<to_vector_t>, type_v<to_list_t>, type_v<to_deque_t>};
+};
+
 template <typename It> auto safe_advance(It beg, It end, std::size_t n) {
   while (n-- && beg != end)
     ++beg;
   return beg;
 }
+
+namespace details {
+template <typename C, typename T> auto buildContainers(C &&c, T t) {
+  using value =
+      typename std::iterator_traits<decltype(begin(FWD(c)))>::value_type;
+
+  [[maybe_unused]] auto beginIt = begin(FWD(c));
+  [[maybe_unused]] auto endIt = end(FWD(c));
+
+  if constexpr (type_from(t) == ltl::type_v<to_vector_t>) {
+    return std::vector<value>(beginIt, endIt);
+  } else if constexpr (type_from(t) == ltl::type_v<to_deque_t>) {
+    return std::deque<value>(beginIt, endIt);
+  } else if constexpr (type_from(t) == ltl::type_v<to_list_t>) {
+    return std::list<value>(beginIt, endIt);
+  }
+}
+} // namespace details
 
 template <typename T1, typename T2>
 constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
@@ -60,31 +84,20 @@ constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
                 !is_range(t1)) {
     if constexpr (!is_owning_range(t1)) {
       return OwningRange<T1, T2>{FWD(a), FWD(b)};
-    } else {
-      static_assert(is_chainable_operation(t2),
-                    "T2 must be a chainable operation");
+    } else if constexpr (is_chainable_operation(t2)) {
       return FWD(a).template add_operation<T2>(FWD(b));
+    } else if constexpr (is_container_builder(t2)) {
+      return details::buildContainers(FWD(a), FWD(b));
     }
   }
 
   else if constexpr (is_iterable(t1)) {
-    using value =
-        typename std::iterator_traits<decltype(begin(FWD(a)))>::value_type;
-
     [[maybe_unused]] auto beginIt = begin(FWD(a));
     [[maybe_unused]] auto endIt = end(FWD(a));
     using it = decltype(beginIt);
 
-    if constexpr (t2 == ltl::type_v<to_vector_t>) {
-      return std::vector<value>(beginIt, endIt);
-    }
-
-    else if constexpr (t2 == ltl::type_v<to_deque_t>) {
-      return std::deque<value>(beginIt, endIt);
-    }
-
-    else if constexpr (t2 == ltl::type_v<to_list_t>) {
-      return std::list<value>(beginIt, endIt);
+    if constexpr (is_container_builder(t2)) {
+      return details::buildContainers(FWD(a), FWD(b));
     }
 
     else if constexpr (is_filter_type(t2)) {

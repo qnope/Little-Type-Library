@@ -42,8 +42,7 @@ template <int I, typename T> struct Value {
     return *this;
   }
 
-  constexpr T operator[](ltl::number_t<I>) &&
-      noexcept {
+  constexpr T operator[](ltl::number_t<I>) && noexcept {
     return static_cast<safe_add_rvalue_reference<T>>(m_value);
   }
 
@@ -140,10 +139,10 @@ public:
   }
 
   template <typename... _Ts>
-  constexpr bool operator==(const tuple_t<_Ts...> &t) const noexcept {
+  constexpr auto operator==(const tuple_t<_Ts...> &t) const noexcept {
     typed_static_assert_msg(t.length == length,
                             "Tuple must have the same size");
-    return (((*this)[number_v<Is>] == t[number_v<Is>]) && ... && true);
+    return (((*this)[number_v<Is>] == t[number_v<Is>]) && ... && true_v);
   }
 
   template <typename... _Ts>
@@ -171,9 +170,12 @@ public:
 } // namespace detail
 
 template <typename... Ts>
-class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...> {
+class tuple_t
+    : public detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>,
+                             Ts...> {
 public:
-  using super = detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...>;
+  using super =
+      detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...>;
 
   using super::isEmpty;
   using super::length;
@@ -184,12 +186,14 @@ public:
 
   template <int... Is>
   [[nodiscard]] constexpr auto extract(number_t<Is>... ns) const &noexcept {
-    return tuple_t<decltype(std::move(*const_cast<tuple_t*>(this))[ns])...>{(*this)[ns]...};
+    return tuple_t<decltype(std::move(*const_cast<tuple_t *>(this))[ns])...>{
+        (*this)[ns]...};
   }
 
   template <int... Is>
       [[nodiscard]] constexpr auto extract(number_t<Is>... ns) && noexcept {
-    return tuple_t<decltype(std::move(*const_cast<tuple_t*>(this))[ns])...>{std::move(*this)[ns]...};
+    return tuple_t<decltype(std::move(*const_cast<tuple_t *>(this))[ns])...>{
+        std::move(*this)[ns]...};
   }
 
   template <typename T>
@@ -260,6 +264,10 @@ public:
     return apply(numbers, extracter);
   }
 
+  static constexpr auto make_indexer() noexcept {
+    return build_index_sequence(length);
+  }
+
   template <typename N1, typename N2>
   [[nodiscard]] static constexpr auto build_index_sequence(N1 n1, N2 n2) {
     return build_index_sequence_helper(n1, n2);
@@ -271,8 +279,9 @@ public:
   }
 
 private:
-  template<int N, int... Ns>
-  [[nodiscard]] static constexpr auto build_index_sequence_helper(number_t<N>, std::integer_sequence<int, Ns...>) {
+  template <int N, int... Ns>
+  [[nodiscard]] static constexpr auto
+  build_index_sequence_helper(number_t<N>, std::integer_sequence<int, Ns...>) {
     return tuple_t<number_t<N + Ns>...>{};
   }
 
@@ -280,7 +289,8 @@ private:
   [[nodiscard]] static constexpr auto
   build_index_sequence_helper(number_t<N1> n1, number_t<N2> n2) {
     typed_static_assert_msg(n1 <= n2, "n1 must be lesser or equal to n2");
-    return build_index_sequence_helper(n1, std::make_integer_sequence<int, N2 - N1>{});
+    return build_index_sequence_helper(
+        n1, std::make_integer_sequence<int, N2 - N1>{});
   }
 };
 
