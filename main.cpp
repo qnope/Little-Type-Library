@@ -1480,6 +1480,15 @@ void test_zip_tuple() {
 
   assert(sumI == 5 + 4);
   assert(sumD == 10.0 + 3.0 + 1.0 + 10.0);
+
+  ltl::tuple_t tuple1 = {0, 5.0, std::string{"lol"}};
+  ltl::tuple_t tuple2 = {0.0, std::string{"lul"}, 18};
+  auto tuple3 = ltl::zip_type(tuple1, tuple2);
+  auto type = ltl::type_v<
+      ltl::tuple_t<ltl::tuple_t<int, double>, ltl::tuple_t<double, std::string>,
+                   ltl::tuple_t<std::string, int>>>;
+  typed_static_assert(type_from(tuple3) == type);
+  assert((tuple3 == decltype_t(type){{0, 0.0}, {5.0, "lul"}, {"lol", 18}}));
 }
 
 void test_scanl_tuple() {

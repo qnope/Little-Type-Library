@@ -205,6 +205,35 @@ constexpr void zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
   });
 }
 
+template <typename T, typename... Tuples, requires_f(ltl::IsTuple<T>)>
+constexpr auto zip_type(T &&tuple, Tuples &&... tuples) {
+  auto indexer = tuple.make_indexer();
+  typed_static_assert_msg(((ltl::is_tuple_t(tuples)) && ... && true_v),
+                          "All tuples must be tuples");
+  typed_static_assert_msg((... && (tuples.length == indexer.length)),
+                          "All tuples must be of the same length");
+
+  auto get_types_for_index = [&tuple, &tuples...](auto index) {
+    return ltl::type_list_v<
+        ltl::tuple_t<decltype_t(tuple.getTypes()[index]),
+                     decltype_t(tuples.getTypes()[index])...>>;
+  };
+
+  auto get_tuple_for_index = [&tuple, &tuples...](auto index) {
+    return ltl::tuple_t<decltype_t(tuple.getTypes()[index]),
+                        decltype_t(tuples.getTypes()[index])...>{
+        std::forward<T>(tuple)[index], std::forward<Tuples>(tuples)[index]...};
+  };
+
+  return indexer([get_types_for_index, get_tuple_for_index](auto... indices) {
+    auto types = (... + (get_types_for_index(indices)));
+    return types([get_tuple_for_index, indices...](auto... types) {
+      return ltl::tuple_t<decltype_t(types)...>{
+          get_tuple_for_index(indices)...};
+    });
+  });
+}
+
 template <typename F, typename T, requires_f(ltl::IsTuple<T>)>
 constexpr void enumerate_with(F &&f, T &&tuple) {
   zip_with(FWD(f), tuple.make_indexer(), FWD(tuple));
