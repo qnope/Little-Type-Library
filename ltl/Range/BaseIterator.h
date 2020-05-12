@@ -18,7 +18,8 @@
 namespace ltl {
 
 template <typename DerivedIt, typename It, typename Function,
-          bool CreateMinusOperator = true>
+          bool CreateMinusOperator = true,
+          bool CreateEqualOperator = true>
 class BaseIterator : public PostIncrementable<DerivedIt>,
                      public PostDecrementable<DerivedIt>,
                      public Comparable<DerivedIt>,
@@ -36,8 +37,10 @@ public:
         m_sentinelEnd{std::move(sentinelEnd)}, m_function{std::move(function)} {
   }
 
-  bool operator==(const DerivedIt &it) const noexcept {
-    return underlying().m_it == it.m_it;
+  template <bool create = CreateEqualOperator,
+            typename = std::enable_if_t<create>>
+  friend bool operator==(const DerivedIt &a, const DerivedIt &b) noexcept {
+    return a.m_it == b.m_it;
   }
 
   DerivedIt &operator++() noexcept {

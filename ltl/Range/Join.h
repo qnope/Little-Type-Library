@@ -6,8 +6,8 @@
 
 namespace ltl {
 template <typename It>
-class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false> {
-  friend BaseIterator<JoinIterator, It, Nothing, false>;
+class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, false> {
+  friend BaseIterator<JoinIterator, It, Nothing, false, false>;
 
 public:
   using Container = typename std::iterator_traits<It>::reference;
@@ -17,10 +17,10 @@ public:
   using reference = typename std::iterator_traits<ContainerIterator>::reference;
   DECLARE_EVERYTHING_BUT_REFERENCE
 
-  using BaseIterator<JoinIterator<It>, It, Nothing, false>::BaseIterator;
+  using BaseIterator<JoinIterator<It>, It, Nothing, false, false>::BaseIterator;
 
   JoinIterator(It it, It sentinelBegin, It sentinelEnd)
-      : BaseIterator<JoinIterator<It>, It, Nothing, false>{
+      : BaseIterator<JoinIterator<It>, It, Nothing, false, false>{
             std::move(it), std::move(sentinelBegin), std::move(sentinelEnd),
             Nothing{}} {
     if (this->m_it == this->m_sentinelEnd)
@@ -29,6 +29,15 @@ public:
       assignContainerValues();
     } while (m_containerIterator == m_sentinelEndContainer &&
              ++this->m_it != this->m_sentinelEnd);
+  }
+
+  friend bool operator==(const JoinIterator &a, const JoinIterator &b) noexcept {
+    if(a.m_it == b.m_it) {
+      if(a.m_it == a.m_sentinelEnd)
+        return true;
+      return a.m_containerIterator == b.m_containerIterator;
+    }
+    return false;
   }
 
   JoinIterator &operator++() noexcept {

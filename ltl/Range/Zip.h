@@ -77,7 +77,7 @@ template <typename... Containers> auto zip(Containers &&... containers) {
                           "Zip operations must be used with containers");
 
   assert(FROM_VARIADIC(FWD(containers))([](auto &&c1, auto &&... cs) {
-    return (true && ... && (size(FWD(c1)) == size(FWD(cs))));
+    return (true && ... && (std::size_t(size(FWD(c1))) == std::size_t(size(FWD(cs)))));
   }));
 
   return ZipRange<Containers...>{FWD(containers)...};

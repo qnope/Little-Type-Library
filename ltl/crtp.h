@@ -12,27 +12,24 @@
 
 namespace ltl {
 template <typename Derived> class Comparable {
-  ENABLE_CRTP(Derived)
-
 public:
-  template <typename Other>
-  constexpr auto operator!=(const Other &o) const noexcept {
-    return !(underlying() == o);
+  friend constexpr auto operator!=(const Derived &a,
+                                   const Derived &b) noexcept {
+    return !(a == b);
   }
 
-  template <typename Other>
-  constexpr auto operator<=(const Other &o) const noexcept {
-    return !(o < underlying());
+  friend constexpr auto operator<=(const Derived &a,
+                                   const Derived &b) noexcept {
+    return !(b < a);
   }
 
-  template <typename Other>
-  constexpr auto operator>(const Other &o) const noexcept {
-    return o < underlying();
+  friend constexpr auto operator>(const Derived &a, const Derived &b) noexcept {
+    return b < a;
   }
 
-  template <typename Other>
-  constexpr auto operator>=(const Other &o) const noexcept {
-    return !(underlying() < o);
+  friend constexpr auto operator>=(const Derived &a,
+                                   const Derived &b) noexcept {
+    return !(a < b);
   }
 };
 
