@@ -239,6 +239,11 @@ constexpr void enumerate_with(F &&f, T &&tuple) {
   zip_with(FWD(f), tuple.make_indexer(), FWD(tuple));
 }
 
+template <typename T, requires_f(ltl::IsTuple<T>)>
+constexpr auto enumerate_type(T &&tuple) {
+  return zip_type(tuple.make_indexer(), FWD(tuple))[0_n];
+}
+
 namespace detail {
 template <typename F, typename T> struct scanl_wrapper {
   scanl_wrapper(F f, T t) : f{f}, t{t} {}
