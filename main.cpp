@@ -11,6 +11,7 @@
 #include "ltl/algos.h"
 #include "ltl/condition.h"
 #include "ltl/functional.h"
+#include "ltl/movable_any.h"
 #include "ltl/operator.h"
 #include "ltl/optional_type.h"
 #include "ltl/traits.h"
