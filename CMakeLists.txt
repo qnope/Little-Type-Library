@@ -2,40 +2,40 @@ cmake_minimum_required(VERSION 3.10)
 project(LittleTypeLibrary)
 
 set(HEADERS_RANGE
-	ltl/Range/Range.h
-	ltl/Range/NullableFunction.h
-	ltl/Range/BaseIterator.h
-    ltl/Range/AsPointer.h
-    ltl/Range/Filter.h
-    ltl/Range/Map.h
-    ltl/Range/Taker.h
-    ltl/Range/Zip.h
-    ltl/Range/Value.h
-    ltl/Range/Join.h
-    ltl/Range/enumerate.h
-    ltl/Range/DefaultView.h
-	ltl/Range/GroupBy.h
+    include/ltl/Range/Range.h
+    include/ltl/Range/NullableFunction.h
+    include/ltl/Range/BaseIterator.h
+    include/ltl/Range/AsPointer.h
+    include/ltl/Range/Filter.h
+    include/ltl/Range/Map.h
+    include/ltl/Range/Taker.h
+    include/ltl/Range/Zip.h
+    include/ltl/Range/Value.h
+    include/ltl/Range/Join.h
+    include/ltl/Range/enumerate.h
+    include/ltl/Range/DefaultView.h
+    include/ltl/Range/GroupBy.h
     )
 
 set(HEADERS
-    ltl/ltl.h
-    ltl/movable_any.h
-    ltl/Tuple.h
-    ltl/StrongType.h
-    ltl/algos.h
-    ltl/stream.h
-    ltl/functional.h
-    ltl/operator.h
-    ltl/concept.h
-    ltl/VariantUtils.h
-    ltl/crtp.h
-    ltl/invoke.h
-    ltl/traits.h
-    ltl/tuple_algos.h
-    ltl/optional_type.h
-    ltl/condition.h
-    ltl/TypedTuple.h
-    lpl/lpl.h
+    include/ltl/ltl.h
+    include/ltl/movable_any.h
+    include/ltl/Tuple.h
+    include/ltl/StrongType.h
+    include/ltl/algos.h
+    include/ltl/stream.h
+    include/ltl/functional.h
+    include/ltl/operator.h
+    include/ltl/concept.h
+    include/ltl/VariantUtils.h
+    include/ltl/crtp.h
+    include/ltl/invoke.h
+    include/ltl/traits.h
+    include/ltl/tuple_algos.h
+    include/ltl/optional_type.h
+    include/ltl/condition.h
+    include/ltl/TypedTuple.h
+    include/lpl/lpl.h
     ${HEADERS_RANGE}
     )
 
@@ -46,6 +46,8 @@ endif(MSVC)
 set(CMAKE_CXX_STANDARD 17)
 
 add_library(LTL INTERFACE)
-target_include_directories(LTL INTERFACE ltl/ lpl/)
+target_include_directories(LTL INTERFACE include/)
+
 
 add_executable(LittleTypeLibrary "main.cpp" ${HEADERS})
+target_link_libraries(LittleTypeLibrary LTL)

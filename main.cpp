@@ -6,23 +6,23 @@
 #include <string>
 #include <unordered_map>
 
-#include "ltl/StrongType.h"
-#include "ltl/VariantUtils.h"
-#include "ltl/algos.h"
-#include "ltl/condition.h"
-#include "ltl/functional.h"
-#include "ltl/movable_any.h"
-#include "ltl/operator.h"
-#include "ltl/optional_type.h"
-#include "ltl/traits.h"
+#include <ltl/StrongType.h>
+#include <ltl/VariantUtils.h>
+#include <ltl/algos.h>
+#include <ltl/condition.h>
+#include <ltl/functional.h>
+#include <ltl/movable_any.h>
+#include <ltl/operator.h>
+#include <ltl/optional_type.h>
+#include <ltl/traits.h>
 
-#include "ltl/Range/DefaultView.h"
-#include "ltl/Range/Value.h"
-#include "ltl/Range/enumerate.h"
+#include <ltl/Range/DefaultView.h>
+#include <ltl/Range/Value.h>
+#include <ltl/Range/enumerate.h>
 
-#include "ltl/stream.h"
+#include <ltl/stream.h>
 
-#include "ltl/TypedTuple.h"
+#include <ltl/TypedTuple.h>
 
 void bool_test() {
   static_assert(false_v == false_v);
