@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(LittleTypeLibrary)
 
-set(SOURCES "main.cpp")
-
 set(HEADERS_RANGE
 	ltl/Range/Range.h
 	ltl/Range/NullableFunction.h
@@ -47,4 +45,7 @@ endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(LittleTypeLibrary ${SOURCES} ${HEADERS})
+add_library(LTL INTERFACE)
+target_include_directories(LTL INTERFACE ltl/ lpl/)
+
+add_executable(LittleTypeLibrary "main.cpp" ${HEADERS})
