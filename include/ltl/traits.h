@@ -301,7 +301,7 @@ template <typename F> constexpr auto is_valid(F &&) {
   template <templateType... Ts>                                                \
   constexpr ltl::true_t LPL_CAT(name, Impl)(const type<Ts...> &);              \
   [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr noexcept {     \
-    return decltype(LPL_CAT(name, Impl)(::ltl::declval(FWD(x)))){};                   \
+    return decltype(LPL_CAT(name, Impl)(::ltl::declval(FWD(x)))){};            \
   };                                                                           \
   template <typename T>                                                        \
   [[maybe_unused]] constexpr bool conceptName =                                \

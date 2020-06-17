@@ -1498,6 +1498,42 @@ void test_scanl_tuple() {
   typed_static_assert((scanned == ltl::number_list_v<0, 1, 3, 6, 10, 15, 21>));
 }
 
+// template <typename T> constexpr auto construct_with_tuple_impl() {
+//    return unzip(construct_impl<T>{});
+//}
+
+void test_construct() {
+  struct A {
+    A(int a, int b, int c) : a(a), b(b), c(c) {}
+    int a, b, c;
+    bool operator==(A d) const noexcept {
+      return a == d.a && b == d.b && c == d.c;
+    }
+  };
+
+  ltl::tuple_t tuple{0, 1, 2};
+  auto a = ltl::construct<A>(0, 1, 2);
+
+  typed_static_assert(type_from(a) == ltl::type_v<A>);
+
+  assert(a.a == 0);
+  assert(a.b == 1);
+  assert(a.c == 2);
+  assert(a == ltl::construct<A>(0)(1, 2));
+  assert(a == ltl::construct<A>(0, 1)(2));
+  assert(a == ltl::construct<A>(0)(1)(2));
+
+  ltl::unzip(_((x, y, z), x + y + z))(tuple);
+  auto b = ltl::construct_with_tuple<A>(tuple);
+  auto c = ltl::construct_with_tuple<A>()(tuple);
+
+  typed_static_assert(type_from(a) == type_from(b) &&
+                      type_from(b) == type_from(c));
+
+  assert(a == b);
+  assert(b == c);
+}
+
 int main() {
   bool_test();
   type_test();
@@ -1556,6 +1592,8 @@ int main() {
 
   test_zip_tuple();
   test_scanl_tuple();
+
+  test_construct();
 
   return 0;
 }

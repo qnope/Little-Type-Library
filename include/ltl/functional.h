@@ -70,4 +70,28 @@ template <typename... Fs> constexpr auto and_(Fs... fs) {
   return [fs...](auto &&... xs) { return (true_v && ... && (fs(FWD(xs)...))); };
 }
 
+template <typename F> constexpr auto unzip(F f) {
+  return [f](auto &&tuple) { return FWD(tuple)(f); };
+}
+
+namespace detail {
+template <typename T> struct construct_impl {
+  template <typename... Ts>
+  constexpr auto operator()(Ts &&... ts) -> decltype(T{std::declval<Ts>()...}) {
+    return T{FWD(ts)...};
+  }
+};
+} // namespace detail
+
+template <typename T, typename... Args>
+constexpr auto construct(Args &&... args) noexcept {
+  return curry(detail::construct_impl<T>{}, FWD(args)...);
+}
+
+template <typename T, typename... Tuple>
+constexpr auto construct_with_tuple(Tuple &&... tuple) noexcept {
+  static_assert(sizeof...(Tuple) <= 1, "Must have 0 or one tuple");
+  return curry(unzip(construct<T>()), FWD(tuple)...);
+}
+
 } // namespace ltl
