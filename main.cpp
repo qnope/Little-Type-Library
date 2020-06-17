@@ -1498,10 +1498,6 @@ void test_scanl_tuple() {
   typed_static_assert((scanned == ltl::number_list_v<0, 1, 3, 6, 10, 15, 21>));
 }
 
-// template <typename T> constexpr auto construct_with_tuple_impl() {
-//    return unzip(construct_impl<T>{});
-//}
-
 void test_construct() {
   struct A {
     A(int a, int b, int c) : a(a), b(b), c(c) {}
