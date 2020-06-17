@@ -85,7 +85,11 @@ template <typename T> struct construct_impl {
 
 template <typename T, typename... Args>
 constexpr auto construct(Args &&... args) noexcept {
-  return curry(detail::construct_impl<T>{}, FWD(args)...);
+  using namespace ltl;
+
+  return [args...](auto &&... xs) {
+    return curry(detail::construct_impl<T>{}, args..., FWD(xs)...);
+  };
 }
 
 template <typename T, typename... Tuple>

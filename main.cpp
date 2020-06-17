@@ -1500,6 +1500,7 @@ void test_scanl_tuple() {
 
 void test_construct() {
   struct A {
+    A() = default;
     A(int a, int b, int c) : a(a), b(b), c(c) {}
     int a, b, c;
     bool operator==(A d) const noexcept {
@@ -1508,7 +1509,7 @@ void test_construct() {
   };
 
   ltl::tuple_t tuple{0, 1, 2};
-  auto a = ltl::construct<A>(0, 1, 2);
+  auto a = ltl::construct<A>(0, 1, 2)();
 
   typed_static_assert(type_from(a) == ltl::type_v<A>);
 
@@ -1519,7 +1520,6 @@ void test_construct() {
   assert(a == ltl::construct<A>(0, 1)(2));
   assert(a == ltl::construct<A>(0)(1)(2));
 
-  ltl::unzip(_((x, y, z), x + y + z))(tuple);
   auto b = ltl::construct_with_tuple<A>(tuple);
   auto c = ltl::construct_with_tuple<A>()(tuple);
 
