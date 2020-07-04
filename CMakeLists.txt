@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.10)
 project(LittleTypeLibrary)
 
+if(MSVC)
+        add_compile_options(
+            /Zc:preprocessor
+            /permissive-
+            /d2cgsummary
+            /Wv:18
+            /MT)
+endif(MSVC)
+
+set(CMAKE_CXX_STANDARD 17)
+
 set(HEADERS_RANGE
     include/ltl/Range/Range.h
     include/ltl/Range/NullableFunction.h
@@ -39,15 +50,15 @@ set(HEADERS
     ${HEADERS_RANGE}
     )
 
-if(MSVC)
-        add_compile_options(/experimental:preprocessor /permissive- /d2cgsummary)
-endif(MSVC)
-
-set(CMAKE_CXX_STANDARD 17)
+enable_testing()
+add_subdirectory(googletest)
 
 add_library(LTL INTERFACE)
 target_include_directories(LTL INTERFACE include/)
 
 
-add_executable(LittleTypeLibrary "main.cpp" ${HEADERS})
-target_link_libraries(LittleTypeLibrary LTL)
+add_executable(LittleTypeLibrary "test.cpp" ${HEADERS})
+target_link_libraries(LittleTypeLibrary
+    LTL
+    gtest_main)
+add_test(NAME test COMMAND LittleTypeLibrary)
