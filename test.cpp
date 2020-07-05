@@ -573,6 +573,10 @@ TEST(LTL_test, test_algos) {
   ASSERT_TRUE(ltl::count(odds, 1) == 0);
   ASSERT_TRUE(ltl::count_if(odds, isSuperiorTo(4)) == 4);
   ASSERT_TRUE(*ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
+  ASSERT_TRUE(ltl::index_of(odds, 5) == 1);
+  ASSERT_FALSE(ltl::index_of(odds, 6).has_value());
+  ASSERT_TRUE(ltl::index_if(odds, isSuperiorTo(10)) == 4);
+  ASSERT_FALSE(ltl::index_if(odds, isSuperiorTo(12)).has_value());
   ASSERT_TRUE(ltl::accumulate(odds, 0) == 3 + 5 + 7 + 9 + 11);
   ASSERT_TRUE(ltl::accumulate(std::move(odds), 0) == 3 + 5 + 7 + 9 + 11);
   ASSERT_TRUE(ltl::computeMean(std::move(odds)) == (3 + 5 + 7 + 9 + 11) / 5);
