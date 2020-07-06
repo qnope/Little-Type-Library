@@ -35,13 +35,13 @@ struct Value {
         return *this;
     }
 
-    constexpr T operator[](ltl::number_t<I>) &&noexcept { return static_cast<safe_add_rvalue_reference<T>>(m_value); }
+    constexpr T operator[](ltl::number_t<I>) && noexcept { return static_cast<safe_add_rvalue_reference<T>>(m_value); }
 
     constexpr safe_add_lvalue_reference<std::add_const_t<T>> operator[](ltl::number_t<I>) const &noexcept {
         return static_cast<safe_add_lvalue_reference<std::add_const_t<T>>>(m_value);
     }
 
-    constexpr safe_add_lvalue_reference<T> operator[](ltl::number_t<I>) &noexcept {
+    constexpr safe_add_lvalue_reference<T> operator[](ltl::number_t<I>) & noexcept {
         return static_cast<safe_add_lvalue_reference<T>>(m_value);
     }
 
@@ -81,23 +81,22 @@ class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
     }
 
     template <typename F>
-    constexpr decltype(auto) operator()(F &&f) &noexcept(noexcept(std::declval<F>()(std::declval<Ts &>()...))) {
-        return FWD(f)((*this)[number_v<Is>]...);
+    constexpr decltype(auto) operator()(F &&f) & {
+        return ltl::invoke(FWD(f), (*this)[number_v<Is>]...);
     }
 
     template <typename F>
-    constexpr decltype(auto)
-    operator()(F &&f) const &noexcept(noexcept(std::declval<F>()(std::declval<const Ts &>()...))) {
-        return FWD(f)((*this)[number_v<Is>]...);
+    constexpr decltype(auto) operator()(F &&f) const & {
+        return ltl::invoke(FWD(f), (*this)[number_v<Is>]...);
     }
 
     template <typename F>
-    constexpr decltype(auto) operator()(F &&f) &&noexcept(noexcept(std::declval<F>()(std::declval<Ts>()...))) {
-        return FWD(f)(std::move(*this)[number_v<Is>]...);
+    constexpr decltype(auto) operator()(F &&f) && {
+        return ltl::invoke(FWD(f), std::move(*this)[number_v<Is>]...);
     }
 
     template <int N>
-    [[nodiscard]] constexpr decltype(auto) get(number_t<N> n) &noexcept {
+        [[nodiscard]] constexpr decltype(auto) get(number_t<N> n) & noexcept {
         typed_static_assert(n < length);
         return (*this)[n];
     }
@@ -109,13 +108,13 @@ class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
     }
 
     template <int N>
-    [[nodiscard]] constexpr decltype(auto) get(number_t<N> n) &&noexcept {
+        [[nodiscard]] constexpr decltype(auto) get(number_t<N> n) && noexcept {
         typed_static_assert(n < length);
         return std::move(*this)[n];
     }
 
     template <int N>
-    [[nodiscard]] constexpr decltype(auto) get() &noexcept {
+        [[nodiscard]] constexpr decltype(auto) get() & noexcept {
         return get(number_v<N>);
     }
 
@@ -125,7 +124,7 @@ class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
     }
 
     template <int N>
-    [[nodiscard]] constexpr decltype(auto) get() &&noexcept {
+        [[nodiscard]] constexpr decltype(auto) get() && noexcept {
         return std::move(*this).get(number_v<N>);
     }
 
@@ -176,7 +175,7 @@ class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...
     }
 
     template <int... Is>
-    [[nodiscard]] constexpr auto extract(number_t<Is>... ns) &&noexcept {
+        [[nodiscard]] constexpr auto extract(number_t<Is>... ns) && noexcept {
         return tuple_t<decltype(std::move(*const_cast<tuple_t *>(this))[ns])...>{std::move(*this)[ns]...};
     }
 
@@ -263,7 +262,7 @@ class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...
 };
 
 template <typename... Ts>
-tuple_t(Ts...) -> tuple_t<decay_reference_wrapper_t<Ts>...>;
+tuple_t(Ts...)->tuple_t<decay_reference_wrapper_t<Ts>...>;
 
 ////////////////////// Templates
 /// Convenience types
@@ -299,35 +298,8 @@ template <typename N1, typename N2>
 
 template <typename N>
 [[nodiscard]] constexpr auto build_index_sequence(N n) {
-    return tuple_t<>::build_index_sequence(0_n, n); // does not compile
+    return tuple_t<>::build_index_sequence(0_n, n);
 }
-
-/*
-namespace detail {
-template <typename... Xs, typename... Ys>
-constexpr auto concatTypes(type_list_t<Xs...>, type_list_t<Ys...>) {
-  return type_v<::ltl::tuple_t<Xs..., Ys...>>;
-}
-} // namespace detail
-
-
-template <typename T1, typename T2, requires_f(IsTuple<T1> &&IsTuple<T2>)>
-constexpr auto operator+(T1 &&t1, T2 &&t2) {
-    constexpr auto types_1 = std::decay_t<T1>::getTypes();
-    constexpr auto types_2 = std::decay_t<T2>::getTypes();
-
-    constexpr auto types = detail::concatTypes(types_1, types_2);
-
-    constexpr auto indices1 = build_index_sequence(types_1.length);
-    constexpr auto indices2 = build_index_sequence(types_2.length);
-
-    return indices1([indices2, &t1, &t2](auto... n1s) {
-        return indices2([&t1, &t2, n1s...](auto... n2s) {
-            return decltype_t(types){std::forward<T1>(t1)[n1s]...,
-                                     std::forward<T2>(t2)[n2s]...};
-        });
-    });
-}*/
 
 template <typename... T1, typename... T2>
 constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {

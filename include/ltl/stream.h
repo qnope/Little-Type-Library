@@ -13,7 +13,6 @@ using std::end;
 
 template <typename Container, typename Char, typename Trait = std::char_traits<Char>>
 class basic_readonly_streambuf final : public std::basic_streambuf<Char, Trait> {
-
     using T = std::decay_t<decltype(*begin(std::declval<Container &>()))>;
     using char_type = typename Trait::char_type;
     using int_type = typename Trait::int_type;
