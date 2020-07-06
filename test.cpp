@@ -1308,6 +1308,10 @@ TEST(LTL_test, test_rvalue) {
     auto listOfCharDigit = (returnStrings() | isDigit) >> identity;
     ASSERT_TRUE(ltl::equal(listOfCharDigit, std::array{'1', '2', '3', '4', '5', '9'}));
     ASSERT_TRUE(size(listOfCharDigit) == size(listOfNumber));
+
+    auto vector = returnStrings() | ltl::map(_((x), x)) | ltl::to_vector;
+    ASSERT_TRUE(ltl::equal(vector, returnStrings()));
+    static_assert(type_from(vector) == ltl::type_v<std::vector<std::string>>);
 }
 
 TEST(LTL_test, test_group_by) {

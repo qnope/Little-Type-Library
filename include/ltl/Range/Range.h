@@ -2,12 +2,11 @@
 
 #include <iterator>
 
-#include "../Tuple.h"
 #include "../crtp.h"
-#include "../traits.h"
+#include "../Tuple.h"
+#include "../concept.h"
 
 namespace ltl {
-
 using std::begin;
 using std::end;
 
@@ -85,7 +84,7 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
     auto add_operation(NewOperation newOperation) && {
         return std::move(m_operations)([this, &newOperation](auto &&... ops) mutable {
             return OwningRange<Container, Operations..., NewOperation>{std::move(m_container), FWD(ops)...,
-                                                                       std::forward<NewOperation>(newOperation)};
+                                                                       std::move(newOperation)};
         });
     }
 
@@ -96,7 +95,7 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
 };
 
 template <typename R>
-Range(R &r) -> Range<decltype(std::begin(r))>;
+Range(R &r)->Range<decltype(std::begin(r))>;
 
 template <typename R>
 auto begin(const AbstractRange<R> &r) noexcept {
@@ -114,5 +113,52 @@ auto size(const AbstractRange<R> &r) noexcept {
 }
 
 LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
-LTL_MAKE_IS_KIND(OwningRange, is_owning_range, IsOwningRange, typename);
+
+template <typename T>
+constexpr bool IsForOwningRange = IsIterable<T> &&IsRValueReference<T> && !IsRange<T>;
+
+template <typename T>
+constexpr bool IsIterableRef = IsIterable<T> && !IsForOwningRange<T>;
+
+template <typename T>
+struct is_chainable_operation : false_t {};
+
+template <typename T>
+constexpr bool IsChainableOperation = is_chainable_operation<std::decay_t<T>>::value;
+
+template <typename T1, typename T2, requires_f(IsForOwningRange<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
+    return OwningRange<T1, T2>{FWD(a), FWD(b)};
+}
+
+template <typename... Ts, typename T2, requires_f(IsChainableOperation<T2>)>
+constexpr decltype(auto) operator|(OwningRange<Ts...> &&a, T2 b) {
+    return std::move(a).add_operation(std::move(b));
+}
+
+template <typename T1, typename... Ts, requires_f(IsIterableRef<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, tuple_t<Ts...> b) {
+    return std::move(b)([&a](auto &&... xs) { return (std::forward<T1>(a) | ... | (std::move(xs))); });
+}
+
+template <typename T1, typename T2, requires_f(IsChainableOperation<T1> &&IsChainableOperation<T2>)>
+constexpr decltype(auto) operator|(T1 a, T2 b) {
+    return tuple_t{a, b};
+}
+
+template <typename T1, typename... Ts, requires_f(IsChainableOperation<T1>)>
+constexpr decltype(auto) operator|(T1 a, tuple_t<Ts...> b) {
+    return b.push_front(a);
+}
+
+template <typename... Ts, typename T2>
+constexpr decltype(auto) operator|(tuple_t<Ts...> a, T2 b) {
+    return a.push_back(b);
+}
+
+template <typename... Ts1, typename... Ts2>
+constexpr decltype(auto) operator|(tuple_t<Ts1...> a, tuple_t<Ts2...> b) {
+    return a + b;
+}
+
 } // namespace ltl

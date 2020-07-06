@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Range.h"
 #include "BaseIterator.h"
 
 namespace ltl {
@@ -41,8 +42,7 @@ class FilterIterator : public BaseIterator<FilterIterator<It, Predicate>, It, Pr
         }
         return res;
     }
-
-}; // namespace ltl
+};
 
 template <typename F>
 struct FilterType {
@@ -53,7 +53,16 @@ auto filter(F &&f) {
     return FilterType<std::decay_t<F>>{FWD(f)};
 }
 
-LTL_MAKE_IS_KIND(FilterIterator, is_filter_iterator, IsFilterIterator, typename);
-LTL_MAKE_IS_KIND(FilterType, is_filter_type, IsFilterType, typename);
+template <typename F>
+struct is_chainable_operation<FilterType<F>> : true_t {};
 
+template <typename T1, typename F, requires_f(IsIterableRef<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, FilterType<F> b) {
+    using std::begin;
+    using std::end;
+    using it = decltype(begin(FWD(a)));
+    return Range{FilterIterator<it, std::decay_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)),
+                                                                            std::move(b.f)},
+                 FilterIterator<it, std::decay_t<decltype(std::move(b.f))>>{end(FWD(a))}};
+}
 } // namespace ltl

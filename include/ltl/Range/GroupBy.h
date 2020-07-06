@@ -88,8 +88,7 @@ class GroupByIterator : public BaseIterator<GroupByIterator<It, Getter>, It, Get
   private:
     It m_previousIterator;
     It m_nextIterator;
-
-}; // namespace ltl
+};
 
 template <typename F>
 struct GroupByType {
@@ -100,7 +99,16 @@ auto group_by(F &&f) {
     return GroupByType<std::decay_t<F>>{FWD(f)};
 }
 
-LTL_MAKE_IS_KIND(GroupByIterator, is_group_by_iterator, IsGroupByIterator, typename);
-LTL_MAKE_IS_KIND(GroupByType, is_group_by_type, IsGroupByType, typename);
+template <typename F>
+struct is_chainable_operation<GroupByType<F>> : true_t {};
 
+template <typename T1, typename F, requires_f(IsIterableRef<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, GroupByType<F> b) {
+    using std::begin;
+    using std::end;
+    using it = decltype(begin(FWD(a)));
+    return Range{GroupByIterator<it, std::decay_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)),
+                                                                             std::move(b.f)},
+                 GroupByIterator<it, std::decay_t<decltype(std::move(b.f))>>{end(FWD(a))}};
+}
 } // namespace ltl

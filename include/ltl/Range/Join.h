@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "Range.h"
 #include "BaseIterator.h"
 
 namespace ltl {
@@ -92,8 +93,17 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
     ContainerIterator m_sentinelEndContainer;
 };
 
-LTL_MAKE_IS_KIND(JoinIterator, is_join_iterator, IsJoinIterator, typename);
-
 struct join_t {};
 constexpr join_t join{};
+
+template <>
+struct is_chainable_operation<join_t> : true_t {};
+
+template <typename T1, requires_f(IsIterableRef<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, join_t) {
+    using std::begin;
+    using std::end;
+    using it = decltype(begin(FWD(a)));
+    return Range{JoinIterator<it>{begin(FWD(a)), begin(FWD(a)), end(FWD(a))}, JoinIterator<it>{end(FWD(a))}};
+}
 } // namespace ltl

@@ -1,6 +1,10 @@
 #pragma once
 
-#include "BaseIterator.h"
+#include "../concept.h"
+#include "../optional_type.h"
+
+#include "Join.h"
+#include "Range.h"
 
 namespace ltl {
 template <typename It, typename Function>
@@ -23,7 +27,58 @@ constexpr auto map(F &&f) {
     return MapType<std::decay_t<F>>{FWD(f)};
 }
 
-LTL_MAKE_IS_KIND(MapIterator, is_map_iterator, IsMapIterator, typename);
-LTL_MAKE_IS_KIND(MapType, is_map_type, IsMapType, typename);
+template <typename F>
+struct is_chainable_operation<MapType<F>> : true_t {};
+
+template <typename T1, typename F, requires_f(IsIterableRef<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
+    using std::begin;
+    using std::end;
+    using it = decltype(begin(FWD(a)));
+    return Range{MapIterator<it, std::decay_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)),
+                                                                         std::move(b.f)},
+                 MapIterator<it, std::decay_t<decltype(std::move(b.f))>>{end(FWD(a))}};
+}
+
+template <typename T1, typename F, requires_f(IsOptional<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
+    if (a)
+        return std::make_optional(ltl::invoke(std::move(b.f), *FWD(a)));
+    return decltype(std::make_optional(ltl::invoke(std::move(b.f), *FWD(a)))){};
+}
+
+template <typename T1, typename F, requires_f(IsOptionalType<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
+    if_constexpr(a.has_value) { //
+        return ltl::optional_type{ltl::invoke(std::move(b.f), *a)};
+    }
+    else return ltl::nullopt_type;
+}
+
+template <typename T1, typename F, requires_f(IsIterable<T1>)>
+constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
+    return FWD(a) | std::move(b) | join;
+}
+
+template <typename T1, typename F, requires_f(IsOptional<T1>)>
+constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
+    typed_static_assert_msg(is_optional(ltl::invoke(std::move(b.f), *a)),
+                            "With >> notation, function must return optional");
+    if (a)
+        return ltl::invoke(std::move(b.f), *FWD(a));
+    return decltype(ltl::invoke(std::move(b.f), *FWD(a))){};
+}
+
+template <typename T1, typename F, requires_f(IsOptionalType<T1>)>
+constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
+    if_constexpr(a.has_value) { //
+        typed_static_assert_msg(is_optional_type(ltl::invoke(std::move(b.f), *a)),
+                                "With >> notation, function must return optional_type");
+        return ltl::invoke(std::move(b.f), *a);
+    }
+    else {
+        return ltl::nullopt_type;
+    }
+}
 
 } // namespace ltl
