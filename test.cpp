@@ -583,12 +583,14 @@ TEST(LTL_test, test_algos) {
   ASSERT_TRUE(ltl::computeMean(std::vector<int>{}) == std::nullopt);
   ASSERT_TRUE(ltl::contains(odds, 9));
   ASSERT_TRUE(!ltl::contains(odds, 10));
-  ASSERT_TRUE(ltl::contains_map(unordered_map, "one"));
-  ASSERT_TRUE(ltl::contains_map(unordered_map, "three") == false);
-  ASSERT_TRUE(!ltl::find_map_value(unordered_map, "three"));
-  ASSERT_TRUE(*ltl::find_map_value(unordered_map, "one") == 1);
-  ASSERT_TRUE(ltl::find_map_ptr(unordered_map, "one") == &unordered_map["one"]);
-  ASSERT_TRUE(ltl::find_map_ptr(unordered_map, "three") == nullptr);
+  ASSERT_TRUE(ltl::map_contains(unordered_map, "one"));
+  ASSERT_TRUE(ltl::map_contains(unordered_map, "three") == false);
+  ASSERT_TRUE(!ltl::map_find_value(unordered_map, "three"));
+  ASSERT_TRUE(*ltl::map_find_value(unordered_map, "one") == 1);
+  ASSERT_TRUE(ltl::map_find_ptr(unordered_map, "one") == &unordered_map["one"]);
+  ASSERT_TRUE(ltl::map_find_ptr(unordered_map, "three") == nullptr);
+  ASSERT_TRUE(ltl::map_find(unordered_map, "two") == unordered_map.find("two"));
+  ASSERT_FALSE(ltl::map_find(unordered_map, "three").has_value());
 
   std::array<int, 5> reverseOdds = {11, 9, 7, 5, 3};
   ASSERT_TRUE(!ltl::equal(reverseOdds, odds));
@@ -1011,14 +1013,14 @@ TEST(LTL_test, test_associative_map) {
   std::unordered_map<std::string, std::string> dict = {
       {"a", "A"}, {"b", "B"}, {"c", "C"}, {"d", "D"}, {"e", "E"}, {"f", "F"}};
 
-  ASSERT_TRUE(ltl::contains_map(dict, "a"));
-  ASSERT_TRUE(ltl::contains_map(dict, "d"));
-  ASSERT_TRUE(!ltl::contains_map(dict, "g"));
-  ASSERT_TRUE(ltl::find_map_value(dict, "e") == "E");
-  ASSERT_TRUE(ltl::find_map_ptr(dict, "f") == &dict["f"]);
-  ASSERT_TRUE(ltl::find_map_value(dict, "g") == std::nullopt);
-  ASSERT_TRUE(ltl::take_map(dict, "f") == "F");
-  ASSERT_TRUE(ltl::find_map_ptr(dict, "f") == nullptr);
+  ASSERT_TRUE(ltl::map_contains(dict, "a"));
+  ASSERT_TRUE(ltl::map_contains(dict, "d"));
+  ASSERT_TRUE(!ltl::map_contains(dict, "g"));
+  ASSERT_TRUE(ltl::map_find_value(dict, "e") == "E");
+  ASSERT_TRUE(ltl::map_find_ptr(dict, "f") == &dict["f"]);
+  ASSERT_TRUE(ltl::map_find_value(dict, "g") == std::nullopt);
+  ASSERT_TRUE(ltl::map_take(dict, "f") == "F");
+  ASSERT_TRUE(ltl::map_find_ptr(dict, "f") == nullptr);
 }
 
 TEST(LTL_test, test_composition) {

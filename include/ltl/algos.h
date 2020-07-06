@@ -1249,11 +1249,19 @@ template <typename C, typename F> auto contains_if(const C &c, F &&f) {
   return static_cast<bool>(find_if(c, FWD(f)));
 }
 
-template <typename C, typename K> auto contains_map(const C &c, K &&k) {
+template <typename C, typename K> auto map_contains(const C &c, K &&k) {
   return c.find(FWD(k)) != c.end();
 }
 
-template <typename C, typename K> auto find_map_value(C &&c, K &&k) {
+template <typename C, typename K> auto map_find(C &&c, K &&k) {
+  auto it = FWD(c).find(FWD(k));
+  if (it == FWD(c).end()) {
+    return std::optional<decltype(it)>{};
+  }
+  return std::make_optional(it);
+}
+
+template <typename C, typename K> auto map_find_value(C &&c, K &&k) {
   auto it = FWD(c).find(FWD(k));
   if (it == FWD(c).end()) {
     return std::optional<decltype(it->second)>{};
@@ -1261,7 +1269,7 @@ template <typename C, typename K> auto find_map_value(C &&c, K &&k) {
   return std::make_optional(it->second);
 }
 
-template <typename C, typename K> auto find_map_ptr(C &c, K &&k) {
+template <typename C, typename K> auto map_find_ptr(C &c, K &&k) {
   auto it = c.find(FWD(k));
   if (it == c.end()) {
     return decltype(std::addressof(it->second)){nullptr};
@@ -1269,7 +1277,7 @@ template <typename C, typename K> auto find_map_ptr(C &c, K &&k) {
   return std::addressof(it->second);
 }
 
-template <typename C, typename K> auto take_map(C &c, K &&k) {
+template <typename C, typename K> auto map_take(C &c, K &&k) {
   auto it = c.find(FWD(k));
   if (it == c.end()) {
     return std::optional<decltype(it->second)>{};
