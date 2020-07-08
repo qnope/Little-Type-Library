@@ -1,4 +1,4 @@
-# Little Type Library (LTL)
+![](LTL.png)
 
 ## Introduction
 **Little Type Library** or **LTL** for short is a lightweight library that can be used for meta programming and / or functional programming. It can be used instead of **boost::hana** or equivalent because they are too heavy or for whatever reason.
