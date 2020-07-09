@@ -142,15 +142,13 @@ class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
             if (a > b) {
                 resultComparison = false;
                 return false;
-            }
-
-            else if (a < b) {
+            } else if (a < b) {
                 resultComparison = true;
                 return false;
             }
             return true;
         };
-        ((tester((*this)[number_v<Is>], t[number_v<Is>])) && ...);
+        (... && (tester((*this)[number_v<Is>], t[number_v<Is>])));
         return resultComparison;
     }
 };
