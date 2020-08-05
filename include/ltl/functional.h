@@ -19,7 +19,7 @@ struct fix : F {
     }
 };
 template <typename F>
-fix(F) -> fix<F>;
+fix(F)->fix<F>;
 
 template <typename F, typename... Args>
 constexpr auto report_call(F f, Args... xs) {
@@ -66,6 +66,36 @@ constexpr auto or_(Fs... fs) {
 template <typename... Fs>
 constexpr auto and_(Fs... fs) {
     return [fs...](auto &&... xs) { return (true_v && ... && (fs(FWD(xs)...))); };
+}
+
+template <typename T>
+constexpr auto less_than(T t) {
+    return [t = std::move(t)](auto x) { return x < t; };
+}
+
+template <typename T>
+constexpr auto less_than_equal(T t) {
+    return [t = std::move(t)](auto x) { return x <= t; };
+}
+
+template <typename T>
+constexpr auto greater_than(T t) {
+    return [t = std::move(t)](auto x) { return x > t; };
+}
+
+template <typename T>
+constexpr auto greater_than_equal(T t) {
+    return [t = std::move(t)](auto x) { return x >= t; };
+}
+
+template <typename T>
+constexpr auto equal(T t) {
+    return [t = std::move(t)](auto x) { return x == t; };
+}
+
+template <typename T>
+constexpr auto not_equal(T t) {
+    return [t = std::move(t)](auto x) { return x != t; };
 }
 
 template <typename F>

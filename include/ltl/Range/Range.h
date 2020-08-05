@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iterator>
+#include <cassert>
 
 #include "../crtp.h"
 #include "../Tuple.h"

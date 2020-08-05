@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Tuple.h"
+#include "functional.h"
 #include "optional_type.h"
 
 #define types_from(x) ::ltl::getQualifiedTypeList(type_from(x))
@@ -58,22 +59,26 @@ constexpr auto accumulate_type(Tuple &&tuple) {
     return accumulate_type(FWD(tuple), accumulate);
 }
 
+namespace details {
+constexpr auto is_type_related_list = ltl::or_(ltl::is_type_list_t, ltl::is_number_list_t, ltl::is_bool_list_t);
+}
+
 ////////////////////// Algorithm tuple
 template <typename... Ts, typename T>
 constexpr auto contains_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] type_t<T> type) {
-    if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (Ts{} == type));
+    if_constexpr(details::is_type_related_list(tuple)) return (false_v || ... || (Ts{} == type));
     else return contains_type(type_list_v<Ts...>, type);
 }
 
 template <typename... Ts, typename T>
 constexpr auto count_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] type_t<T> type) {
-    if_constexpr(is_type_list_t(tuple)) return (0_n + ... + bool_to_number(Ts{} == type));
+    if_constexpr(details::is_type_related_list(tuple)) return (0_n + ... + bool_to_number(Ts{} == type));
     else return count_type(type_list_v<Ts...>, type);
 }
 
 template <typename... Ts, typename T, int N = 0>
 constexpr auto find_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] type_t<T> type, number_t<N> first = {}) {
-    if_constexpr(is_type_list_t(tuple)) {
+    if_constexpr(details::is_type_related_list(tuple)) {
         if_constexpr(first == tuple.length) return nullopt_type;
         else_if_constexpr(tuple[first] == type) return optional_type{first};
         else return find_type(tuple, type, first + 1_n);
@@ -84,7 +89,7 @@ constexpr auto find_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] type_t<T>
 
 template <typename... Ts, typename P, int N = 0>
 constexpr auto find_if_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p, number_t<N> first = {}) {
-    if_constexpr(is_type_list_t(tuple)) {
+    if_constexpr(details::is_type_related_list(tuple)) {
         if_constexpr(first == tuple.length) return nullopt_type;
         else_if_constexpr(p(tuple[first])) return optional_type{first};
         else return find_if_type(tuple, p, first + 1_n);
@@ -94,25 +99,25 @@ constexpr auto find_if_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p, n
 
 template <typename... Ts, typename P>
 constexpr auto contains_if_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
-    if_constexpr(is_type_list_t(tuple)) return (false_v || ... || p(Ts{}));
+    if_constexpr(details::is_type_related_list(tuple)) return (false_v || ... || p(Ts{}));
     else return contains_if_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
 constexpr auto count_if_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
-    if_constexpr(is_type_list_t(tuple)) return (0_n + ... + bool_to_number(p(Ts{})));
+    if_constexpr(details::is_type_related_list(tuple)) return (0_n + ... + bool_to_number(p(Ts{})));
     else return count_if_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
 constexpr auto all_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
-    if_constexpr(is_type_list_t(tuple)) return (true_v && ... && (p(Ts{})));
+    if_constexpr(details::is_type_related_list(tuple)) return (true_v && ... && (p(Ts{})));
     else return all_of_type(type_list_v<Ts...>, p);
 }
 
 template <typename... Ts, typename P>
 constexpr auto any_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
-    if_constexpr(is_type_list_t(tuple)) return (false_v || ... || (p(Ts{})));
+    if_constexpr(details::is_type_related_list(tuple)) return (false_v || ... || (p(Ts{})));
     else return any_of_type(type_list_v<Ts...>, p);
 }
 
@@ -127,14 +132,14 @@ struct unique_wrapper_t {};
 template <typename T>
 constexpr unique_wrapper_t<T> unique_wrapper_v{};
 
-template <typename... Ts, typename T>
-constexpr auto operator+(type_list_t<Ts...> list, unique_wrapper_t<type_t<T>>) {
-    constexpr auto type = type_v<T>;
-    if_constexpr(contains_type(list, type)) { //
+template <typename... Ts, template <typename T> typename X, typename T>
+constexpr auto operator+(ltl::tuple_t<Ts...> list, unique_wrapper_t<X<T>>) {
+    constexpr auto to_add = X<T>{};
+    if_constexpr(contains_type(list, to_add)) { //
         return list;
     }
     else {
-        return type_list_v<Ts..., T>;
+        return ltl::tuple_t<Ts..., X<T>>{};
     }
 }
 
@@ -142,8 +147,8 @@ constexpr auto operator+(type_list_t<Ts...> list, unique_wrapper_t<type_t<T>>) {
 
 template <typename... Ts>
 constexpr auto unique_type(const tuple_t<Ts...> &tuple) {
-    if_constexpr(is_type_list_t(tuple)) { //
-        return (type_list_v<> + ... + (detail::unique_wrapper_v<Ts>));
+    if_constexpr(details::is_type_related_list(tuple)) { //
+        return (tuple_t{} + ... + (detail::unique_wrapper_v<Ts>));
     }
     else { //
         return unique_type(ltl::type_list_v<Ts...>);
@@ -152,7 +157,7 @@ constexpr auto unique_type(const tuple_t<Ts...> &tuple) {
 
 template <typename... Ts>
 constexpr auto is_unique_type(const tuple_t<Ts...> &tuple) {
-    if_constexpr(is_type_list_t(tuple)) { //
+    if_constexpr(details::is_type_related_list(tuple)) { //
         return (true_v && ... && (count_type(tuple, Ts{}) == 1_n));
     }
     else { //
@@ -174,8 +179,8 @@ constexpr auto optional_maker(T, false_t) {
 
 template <typename... Ts, typename P>
 constexpr auto filter_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
-    if_constexpr(is_type_list_t(tuple)) { //
-        return (ltl::type_list_v<> + ... + (detail::optional_maker(Ts{}, p(Ts{}))));
+    if_constexpr(details::is_type_related_list(tuple)) { //
+        return (tuple_t{} + ... + (detail::optional_maker(Ts{}, p(Ts{}))));
     }
     else {
         return filter_type(ltl::type_list_v<Ts...>, p);

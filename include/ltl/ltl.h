@@ -188,24 +188,24 @@ namespace ltl {
 [[nodiscard]] constexpr auto bool_to_number(true_t) { return 1_n; }
 
 template <typename T>
-[[nodiscard]] constexpr auto max(T a) {
+[[nodiscard]] constexpr auto max_type(T a) {
     return a;
 }
 
 template <typename T1, typename T2, typename... Ts>
-[[nodiscard]] constexpr auto max(T1 a, T2 b, Ts... ts) {
-    if_constexpr(a > b) return ::ltl::max(a, ts...);
-    else return ::ltl::max(b, ts...);
+[[nodiscard]] constexpr auto max_type(T1 a, T2 b, Ts... ts) {
+    if_constexpr(a > b) return ::ltl::max_type(a, ts...);
+    else return ::ltl::max_type(b, ts...);
 }
 
 template <typename T>
-[[nodiscard]] constexpr auto min(T a) {
+[[nodiscard]] constexpr auto min_type(T a) {
     return a;
 }
 template <typename T1, typename T2, typename... Ts>
-[[nodiscard]] constexpr auto min(T1 a, T2 b, Ts... ts) {
-    if_constexpr(a < b) return ::ltl::min(a, ts...);
-    else return ::ltl::min(b, ts...);
+[[nodiscard]] constexpr auto min_type(T1 a, T2 b, Ts... ts) {
+    if_constexpr(a < b) return ::ltl::min_type(a, ts...);
+    else return ::ltl::min_type(b, ts...);
 }
 
 template <typename... Ts>

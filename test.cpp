@@ -78,8 +78,8 @@ TEST(LTL_test, number_test) {
     static_assert((8_n | 7_n) == 15_n);
     static_assert((8_n ^ 15_n) == 7_n);
 
-    static_assert(ltl::max(5_n, 3_n, 8_n, 4_n) == 8_n);
-    static_assert(ltl::min(4_n, -8_n, 8_n, 4_n) == -8_n);
+    static_assert(ltl::max_type(5_n, 3_n, 8_n, 4_n) == 8_n);
+    static_assert(ltl::min_type(4_n, -8_n, 8_n, 4_n) == -8_n);
 }
 
 TEST(LTL_test, constexpr_tuple_test) {
@@ -1419,4 +1419,24 @@ TEST(LTL_test, test_construct) {
 
     ASSERT_TRUE(a == b);
     ASSERT_TRUE(b == c);
+}
+
+TEST(LTL_test, test_comparators) {
+    using namespace ltl;
+    std::array array1 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    std::array array2 = {5, 4, 2, 3, 6, 5, 4, 1, 2, 5, 6, 10, 4, 2, 1, 3, 5};
+
+    ASSERT_EQ(count_if(array1, less_than(5)), 5);
+    ASSERT_EQ(count_if(array1, greater_than(7)), 3);
+    ASSERT_EQ(count_if(array1, less_than_equal(5)), 6);
+    ASSERT_EQ(count_if(array1, greater_than_equal(8)), 3);
+    ASSERT_EQ(count_if(array2, equal(5)), 4);
+    ASSERT_EQ(count_if(array2, not_equal(5)), array2.size() - 4);
+
+    constexpr auto list = number_list_v<1, 3, 4, 2, 5, 10, 4>;
+
+    typed_static_assert(ltl::count_if_type(list, equal(4_n)) == 2_n);
+    typed_static_assert(ltl::count_if_type(list, less_than(4_n)) == 3_n);
+    typed_static_assert(ltl::count_if_type(list, less_than_equal(1_n)) == 1_n);
+    typed_static_assert((ltl::filter_type(list, greater_than_equal(4_n)) == ltl::number_list_v<4, 5, 10, 4>));
 }
