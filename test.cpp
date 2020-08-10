@@ -978,6 +978,14 @@ TEST(LTL_test, test_join) {
     ASSERT_TRUE(equal(arrayRange, array2 >> map(to_vector)));
     ASSERT_TRUE(equal(arrayRange, array2 >> map(to_vector_ref)));
     ASSERT_TRUE(equal(array2ptr, array2 >> map(to_vector_ref) | map(to_ptr)));
+
+    std::array<std::array<std::array<int, 3>, 3>, 3> nestedArray{};
+    auto flatArray = nestedArray | ltl::join | ltl::join;
+    typed_static_assert(type_from(flatArray[0]) == ltl::type_v<int &>);
+    ASSERT_TRUE(ltl::equal(flatArray, std::array<int, 27>{}));
+    ASSERT_EQ(std::addressof(flatArray[14]), std::addressof(nestedArray[1][1][2]));
+    ASSERT_EQ(std::addressof(flatArray[26]), std::addressof(nestedArray[2][2][2]));
+    ASSERT_EQ(std::addressof(flatArray[0]), std::addressof(nestedArray[0][0][0]));
 }
 
 TEST(LTL_test, test_and_or) {
