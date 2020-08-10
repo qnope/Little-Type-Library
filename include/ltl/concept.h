@@ -32,6 +32,9 @@ constexpr bool IsSame = (true_v && ... && (ltl::type_v<T> == ltl::type_v<Ts>));
 template <typename T>
 constexpr bool IsRValueReference = std::is_rvalue_reference_v<T &&>;
 
+template <typename T>
+constexpr bool IsFixedSizeArray = decltype(is_fixed_size_array(std::declval<T>()))::value;
+
 } // namespace ltl
 
 #define requires_f(x) ::ltl::requires_t<bool, (x)> = true

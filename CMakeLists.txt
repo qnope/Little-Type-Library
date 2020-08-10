@@ -8,24 +8,27 @@ if(MSVC)
             /d2cgsummary
             /Wv:18
             /MT)
+        message(Debug)
+        add_compile_options(/Zi /DEBUG:FULL)
 endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
 
 set(HEADERS_RANGE
-    include/ltl/Range/Range.h
-    include/ltl/Range/NullableFunction.h
-    include/ltl/Range/BaseIterator.h
-    include/ltl/Range/AsPointer.h
-    include/ltl/Range/Filter.h
     include/ltl/Range/Map.h
-    include/ltl/Range/Taker.h
     include/ltl/Range/Zip.h
-    include/ltl/Range/Value.h
     include/ltl/Range/Join.h
+    include/ltl/Range/Range.h
+    include/ltl/Range/Taker.h
+    include/ltl/Range/Value.h
+    include/ltl/Range/Filter.h
+    include/ltl/Range/GroupBy.h
+    include/ltl/Range/actions.h
+    include/ltl/Range/AsPointer.h
     include/ltl/Range/enumerate.h
     include/ltl/Range/DefaultView.h
-    include/ltl/Range/GroupBy.h
+    include/ltl/Range/BaseIterator.h
+    include/ltl/Range/NullableFunction.h
     )
 
 set(HEADERS

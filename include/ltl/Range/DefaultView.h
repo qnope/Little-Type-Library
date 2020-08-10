@@ -5,23 +5,8 @@
 #include "Map.h"
 
 namespace ltl {
-namespace detail {
-template <typename T>
-struct remove_rvalue_reference {
-    using type = std::decay_t<T>;
-};
-
-template <typename T>
-struct remove_rvalue_reference<T &> {
-    using type = T &;
-};
-
-template <typename T>
-using remove_rvalue_reference_t = typename remove_rvalue_reference<T>::type;
-} // namespace detail
-
 inline auto dereference() noexcept {
-    return map([](auto &&x) noexcept -> detail::remove_rvalue_reference_t<decltype(*FWD(x))> { return *FWD(x); });
+    return map([](auto &&x) noexcept -> remove_rvalue_reference_t<decltype(*FWD(x))> { return *FWD(x); });
 }
 
 inline auto remove_null() noexcept {

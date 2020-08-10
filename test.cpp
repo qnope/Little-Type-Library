@@ -6,15 +6,16 @@
 #include <string>
 #include <unordered_map>
 
-#include <ltl/StrongType.h>
-#include <ltl/VariantUtils.h>
 #include <ltl/algos.h>
+#include <ltl/traits.h>
+#include <ltl/operator.h>
 #include <ltl/condition.h>
 #include <ltl/functional.h>
+#include <ltl/StrongType.h>
 #include <ltl/movable_any.h>
-#include <ltl/operator.h>
+#include <ltl/VariantUtils.h>
 #include <ltl/optional_type.h>
-#include <ltl/traits.h>
+#include <ltl/Range/actions.h>
 
 #include <ltl/Range/DefaultView.h>
 #include <ltl/Range/Value.h>
@@ -426,6 +427,23 @@ TEST(LTL_test, test_trait) {
 
         static_assert(!ltl::is_derived_from(ltl::type_v<Base>)(nd));
         static_assert(!ltl::is_derived_from(ltl::type_v<Base>)(ltl::type_v<NotDerived>));
+    }
+
+    {
+        const int a[] = {0, 1, 2, 3};
+        int b[] = {0, 1, 2, 3};
+        std::array<double, 5> c;
+        const std::array<std::string, 6> d{};
+        int x;
+        std::string y;
+        std::vector<int> z;
+        typed_static_assert(ltl::is_fixed_size_array(a));
+        typed_static_assert(ltl::is_fixed_size_array(b));
+        typed_static_assert(ltl::is_fixed_size_array(c));
+        typed_static_assert(ltl::is_fixed_size_array(d));
+        typed_static_assert(!ltl::is_fixed_size_array(x));
+        typed_static_assert(!ltl::is_fixed_size_array(y));
+        typed_static_assert(!ltl::is_fixed_size_array(z));
     }
 }
 
@@ -1447,4 +1465,54 @@ TEST(LTL_test, test_comparators) {
     typed_static_assert(ltl::count_if_type(list, less_than(4_n)) == 3_n);
     typed_static_assert(ltl::count_if_type(list, less_than_equal(1_n)) == 1_n);
     typed_static_assert((ltl::filter_type(list, greater_than_equal(4_n)) == ltl::number_list_v<4, 5, 10, 4>));
+}
+
+TEST(LTL_test, test_actions) {
+    std::vector a = {0, 5, 4, 1, 2, 3, 8, 1, 4, 1, 2, 1, 3};
+    std::array b = {0, 5, 1, 1, 2, 3, 4, 0, 2, 4, 12, 5};
+
+    ASSERT_TRUE(a.size() == 13);
+    ASSERT_TRUE(!a.empty());
+
+    a |= ltl::actions::sort | ltl::actions::unique;
+    b |= ltl::actions::sort;
+    auto c = std::vector{5, 4, 1, 3, 2, 1, 5, 9, 6} | (ltl::actions::sort | ltl::actions::unique);
+    auto d = std::vector{5, 4, 3, 2, 1, 1} | ltl::actions::sort;
+
+    ASSERT_TRUE(ltl::equal(a, std::array{0, 1, 2, 3, 4, 5, 8}));
+    ASSERT_TRUE(ltl::equal(b, std::array{0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 12}));
+    ASSERT_TRUE(ltl::equal(c, std::array{1, 2, 3, 4, 5, 6, 9}));
+    ASSERT_TRUE(ltl::equal(d, std::array{1, 1, 2, 3, 4, 5}));
+}
+
+TEST(LTL_test, test_complexe_range) {
+    using namespace ltl;
+    std::string text =
+        "My name is Antoine. I own a Hyundai i30N. She has 275 horses power, she is beautiful. The idea "
+        "of this test is to test the range thing with a complex thing : So I wrote a random text to test "
+        "this thing. This test is about having the five first words the most used.";
+
+    std::istringstream iss{std::move(text)};
+    auto onlyAlphaNum = [](const auto &s) -> std::string { return s | filter(lift(std::isalnum)); };
+    auto toLower = [](const auto &s) -> std::string { return s | map(lift(std::tolower)); };
+    auto count_group = [](const auto &tupleWordRange) { //
+        return tuple_t{tupleWordRange[1_n].size(), tupleWordRange[0_n]};
+    };
+
+    auto words =
+        std::vector<std::string>{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}} | //
+        map(onlyAlphaNum) |                                                                                       //
+        filter(not_(&std::string::empty)) |                                                                       //
+        map(toLower) | to_vector |                                                                                //
+        actions::sort |                                                                                           //
+        group_by(identity) |                                                                                      //
+        map(count_group) | to_vector |                                                                            //
+        actions::sort_by(std::greater<>{}) |                                                                      //
+        ltl::get(1_n) |                                                                                           //
+        ltl::take_n(5) | to_vector;
+
+    static_assert(type_from(words) == ltl::type_v<std::vector<std::string>>);
+
+    ASSERT_EQ(words.size(), 5);
+    ASSERT_TRUE(ltl::equal(words, std::array{"the", "test", "is", "this", "thing"}));
 }

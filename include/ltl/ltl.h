@@ -41,6 +41,19 @@ struct decay_reference_wrapper<std::reference_wrapper<T>> {
 template <typename T>
 using decay_reference_wrapper_t = typename decay_reference_wrapper<T>::type;
 
+template <typename T>
+struct remove_rvalue_reference {
+    using type = std::decay_t<T>;
+};
+
+template <typename T>
+struct remove_rvalue_reference<T &> {
+    using type = T &;
+};
+
+template <typename T>
+using remove_rvalue_reference_t = typename remove_rvalue_reference<T>::type;
+
 ///////////////////// overloader
 template <typename... Fs>
 struct overloader : Fs... {

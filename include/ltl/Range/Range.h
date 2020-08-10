@@ -3,6 +3,7 @@
 #include <iterator>
 #include <cassert>
 
+#include "actions.h"
 #include "../crtp.h"
 #include "../Tuple.h"
 #include "../concept.h"
@@ -127,7 +128,7 @@ struct is_chainable_operation : false_t {};
 template <typename T>
 constexpr bool IsChainableOperation = is_chainable_operation<std::decay_t<T>>::value;
 
-template <typename T1, typename T2, requires_f(IsForOwningRange<T1>)>
+template <typename T1, typename T2, requires_f(IsForOwningRange<T1>), requires_f(!actions::IsAction<T2>)>
 constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
     return OwningRange<T1, T2>{FWD(a), FWD(b)};
 }
@@ -137,7 +138,8 @@ constexpr decltype(auto) operator|(OwningRange<Ts...> &&a, T2 b) {
     return std::move(a).add_operation(std::move(b));
 }
 
-template <typename T1, typename... Ts, requires_f(IsIterableRef<T1>)>
+template <typename T1, typename... Ts, requires_f(IsIterableRef<T1>),
+          requires_f((true && ... && IsChainableOperation<Ts>))>
 constexpr decltype(auto) operator|(T1 &&a, tuple_t<Ts...> b) {
     return std::move(b)([&a](auto &&... xs) { return (std::forward<T1>(a) | ... | (std::move(xs))); });
 }

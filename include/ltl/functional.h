@@ -126,4 +126,6 @@ constexpr auto construct_with_tuple(Tuple &&... tuple) noexcept {
     return curry(unzip(construct<T>()), FWD(tuple)...);
 }
 
+constexpr auto identity = [](auto &&t) -> remove_rvalue_reference_t<decltype(FWD(t))> { return FWD(t); };
+
 } // namespace ltl

@@ -13,7 +13,7 @@ std::add_rvalue_reference_t<T> declval(T &&);
 
 #define TRAIT(name)                                                                                                    \
     [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
-        return bool_v<std::LPL_CAT(name, _v) < std::decay_t<decltype(declval(FWD(xs)))>...> > ;                        \
+        return bool_v<std::LPL_CAT(name, _v) < std::decay_t<decltype(declval(FWD(xs)))>...>> ;                         \
     };
 
 // Primary type categories
@@ -89,12 +89,12 @@ TRAIT(is_convertible)
 
 #define TRAIT_REFERENCE(name)                                                                                          \
     [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
-        return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...> > ;                                      \
+        return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...>> ;                                       \
     };
 
 #define TRAIT_CVNESS(name)                                                                                             \
     [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr {                                                    \
-        return bool_v<std::LPL_CAT(name, _v) < std::remove_reference_t<decltype(declval(FWD(x)))>> > ;                 \
+        return bool_v<std::LPL_CAT(name, _v) < std::remove_reference_t<decltype(declval(FWD(x)))>>> ;                  \
     };
 
 // Reference / cv-ness
@@ -106,7 +106,7 @@ TRAIT_CVNESS(is_array)
 
 #define TRAIT(name)                                                                                                    \
     template <typename T>                                                                                              \
-        [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T> > name(type_t<T>) {                               \
+        [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T>> name(type_t<T>) {                                \
         return {};                                                                                                     \
     }
 
@@ -123,7 +123,7 @@ TRAIT(rank)
 
 #define TRAIT(name)                                                                                                    \
     [[maybe_unused]] constexpr auto name = [](auto x) constexpr noexcept {                                             \
-        return type_v<std::LPL_CAT(name, _t) < decltype_t(x)> > ;                                                      \
+        return type_v<std::LPL_CAT(name, _t) < decltype_t(x)>> ;                                                       \
     };
 
 // const-volatibility specifiers
@@ -337,5 +337,13 @@ constexpr any_trait_t any_trait_v;
 
 constexpr auto is_iterable = IS_VALID((x), begin(x), end(x));
 constexpr auto is_generic_callable = IS_VALID((x), x(any_trait_v));
+
+constexpr ltl::false_t is_fixed_size_array(...);
+
+template <typename T, std::size_t N>
+constexpr ltl::true_t is_fixed_size_array(const T (&)[N]);
+
+template <typename T, std::size_t N>
+constexpr ltl::true_t is_fixed_size_array(const std::array<T, N> &);
 
 } // namespace ltl
