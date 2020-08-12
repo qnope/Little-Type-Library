@@ -10,7 +10,7 @@ namespace ltl {
 template <typename It, typename Function>
 struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
     using reference = std::invoke_result_t<Function, typename std::iterator_traits<It>::reference>;
-    DECLARE_EVERYTHING_BUT_REFERENCE
+    DECLARE_EVERYTHING_BUT_REFERENCE(typename std::iterator_traits<It>::iterator_category)
 
     using BaseIterator<MapIterator<It, Function>, It, Function>::BaseIterator;
 

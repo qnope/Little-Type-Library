@@ -11,7 +11,7 @@ struct ZipIterator : BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators..
 
     using BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>, Nothing>::BaseIterator;
 
-    DECLARE_EVERYTHING_BUT_REFERENCE
+    DECLARE_EVERYTHING_BUT_REFERENCE(std::forward_iterator_tag)
 
     ZipIterator &operator++() {
         assert(this->m_it != this->m_sentinelEnd);

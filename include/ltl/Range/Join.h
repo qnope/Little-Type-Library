@@ -16,7 +16,7 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
     using ContainerPtr = AsPointer<Container>;
 
     using reference = typename std::iterator_traits<ContainerIterator>::reference;
-    DECLARE_EVERYTHING_BUT_REFERENCE
+    DECLARE_EVERYTHING_BUT_REFERENCE(typename std::iterator_traits<It>::iterator_category)
 
     using BaseIterator<JoinIterator<It>, It, Nothing, false, false>::BaseIterator;
 

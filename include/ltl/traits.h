@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ltl.h"
+#include <array>
 
 #define qualifier_from(x) ltl::qualifier_v<ltl::getQualifierEnum(type_from(x))>
 

@@ -1499,17 +1499,16 @@ TEST(LTL_test, test_complexe_range) {
         return tuple_t{tupleWordRange[1_n].size(), tupleWordRange[0_n]};
     };
 
-    auto words =
-        std::vector<std::string>{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}} | //
-        map(onlyAlphaNum) |                                                                                       //
-        filter(not_(&std::string::empty)) |                                                                       //
-        map(toLower) | to_vector |                                                                                //
-        actions::sort |                                                                                           //
-        group_by(identity) |                                                                                      //
-        map(count_group) | to_vector |                                                                            //
-        actions::sort_by(std::greater<>{}) |                                                                      //
-        ltl::get(1_n) |                                                                                           //
-        ltl::take_n(5) | to_vector;
+    auto words = Range{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}} | //
+                 map(onlyAlphaNum) |                                                                    //
+                 filter(not_(&std::string::empty)) |                                                    //
+                 map(toLower) | to_vector |                                                             //
+                 actions::sort |                                                                        //
+                 group_by(identity) |                                                                   //
+                 map(count_group) | to_vector |                                                         //
+                 actions::sort_by(std::greater<>{}) |                                                   //
+                 ltl::get(1_n) |                                                                        //
+                 ltl::take_n(5) | to_vector;
 
     static_assert(type_from(words) == ltl::type_v<std::vector<std::string>>);
 

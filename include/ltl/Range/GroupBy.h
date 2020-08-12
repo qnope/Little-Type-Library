@@ -13,7 +13,7 @@ class GroupByIterator : public BaseIterator<GroupByIterator<It, Getter>, It, Get
     using range_type = Range<It>;
 
     using reference = tuple_t<key, range_type>;
-    DECLARE_EVERYTHING_BUT_REFERENCE
+    DECLARE_EVERYTHING_BUT_REFERENCE(typename std::iterator_traits<It>::iterator_category)
 
     using BaseIterator<GroupByIterator<It, Getter>, It, Getter, false>::BaseIterator;
 

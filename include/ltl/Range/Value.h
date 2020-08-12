@@ -7,7 +7,7 @@ namespace ltl {
 template <typename ValueType>
 struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing> {
     using reference = ValueType;
-    DECLARE_EVERYTHING_BUT_REFERENCE
+    DECLARE_EVERYTHING_BUT_REFERENCE(std::random_access_iterator_tag)
 
     ValueIterator() noexcept {
         this->m_sentinelBegin = std::numeric_limits<ValueType>::lowest();

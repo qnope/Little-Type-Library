@@ -10,7 +10,7 @@ class FilterIterator : public BaseIterator<FilterIterator<It, Predicate>, It, Pr
 
   public:
     using reference = typename std::iterator_traits<It>::reference;
-    DECLARE_EVERYTHING_BUT_REFERENCE
+    DECLARE_EVERYTHING_BUT_REFERENCE(typename std::iterator_traits<It>::iterator_category)
 
     using BaseIterator<FilterIterator<It, Predicate>, It, Predicate, false>::BaseIterator;
 

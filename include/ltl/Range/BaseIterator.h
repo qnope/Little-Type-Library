@@ -9,11 +9,11 @@
 #include "AsPointer.h"
 #include "NullableFunction.h"
 
-#define DECLARE_EVERYTHING_BUT_REFERENCE                                                                               \
+#define DECLARE_EVERYTHING_BUT_REFERENCE(tag)                                                                          \
     using pointer = ::ltl::AsPointer<reference>;                                                                       \
     using value_type = std::decay_t<reference>;                                                                        \
     using difference_type = std::size_t;                                                                               \
-    using iterator_category = std::random_access_iterator_tag;
+    using iterator_category = tag;
 
 namespace ltl {
 
@@ -58,7 +58,7 @@ class BaseIterator :
         return *it.m_it;
     }
 
-    auto operator->() const noexcept {
+    auto operator-> () const noexcept {
         const DerivedIt &it = underlying();
         return AsPointer<decltype(*it)>{*it};
     }
