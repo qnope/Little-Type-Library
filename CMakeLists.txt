@@ -8,8 +8,6 @@ if(MSVC)
             /d2cgsummary
             /Wv:18
             /MT)
-        message(Debug)
-        add_compile_options(/Zi /DEBUG:FULL)
 endif(MSVC)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -59,8 +57,20 @@ add_subdirectory(googletest)
 add_library(LTL INTERFACE)
 target_include_directories(LTL INTERFACE include/)
 
-
 add_executable(LittleTypeLibrary "test.cpp" ${HEADERS})
+
+string(TOLOWER ${CMAKE_BUILD_TYPE} build_type)
+string(TOLOWER ${CMAKE_CXX_COMPILER} compiler)
+if(MSVC AND ${build_type} STREQUAL "debug")
+    message("using MSVC to build in full debug")
+    target_compile_options(LittleTypeLibrary PUBLIC /Zi /DEBUG:FULL)
+endif()
+
+if(${compiler} MATCHES ".*clang.*")
+    message("using clang to build LTL")
+    target_compile_options(LittleTypeLibrary PUBLIC -ftime-trace)
+endif()
+
 target_link_libraries(LittleTypeLibrary
     LTL
     gtest_main)
