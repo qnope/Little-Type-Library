@@ -74,7 +74,7 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
 
   public:
     OwningRange(Container container, Operations... operations) noexcept :
-        m_container{std::move(container)}, //
+        m_container(std::move(container)), //
         m_operations{FWD(operations)...},  //
         m_range{m_container | m_operations} {}
 

@@ -1339,6 +1339,13 @@ TEST(LTL_test, test_rvalue) {
     auto vector = returnStrings() | ltl::map(_((x), x)) | ltl::to_vector;
     ASSERT_TRUE(ltl::equal(vector, returnStrings()));
     static_assert(type_from(vector) == ltl::type_v<std::vector<std::string>>);
+
+    std::vector<std::any> any = {0, 5.0, "lol", std::string{"lol2"}};
+    auto anyLValueReference = any | ltl::map(&std::any::has_value);
+    auto anyRValueReference = std::vector(any) | ltl::map(&std::any::has_value);
+
+    ASSERT_EQ(any.size(), anyLValueReference.size());
+    ASSERT_EQ(any.size(), anyRValueReference.size());
 }
 
 TEST(LTL_test, test_group_by) {
