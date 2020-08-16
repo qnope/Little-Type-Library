@@ -19,7 +19,7 @@ struct fix : F {
     }
 };
 template <typename F>
-fix(F)->fix<F>;
+fix(F) -> fix<F>;
 
 template <typename F, typename... Args>
 constexpr auto report_call(F f, Args... xs) {
@@ -127,5 +127,17 @@ constexpr auto construct_with_tuple(Tuple &&... tuple) noexcept {
 }
 
 constexpr auto identity = [](auto &&t) -> remove_rvalue_reference_t<decltype(FWD(t))> { return FWD(t); };
+
+constexpr auto ascending = [](auto f) {
+    return [f = std::move(f)](const auto &x, const auto &y) noexcept { //
+        return ltl::invoke(f, x) < ltl::invoke(f, y);
+    };
+};
+
+constexpr auto descending = [](auto f) {
+    return [f = std::move(f)](const auto &x, const auto &y) noexcept { //
+        return ltl::invoke(f, x) > ltl::invoke(f, y);
+    };
+};
 
 } // namespace ltl

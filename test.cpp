@@ -1483,6 +1483,14 @@ TEST(LTL_test, test_actions) {
     ASSERT_TRUE(ltl::equal(b, std::array{0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 12}));
     ASSERT_TRUE(ltl::equal(c, std::array{1, 2, 3, 4, 5, 6, 9}));
     ASSERT_TRUE(ltl::equal(d, std::array{1, 1, 2, 3, 4, 5}));
+
+    std::vector e = {5, 4, 2, 1, 6, 5, 8, 9, 10};
+
+    e |= ltl::actions::sort_by(ltl::ascending(ltl::identity));
+    ASSERT_TRUE(ltl::equal(e, std::array{1, 2, 4, 5, 5, 6, 8, 9, 10}));
+
+    e |= ltl::actions::sort_by(ltl::descending(ltl::identity));
+    ASSERT_TRUE(ltl::equal(e, std::array{10, 9, 8, 6, 5, 5, 4, 2, 1}));
 }
 
 TEST(LTL_test, test_complexe_range) {
