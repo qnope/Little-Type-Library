@@ -1,7 +1,7 @@
 #pragma once
 
-#include <iterator>
 #include <cassert>
+#include <iterator>
 
 #include "actions.h"
 #include "../crtp.h"

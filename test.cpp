@@ -1514,19 +1514,32 @@ TEST(LTL_test, test_complexe_range) {
         return tuple_t{tupleWordRange[1_n].size(), tupleWordRange[0_n]};
     };
 
-    auto words = Range{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}} | //
-                 map(onlyAlphaNum) |                                                                    //
-                 filter(not_(&std::string::empty)) |                                                    //
-                 map(toLower) | to_vector |                                                             //
-                 actions::sort |                                                                        //
-                 group_by(identity) |                                                                   //
-                 map(count_group) | to_vector |                                                         //
-                 actions::sort_by(std::greater<>{}) |                                                   //
-                 ltl::get(1_n) |                                                                        //
+    auto words = make_istream_range<std::string>(iss) | //
+                 map(onlyAlphaNum) |                    //
+                 filter(not_(&std::string::empty)) |    //
+                 map(toLower) | to_vector |             //
+                 actions::sort |                        //
+                 group_by(identity) |                   //
+                 map(count_group) | to_vector |         //
+                 actions::sort_by(std::greater<>{}) |   //
+                 ltl::get(1_n) |                        //
                  ltl::take_n(5) | to_vector;
 
     static_assert(type_from(words) == ltl::type_v<std::vector<std::string>>);
 
     ASSERT_EQ(words.size(), 5);
     ASSERT_TRUE(ltl::equal(words, std::array{"the", "test", "is", "this", "thing"}));
+}
+
+TEST(LTL_test, test_move_range) {
+    using namespace ltl;
+    std::vector<std::string> array = {"My", "name", "is", "Antoine"};
+    std::vector<std::string> copied = array | map(identity);
+    std::vector<std::string> empty = {"", "", "", ""};
+    ASSERT_TRUE(equal(array, copied));
+
+    std::vector<std::string> moved = make_move_range(array);
+    ASSERT_EQ(moved.size(), 4);
+    ASSERT_TRUE(equal(array, empty));
+    ASSERT_TRUE(equal(moved, copied));
 }

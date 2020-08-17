@@ -159,7 +159,7 @@ struct as_byte {
     std::size_t count;
 
     template <typename T>
-    as_byte(T &&t) {
+    explicit as_byte(T &&t) {
         begin = reinterpret_cast<char *>(const_cast<std::decay_t<T> *>(std::addressof(t)));
         count = sizeof(std::decay_t<T>);
     }
@@ -173,6 +173,11 @@ inline std::istream &operator>>(std::istream &stream, as_byte b) {
 inline std::ostream &operator<<(std::ostream &stream, as_byte b) {
     stream.write(b.begin, b.count);
     return stream;
+}
+
+template <typename T>
+auto make_istream_range(std::istream &istream) {
+    return Range{std::istream_iterator<T>{istream}, std::istream_iterator<T>{}};
 }
 
 } // namespace ltl

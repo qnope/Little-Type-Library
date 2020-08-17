@@ -1185,17 +1185,22 @@ auto iota(C &c, V &&v) {
 template <typename C, typename T>
 constexpr T accumulate(const C &c, T init) {
     typed_static_assert_msg(is_iterable(c), "C must be iterable");
-    for (const auto &e : c) {
-        init = std::move(init) + e;
+    auto b = begin(c);
+    auto e = end(c);
+    for (; b != e; ++b) {
+        init = std::move(init) + *b;
     }
+
     return init;
 }
 
 template <typename C, typename T, typename BinaryOperation>
 constexpr T accumulate(const C &c, T init, BinaryOperation &&op) {
     typed_static_assert_msg(is_iterable(c), "C must be iterable");
-    for (const auto &e : c) {
-        init = ltl::invoke(FWD(op), std::move(init), e);
+    auto b = begin(c);
+    auto e = end(c);
+    for (; b != e; ++b) {
+        init = ltl::invoke(FWD(op), std::move(init), *b);
     }
     return init;
 }

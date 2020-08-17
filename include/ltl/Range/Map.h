@@ -81,4 +81,12 @@ constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
     }
 }
 
+template <typename T>
+auto make_move_range(T &&t) {
+    auto move = [](auto &x) -> std::decay_t<decltype(x)> { //
+        return std::move(x);
+    };
+    return FWD(t) | ltl::map(move);
+}
+
 } // namespace ltl
