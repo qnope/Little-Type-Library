@@ -973,37 +973,120 @@ TEST(LTL_test, test_composition) {
 
 TEST(LTL_test, test_join) {
     using namespace ltl;
-    struct Test {
-        Test(int n) {
-            for (int i = 0; i < n; ++i)
-                v.push_back(i);
-        }
-        std::vector<int> v;
-    };
-    std::array array = {0, 1, 2, 3, 4, 5};
-    auto to_range = [](auto n) { return valueRange(0, n); };
-    auto arrayRange = array >> map(to_range);
-    ASSERT_TRUE(equal(arrayRange, std::array{0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4}));
+    {
+        struct Test {
+            Test(int n) {
+                for (int i = 0; i < n; ++i)
+                    v.push_back(i);
+            }
+            std::vector<int> v;
+        };
+        std::array array = {0, 1, 2, 3, 4, 5};
+        auto to_range = [](auto n) { return valueRange(0, n); };
+        auto arrayRange = array >> map(to_range);
+        ASSERT_TRUE(equal(arrayRange, std::array{0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4}));
 
-    std::array array2 = {Test{0}, Test{1}, Test{2}, Test{3}, Test{4}, Test{5}};
-    auto to_vector_ref = [](auto &x) -> std::vector<int> & { return x.v; };
-    auto to_vector = [](auto &x) { return x.v; };
-    auto to_ptr = [](auto &x) { return std::addressof(x); };
-    std::array array2ptr = {&array2[1].v[0], &array2[2].v[0], &array2[2].v[1], &array2[3].v[0], &array2[3].v[1],
-                            &array2[3].v[2], &array2[4].v[0], &array2[4].v[1], &array2[4].v[2], &array2[4].v[3],
-                            &array2[5].v[0], &array2[5].v[1], &array2[5].v[2], &array2[5].v[3], &array2[5].v[4]};
+        std::array array2 = {Test{0}, Test{1}, Test{2}, Test{3}, Test{4}, Test{5}};
+        auto to_vector_ref = [](auto &x) -> std::vector<int> & { return x.v; };
+        auto to_vector = [](auto &x) { return x.v; };
+        auto to_ptr = [](auto &x) { return std::addressof(x); };
+        std::array array2ptr = {&array2[1].v[0], &array2[2].v[0], &array2[2].v[1], &array2[3].v[0], &array2[3].v[1],
+                                &array2[3].v[2], &array2[4].v[0], &array2[4].v[1], &array2[4].v[2], &array2[4].v[3],
+                                &array2[5].v[0], &array2[5].v[1], &array2[5].v[2], &array2[5].v[3], &array2[5].v[4]};
 
-    ASSERT_TRUE(equal(arrayRange, array2 >> map(to_vector)));
-    ASSERT_TRUE(equal(arrayRange, array2 >> map(to_vector_ref)));
-    ASSERT_TRUE(equal(array2ptr, array2 >> map(to_vector_ref) | map(to_ptr)));
+        ASSERT_TRUE(equal(arrayRange, array2 >> map(to_vector)));
+        ASSERT_TRUE(equal(arrayRange, array2 >> map(to_vector_ref)));
+        ASSERT_TRUE(equal(array2ptr, array2 >> map(to_vector_ref) | map(to_ptr)));
+    }
 
-    std::array<std::array<std::array<int, 3>, 3>, 3> nestedArray{};
-    auto flatArray = nestedArray | ltl::join | ltl::join;
-    typed_static_assert(type_from(flatArray[0]) == ltl::type_v<int &>);
-    ASSERT_TRUE(ltl::equal(flatArray, std::array<int, 27>{}));
-    ASSERT_EQ(std::addressof(flatArray[14]), std::addressof(nestedArray[1][1][2]));
-    ASSERT_EQ(std::addressof(flatArray[26]), std::addressof(nestedArray[2][2][2]));
-    ASSERT_EQ(std::addressof(flatArray[0]), std::addressof(nestedArray[0][0][0]));
+    {
+        std::array<std::array<std::array<int, 3>, 3>, 3> nestedArray{};
+        auto flatArray = nestedArray | ltl::join | ltl::join;
+        typed_static_assert(type_from(flatArray[0]) == ltl::type_v<int &>);
+        ASSERT_TRUE(ltl::equal(flatArray, std::array<int, 27>{}));
+        ASSERT_EQ(std::addressof(flatArray[14]), std::addressof(nestedArray[1][1][2]));
+        ASSERT_EQ(std::addressof(flatArray[26]), std::addressof(nestedArray[2][2][2]));
+        ASSERT_EQ(std::addressof(flatArray[0]), std::addressof(nestedArray[0][0][0]));
+    }
+
+    {
+        std::vector<std::vector<int>> nestedVectorEmpty;
+
+        auto to_vector = [](const auto &v) -> const auto & { return v; };
+        auto ints = nestedVectorEmpty >> map(to_vector);
+
+        ASSERT_EQ(ints.size(), 0);
+        auto sum = accumulate(ints, 0);
+        ASSERT_EQ(sum, 0);
+    }
+
+    {
+        std::vector<std::vector<int>> nestedVectorWithEmptyArray;
+
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({4, 5, 6, 7});
+
+        auto to_vector = [](const auto &v) -> const auto & { return v; };
+        auto ints = nestedVectorWithEmptyArray >> map(to_vector);
+
+        ASSERT_EQ(ints.size(), 4);
+        auto sum = accumulate(ints, 0);
+        ASSERT_EQ(sum, 22);
+    }
+
+    {
+        std::vector<std::vector<int>> nestedVectorWithEmptyArray;
+
+        nestedVectorWithEmptyArray.push_back({0, 1, 2, 3});
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({});
+
+        auto to_vector = [](const auto &v) -> const auto & { return v; };
+        auto ints = nestedVectorWithEmptyArray >> map(to_vector);
+
+        ASSERT_EQ(ints.size(), 4);
+        auto sum = accumulate(ints, 0);
+        ASSERT_EQ(sum, 6);
+    }
+
+    {
+        std::vector<std::vector<int>> nestedVectorWithEmptyArray;
+
+        nestedVectorWithEmptyArray.push_back({0, 1, 2, 3});
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({4, 5, 6, 7});
+
+        auto to_vector = [](const auto &v) -> const auto & { return v; };
+        auto ints = nestedVectorWithEmptyArray >> map(to_vector);
+
+        ASSERT_EQ(ints.size(), 8);
+        auto sum = accumulate(ints, 0);
+        ASSERT_EQ(sum, 28);
+
+        std::vector<int> v = ints;
+
+        ASSERT_EQ(v.size(), 8);
+        ASSERT_TRUE(ltl::equal(v, std::array{0, 1, 2, 3, 4, 5, 6, 7}));
+
+        auto five = ints.begin() + 5;
+        ASSERT_EQ(*five, 5);
+        ASSERT_EQ(std::addressof(*five), std::addressof(nestedVectorWithEmptyArray[3][1]));
+
+        auto four = five - 1;
+        ASSERT_EQ(*four, 4);
+        ASSERT_EQ(std::addressof(*four), std::addressof(nestedVectorWithEmptyArray[3][0]));
+
+        auto three = four - 1;
+        ASSERT_EQ(*three, 3);
+        ASSERT_EQ(std::addressof(*three), std::addressof(nestedVectorWithEmptyArray[0][3]));
+
+        ASSERT_TRUE(three != four);
+        ASSERT_TRUE(three != five);
+        ASSERT_TRUE(three + 2 == five);
+        ASSERT_TRUE(four + 1 == five);
+    }
 }
 
 TEST(LTL_test, test_and_or) {

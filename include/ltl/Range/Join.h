@@ -23,20 +23,8 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
     JoinIterator(It it, It sentinelBegin, It sentinelEnd) :
         BaseIterator<JoinIterator<It>, It, Nothing, false, false>{std::move(it), std::move(sentinelBegin),
                                                                   std::move(sentinelEnd), Nothing{}} {
-        if (this->m_it == this->m_sentinelEnd)
-            return;
-        do {
-            assignContainerValues();
-        } while (m_containerIterator == m_sentinelEndContainer && ++this->m_it != this->m_sentinelEnd);
-    }
-
-    friend bool operator==(const JoinIterator &a, const JoinIterator &b) noexcept {
-        if (a.m_it == b.m_it) {
-            if (a.m_it == a.m_sentinelEnd)
-                return true;
-            return a.m_containerIterator == b.m_containerIterator;
-        }
-        return false;
+        while (!assignContainerValues())
+            ++this->m_it;
     }
 
     JoinIterator &operator++() noexcept {
@@ -46,8 +34,9 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
 
         if (m_containerIterator == m_sentinelEndContainer) {
             assert(this->m_it != this->m_sentinelEnd);
-            ++this->m_it;
-            assignContainerValues();
+            do {
+                ++this->m_it;
+            } while (!assignContainerValues());
         }
 
         return *this;
@@ -56,8 +45,11 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
     JoinIterator &operator--() noexcept {
         if (m_containerIterator == m_sentinelBeginContainer) {
             assert(this->m_it != this->m_sentinelBegin);
-            --this->m_it;
-            assignContainerValues();
+            do {
+                --this->m_it;
+            } while (!assignContainerValues());
+            m_containerIterator = m_sentinelEndContainer;
+            --m_containerIterator;
         } else {
             --m_containerIterator;
         }
@@ -77,14 +69,25 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
         return res;
     }
 
-  private:
-    void assignContainerValues() {
-        if (this->m_it != this->m_sentinelEnd) {
-            m_currentContainer = ContainerPtr{*this->m_it};
-            m_containerIterator = begin(**m_currentContainer);
-            m_sentinelBeginContainer = begin(**m_currentContainer);
-            m_sentinelEndContainer = end(**m_currentContainer);
+    friend bool operator==(const JoinIterator &a, const JoinIterator &b) noexcept {
+        if (a.m_it == b.m_it) {
+            if (a.m_it == a.m_sentinelEnd)
+                return true;
+            return a.m_containerIterator == b.m_containerIterator;
         }
+        return false;
+    }
+
+  private:
+    [[nodiscard]] bool assignContainerValues() {
+        if (this->m_it == this->m_sentinelEnd) {
+            return true;
+        }
+        m_currentContainer = ContainerPtr{*this->m_it};
+        m_containerIterator = begin(**m_currentContainer);
+        m_sentinelBeginContainer = begin(**m_currentContainer);
+        m_sentinelEndContainer = end(**m_currentContainer);
+        return m_containerIterator != m_sentinelEndContainer;
     }
 
     std::optional<ContainerPtr> m_currentContainer;
