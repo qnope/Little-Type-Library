@@ -580,6 +580,12 @@ TEST(LTL_test, test_algos) {
     ASSERT_TRUE((ltl::tuple_t{3, 11} == ltl::minmax_element_value(odds)));
     ASSERT_TRUE(std::nullopt == ltl::min_element_value(std::vector<int>{}));
     ASSERT_TRUE(std::nullopt == ltl::max_element_value(std::vector<int>{}));
+
+    {
+        auto emptyArray = std::vector<int>{};
+        ASSERT_FALSE(ltl::minmax_element(emptyArray));
+        ASSERT_FALSE(ltl::minmax_element_value(std::array<int, 0>{}));
+    }
 }
 
 TEST(LTL_test, test_find_range) {
@@ -619,12 +625,14 @@ TEST(LTL_test, test_find_range) {
         auto find = ltl::find_end(v, toFind);
         auto notFind = ltl::find_end(v, toNotFind);
         auto findOneOf = ltl::find_first_of(v, toFind);
+        auto notFindOneOf = ltl::find_first_of(v, std::array{87, 25, 65});
 
         ASSERT_TRUE(find);
         ASSERT_TRUE(!notFind);
         ASSERT_TRUE(findOneOf);
         ASSERT_TRUE(*find == v.begin() + 3);
         ASSERT_TRUE(*findOneOf == v.begin() + 3);
+        ASSERT_FALSE(notFindOneOf);
     }
 }
 
@@ -658,6 +666,7 @@ TEST(LTL_test, test_optional) {
     ASSERT_TRUE((a | times_3 | plus_1) == 16);
     ASSERT_TRUE((b | times_3 | plus_1) == std::nullopt);
     ASSERT_TRUE((a >> identity) == 5);
+    ASSERT_FALSE(b >> identity);
 }
 
 TEST(LTL_test, test_range_view) {
@@ -721,6 +730,10 @@ TEST(LTL_test, test_map) {
 
     // array | (tuple | tuple)
     ASSERT_TRUE(ltl::equal(array | (map(times(2)) | map(times(2))) | (map(times(1)) | map(times(2))), times8Array));
+
+    std::list list = {0, 1, 2, 3, 4, 5};
+    auto listWithMinusOperator = list | map(identity);
+    ASSERT_EQ(listWithMinusOperator.end() - listWithMinusOperator.begin(), 6);
 }
 
 TEST(LTL_test, test_to) {
@@ -954,6 +967,7 @@ TEST(LTL_test, test_associative_map) {
     ASSERT_TRUE(ltl::map_find_ptr(dict, "f") == &dict["f"]);
     ASSERT_TRUE(ltl::map_find_value(dict, "g") == std::nullopt);
     ASSERT_TRUE(ltl::map_take(dict, "f") == "F");
+    ASSERT_FALSE(ltl::map_take(dict, "f"));
     ASSERT_TRUE(ltl::map_find_ptr(dict, "f") == nullptr);
 }
 
@@ -1463,10 +1477,16 @@ TEST(LTL_test, test_group_by) {
     static_assert(type_from(femaleTeams[0][0_n]) == ltl::type_v<std::string &>);
     static_assert(type_from(femaleTeams[0][1_n][0]) == ltl::type_v<Player &>);
 
-    assert(size(femaleTeams) == 3);
-    assert(size(femaleTeams[1][1_n]) == 2);
-    assert(std::addressof(femaleTeams[2][1_n][2]) == std::addressof(players[13]));
-    assert(std::addressof((*(((femaleTeams.begin() + 2) - 1) - 1))[1_n][0]) == std::addressof(players[2]));
+    ASSERT_TRUE(size(femaleTeams) == 3);
+    ASSERT_TRUE(size(femaleTeams[1][1_n]) == 2);
+    ASSERT_TRUE(std::addressof(femaleTeams[2][1_n][2]) == std::addressof(players[13]));
+    ASSERT_TRUE(std::addressof((*(((femaleTeams.begin() + 2) - 1) - 1))[1_n][0]) == std::addressof(players[2]));
+
+    auto japan = groupped_by_team.begin() + 3;
+    auto portugal = japan - 1;
+
+    ASSERT_EQ((*japan)[0_n], "JPN");
+    ASSERT_EQ((*portugal)[0_n], "POR");
 }
 
 TEST(LTL_test, test_zip_tuple) {

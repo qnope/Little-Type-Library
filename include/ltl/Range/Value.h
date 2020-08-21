@@ -5,7 +5,7 @@
 
 namespace ltl {
 template <typename ValueType>
-struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing> {
+struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing, false, true> {
     using reference = ValueType;
     DECLARE_EVERYTHING_BUT_REFERENCE(std::random_access_iterator_tag)
 
@@ -36,6 +36,10 @@ struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing
     }
 
     ValueType operator*() const noexcept { return this->m_it; }
+
+    friend std::size_t operator-(const ValueIterator &b, const ValueIterator &a) noexcept {
+        return (b.m_it - a.m_it) / (b.m_step);
+    }
 
     ValueType m_step;
 };

@@ -92,17 +92,8 @@ class BaseIterator :
     }
 
     template <bool createMinus = CreateMinusOperator, typename = std::enable_if_t<createMinus>>
-    friend std::size_t operator-(const DerivedIt &b, DerivedIt a) noexcept {
-        constexpr auto isDifferenciable = IS_VALID((x, y), x - y);
-        if_constexpr(isDifferenciable(b.m_it, a.m_it)) { return b.m_it - a.m_it; }
-        else {
-            std::size_t d{0};
-            while (a != b) {
-                ++d;
-                ++a;
-            }
-            return d;
-        }
+    friend std::size_t operator-(const DerivedIt &b, const DerivedIt &a) noexcept {
+        return std::distance(a.m_it, b.m_it);
     }
 
   protected:

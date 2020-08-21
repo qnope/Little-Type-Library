@@ -214,7 +214,7 @@ auto find_end(C1 &c1, C2 &c2, F &&f) {
 }
 
 template <typename C1, typename C2>
-auto find_first_of(C1 &c1, C2 &c2) {
+auto find_first_of(C1 &c1, const C2 &c2) {
     typed_static_assert_msg(is_iterable(c1) && is_iterable(c2), "C1 and C2 must be iterable");
     auto it = std::find_first_of(begin(c1), end(c1), begin(c2), end(c2));
     if (it != end(c1))
