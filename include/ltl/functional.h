@@ -19,7 +19,7 @@ struct fix : F {
     }
 };
 template <typename F>
-fix(F) -> fix<F>;
+fix(F)->fix<F>;
 
 template <typename F, typename... Args>
 constexpr auto report_call(F f, Args... xs) {
@@ -42,7 +42,7 @@ constexpr auto composeImpl(ltl::tuple_t<Fs...> fs) {
     if_constexpr(tails.isEmpty) { return f; }
     else {
         return [f = std::move(f), tails = std::move(tails)](auto &&... xs) -> decltype(auto) {
-            return ltl::invoke(f, composeImpl(tails)(FWD(xs)...));
+            return ltl::invoke(f, ltl::invoke(composeImpl(tails), FWD(xs)...));
         };
     }
 }
