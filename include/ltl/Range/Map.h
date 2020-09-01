@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../concept.h"
+#include "../functional.h"
 #include "../optional_type.h"
 
 #include "Join.h"
@@ -25,6 +26,10 @@ struct MapType {
 template <typename F>
 constexpr auto map(F &&f) {
     return MapType<std::decay_t<F>>{FWD(f)};
+}
+template <typename... Fs>
+constexpr auto map(Fs... fs) {
+    return map(compose(std::move(fs)...));
 }
 
 template <typename F>

@@ -1646,3 +1646,10 @@ TEST(LTL_test, test_move_range) {
     ASSERT_TRUE(equal(array, empty));
     ASSERT_TRUE(equal(moved, copied));
 }
+
+TEST(LTL_test, test_map_composed) {
+    using namespace ltl;
+    std::vector<int> array = {0, 10, 20, 100, 320, 1456, 85};
+    auto arrayTransformed = array | map(lift(std::to_string), &std::string::size);
+    ASSERT_TRUE(equal(arrayTransformed, std::array{1, 2, 2, 3, 3, 4, 2}));
+}
