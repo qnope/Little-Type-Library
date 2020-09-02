@@ -1566,12 +1566,12 @@ TEST(LTL_test, test_comparators) {
     ASSERT_EQ(count_if(array1, greater_than(7)), 3);
     ASSERT_EQ(count_if(array1, less_than_equal(5)), 6);
     ASSERT_EQ(count_if(array1, greater_than_equal(8)), 3);
-    ASSERT_EQ(count_if(array2, equal(5)), 4);
-    ASSERT_EQ(count_if(array2, not_equal(5)), array2.size() - 4);
+    ASSERT_EQ(count_if(array2, equal_to(5)), 4);
+    ASSERT_EQ(count_if(array2, not_equal_to(5)), array2.size() - 4);
 
     constexpr auto list = number_list_v<1, 3, 4, 2, 5, 10, 4>;
 
-    typed_static_assert(ltl::count_if_type(list, equal(4_n)) == 2_n);
+    typed_static_assert(ltl::count_if_type(list, equal_to(4_n)) == 2_n);
     typed_static_assert(ltl::count_if_type(list, less_than(4_n)) == 3_n);
     typed_static_assert(ltl::count_if_type(list, less_than_equal(1_n)) == 1_n);
     typed_static_assert((ltl::filter_type(list, greater_than_equal(4_n)) == ltl::number_list_v<4, 5, 10, 4>));

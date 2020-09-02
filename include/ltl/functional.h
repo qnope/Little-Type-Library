@@ -89,12 +89,12 @@ constexpr auto greater_than_equal(T t) {
 }
 
 template <typename T>
-constexpr auto equal(T t) {
+constexpr auto equal_to(T t) {
     return [t = std::move(t)](auto x) { return x == t; };
 }
 
 template <typename T>
-constexpr auto not_equal(T t) {
+constexpr auto not_equal_to(T t) {
     return [t = std::move(t)](auto x) { return x != t; };
 }
 
