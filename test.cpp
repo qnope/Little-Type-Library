@@ -1686,8 +1686,8 @@ TEST(LTL_test, test_expected) {
 
 TEST(LTL_test, test_expected_monade) {
     using namespace ltl;
-    expected<int, std::string> res = 18;
-    expected<int, std::string> err{"wrong"};
+    expected<int, const char *> res = 18;
+    expected<int, const char *> err{"wrong"};
 
     typed_static_assert(is_expected(res));
     typed_static_assert(is_expected(std::move(err)));
@@ -1713,7 +1713,7 @@ TEST(LTL_test, test_expected_monade) {
 
     {
         auto good = [](auto x) { return expected<std::string, std::string>{value_tag{}, std::to_string(x)}; };
-        auto bad = [](auto) { return expected<double, const char *>{"FALSE"}; };
+        auto bad = [](auto) { return expected<double, std::string>{"FALSE"}; };
 
         auto a = res >> map(good);
         auto b = err >> map(good);
