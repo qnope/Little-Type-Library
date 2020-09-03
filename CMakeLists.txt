@@ -44,6 +44,7 @@ set(HEADERS
     include/ltl/invoke.h
     include/ltl/traits.h
     include/ltl/tuple_algos.h
+	include/ltl/expected.h
     include/ltl/optional_type.h
     include/ltl/condition.h
     include/ltl/TypedTuple.h

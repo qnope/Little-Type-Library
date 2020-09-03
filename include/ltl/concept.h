@@ -5,9 +5,11 @@
 
 #include "ltl.h"
 #include "traits.h"
+#include "expected.h"
 
 namespace ltl {
 LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, typename);
+LTL_MAKE_IS_KIND(expected, is_expected, IsExpected, typename);
 
 template <typename T, bool b>
 using requires_t = std::enable_if_t<b, T>;

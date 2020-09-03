@@ -26,6 +26,8 @@
 #include <ltl/TypedTuple.h>
 #include <ltl/movable_any.h>
 
+#include <ltl/expected.h>
+
 #include <gtest/gtest.h>
 
 TEST(LTL_test, bool_test) {
@@ -1652,4 +1654,80 @@ TEST(LTL_test, test_map_composed) {
     std::vector<int> array = {0, 10, 20, 100, 320, 1456, 85};
     auto arrayTransformed = array | map(lift(std::to_string), &std::string::size);
     ASSERT_TRUE(equal(arrayTransformed, std::array{1, 2, 2, 3, 3, 4, 2}));
+}
+
+TEST(LTL_test, test_expected) {
+    using namespace ltl;
+
+    {
+        expected<int, std::string> exp{0};
+
+        typed_static_assert(type_from(std::move(exp).result()) == ltl::type_v<int &&>);
+        typed_static_assert(type_from(std::move(exp).error()) == ltl::type_v<std::string &&>);
+        typed_static_assert(type_from(std::as_const(exp).result()) == ltl::type_v<const int &>);
+        typed_static_assert(type_from(std::as_const(exp).error()) == ltl::type_v<const std::string &>);
+        typed_static_assert(type_from(exp.result()) == ltl::type_v<int &>);
+        typed_static_assert(type_from(exp.error()) == ltl::type_v<std::string &>);
+
+        ASSERT_TRUE(exp);
+        ASSERT_TRUE(exp.is_result());
+        ASSERT_FALSE(exp.is_error());
+        ASSERT_EQ(exp.result(), 0);
+
+        exp = expected<long long, const char *>("Error");
+        ASSERT_TRUE(exp.is_error());
+        ASSERT_EQ(exp.error(), "Error");
+
+        exp = decltype(exp){5};
+        ASSERT_TRUE(exp.is_result());
+        ASSERT_EQ(exp.result(), 5);
+    }
+}
+
+TEST(LTL_test, test_expected_monade) {
+    using namespace ltl;
+    expected<int, std::string> res = 18;
+    expected<int, std::string> err{"wrong"};
+
+    typed_static_assert(is_expected(res));
+    typed_static_assert(is_expected(std::move(err)));
+    typed_static_assert(!is_expected(4));
+
+    {
+        auto plus_3 = [](auto x) { return x + 3; };
+
+        auto a = res | map(plus_3);
+        auto b = err | map(plus_3);
+
+        typed_static_assert(is_expected(a) && is_expected(b));
+
+        ASSERT_TRUE(a.is_result());
+        ASSERT_TRUE(b.is_error());
+
+        ASSERT_EQ(a.result(), res.result() + 3);
+        ASSERT_EQ(b.error(), err.error());
+
+        auto c = res | map(lift(std::to_string));
+        ASSERT_EQ(c.result(), std::to_string(res.result()));
+    }
+
+    {
+        auto good = [](auto x) { return expected<std::string, std::string>{value_tag{}, std::to_string(x)}; };
+        auto bad = [](auto) { return expected<double, const char *>{"FALSE"}; };
+
+        auto a = res >> map(good);
+        auto b = err >> map(good);
+        auto c = res >> map(bad);
+        auto d = err >> map(bad);
+
+        ASSERT_TRUE(a.is_result());
+        ASSERT_TRUE(b.is_error());
+        ASSERT_TRUE(c.is_error());
+        ASSERT_TRUE(d.is_error());
+
+        ASSERT_EQ(a.result(), std::to_string(res.result()));
+        ASSERT_EQ(b.error(), err.error());
+        ASSERT_EQ(c.error(), "FALSE");
+        ASSERT_EQ(d.error(), err.error());
+    }
 }
