@@ -1731,3 +1731,30 @@ TEST(LTL_test, test_expected_monade) {
         ASSERT_EQ(d.error(), err.error());
     }
 }
+
+TEST(LTL_test, test_to_pair) {
+    using namespace ltl;
+    std::vector<int> a = {0, 1, 2, 3, 4};
+    std::vector<std::string> b = {"0", "1", "2", "3", "4"};
+
+    std::map<int, std::string> result = zip(a, b) | map(to_pair);
+
+    ASSERT_TRUE(equal(
+        result, std::vector{std::pair<const int, std::string>{0, b[0]}, {1, b[1]}, {2, b[2]}, {3, b[3]}, {4, b[4]}}));
+
+    int dummy1{};
+    std::string dummy2{};
+    ltl::tuple_t<int, std::string> tuple;
+    ltl::tuple_t<int &, std::string &> tuple2{dummy1, dummy2};
+    ltl::tuple_t<const int, const std::string &> tuple3{dummy1, dummy2};
+
+    typed_static_assert((type_from(to_pair(tuple)) == ltl::type_v<std::pair<int, std::string>>));
+    typed_static_assert((type_from(to_pair(std::move(tuple))) == ltl::type_v<std::pair<int, std::string>>));
+    typed_static_assert((type_from(to_pair(std::as_const(tuple))) == ltl::type_v<std::pair<int, std::string>>));
+
+    typed_static_assert((type_from(to_pair(tuple2)) == ltl::type_v<std::pair<int &, std::string &>>));
+    typed_static_assert((type_from(to_pair(std::move(tuple2))) == ltl::type_v<std::pair<int &, std::string &>>));
+    typed_static_assert((type_from(to_pair(std::as_const(tuple2))) == ltl::type_v<std::pair<int &, std::string &>>));
+
+    typed_static_assert((type_from(to_pair(tuple3)) == ltl::type_v<std::pair<int, const std::string &>>));
+}

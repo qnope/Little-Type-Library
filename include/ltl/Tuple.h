@@ -331,9 +331,3 @@ decltype(auto) get(Tuple &&tuple) {
 }
 
 } // namespace std
-
-#define FROM_VARIADIC(args)                                                                                            \
-    ::ltl::tuple_t<decltype(args)...> { args... }
-
-#define TO_VARIADIC(tuple, var, expr) tuple([](auto &&... var) { expr; });
-#define TO_VARIADIC_RETURN(tuple, var, expr) tuple([](auto &&... var) { return expr; });

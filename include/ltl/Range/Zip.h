@@ -15,17 +15,19 @@ struct ZipIterator : BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators..
 
     ZipIterator &operator++() {
         assert(this->m_it != this->m_sentinelEnd);
-        TO_VARIADIC(this->m_it, xs, (++xs, ...));
+        this->m_it([](auto &... xs) { (++xs, ...); });
         return *this;
     }
 
     ZipIterator &operator--() {
         assert(this->m_it != this->m_sentinelBegin);
-        TO_VARIADIC(this->m_it, xs, (--xs, ...));
+        this->m_it([](auto &... xs) { (--xs, ...); });
         return *this;
     }
 
-    reference operator*() const { return TO_VARIADIC(this->m_it, xs, return reference{*xs...}); }
+    reference operator*() const {
+        return this->m_it([](auto &&... xs) { return reference{*FWD(xs)...}; });
+    }
 };
 
 namespace details {
@@ -65,7 +67,7 @@ auto zip(Containers &&... containers) {
     typed_static_assert(!types.isEmpty);
     typed_static_assert_msg(all_of_type(types, is_iterable), "Zip operations must be used with containers");
 
-    assert(FROM_VARIADIC(FWD(containers))([](auto &&c1, auto &&... cs) {
+    assert(tuple_t{std::cref(containers)...}([](auto &&c1, auto &&... cs) {
         return (true && ... && (std::size_t(size(FWD(c1))) == std::size_t(size(FWD(cs)))));
     }));
 

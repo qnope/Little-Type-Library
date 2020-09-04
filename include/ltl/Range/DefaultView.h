@@ -13,6 +13,13 @@ inline auto remove_null() noexcept {
     return filter([](auto &&x) noexcept { return static_cast<bool>(FWD(x)); });
 }
 
+auto to_pair = [](auto &&tuple) {
+    using Tuple = std::decay_t<decltype(tuple)>;
+    static_assert(std::tuple_size_v<Tuple> == 2, "Tuple must have two elements");
+    using pair = std::pair<std::tuple_element_t<0, Tuple>, std::tuple_element_t<1, Tuple>>;
+    return pair{FWD(tuple)[0_n], FWD(tuple)[1_n]};
+};
+
 template <int... Ns>
 auto get(number_t<Ns>...) {
     return map([](auto &&x) noexcept -> decltype(auto) {
