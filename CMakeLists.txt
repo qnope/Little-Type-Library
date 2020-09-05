@@ -22,6 +22,7 @@ set(HEADERS_RANGE
     include/ltl/Range/Filter.h
     include/ltl/Range/GroupBy.h
     include/ltl/Range/actions.h
+    include/ltl/Range/Repeater.h
     include/ltl/Range/AsPointer.h
     include/ltl/Range/enumerate.h
     include/ltl/Range/DefaultView.h

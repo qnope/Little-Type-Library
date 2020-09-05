@@ -16,7 +16,7 @@
 #include <ltl/VariantUtils.h>
 #include <ltl/optional_type.h>
 #include <ltl/Range/actions.h>
-
+#include <ltl/Range/Repeater.h>
 #include <ltl/Range/DefaultView.h>
 #include <ltl/Range/Value.h>
 #include <ltl/Range/enumerate.h>
@@ -1757,4 +1757,14 @@ TEST(LTL_test, test_to_pair) {
     typed_static_assert((type_from(to_pair(std::as_const(tuple2))) == ltl::type_v<std::pair<int &, std::string &>>));
 
     typed_static_assert((type_from(to_pair(tuple3)) == ltl::type_v<std::pair<int, const std::string &>>));
+}
+
+TEST(LTL_test, test_repeater) {
+    auto strings = ltl::make_repeater_range(std::string("TEST"), 4);
+
+    ASSERT_EQ(4, strings.size());
+    ASSERT_TRUE(ltl::equal(strings, std::vector<std::string>{"TEST", "TEST", "TEST", "TEST"}));
+
+    auto continuous = ltl::valueRange(0, 5) >> ltl::map([](auto x) { return ltl::make_repeater_range(x, x); });
+    ASSERT_TRUE(ltl::equal(continuous, std::array{1, 2, 2, 3, 3, 3, 4, 4, 4, 4}));
 }
