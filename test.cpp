@@ -1768,10 +1768,29 @@ TEST(LTL_test, test_to_pair) {
 
 TEST(LTL_test, test_repeater) {
     auto strings = ltl::make_repeater_range(std::string("TEST"), 4);
+    std::vector<char> string_vector = ltl::make_repeater_range(std::string("TEST"), 4) | ltl::join;
 
     ASSERT_EQ(4, strings.size());
     ASSERT_TRUE(ltl::equal(strings, std::vector<std::string>{"TEST", "TEST", "TEST", "TEST"}));
 
+    ASSERT_TRUE(ltl::equal(strings | ltl::join, string_vector));
+
     auto continuous = ltl::valueRange(0, 5) >> ltl::map([](auto x) { return ltl::make_repeater_range(x, x); });
+    std::vector<int> x = ltl::valueRange(0, 5) >> ltl::map([](auto x) { return ltl::make_repeater_range(x, x); });
+
     ASSERT_TRUE(ltl::equal(continuous, std::array{1, 2, 2, 3, 3, 3, 4, 4, 4, 4}));
+
+    auto empty = ltl::make_empty_range<std::string>();
+    ASSERT_EQ(empty.size(), 0);
+    ASSERT_TRUE(empty.empty());
+    ASSERT_TRUE(ltl::equal(empty, std::vector<std::string>{}));
+
+    auto mono = ltl::make_mono_element_range(5);
+    ASSERT_EQ(mono.size(), 1);
+    ASSERT_EQ(mono[0], 5);
+    ASSERT_EQ(ltl::accumulate(mono, 2), 2 + 5);
+
+    auto sum =
+        ltl::accumulate(ltl::valueRange(0, 10) >> ltl::map([](auto x) { return ltl::yield_if(x % 2 == 1, x); }), 0);
+    ASSERT_EQ(sum, 0 + 1 + 3 + 5 + 7 + 9);
 }
