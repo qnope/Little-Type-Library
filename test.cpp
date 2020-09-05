@@ -1103,6 +1103,13 @@ TEST(LTL_test, test_join) {
         ASSERT_TRUE(three + 2 == five);
         ASSERT_TRUE(four + 1 == five);
     }
+
+    {
+        std::array<int, 3> array = {0, 1, 2};
+        std::vector<int> array2 = array >> ltl::map([](auto x) { return std::array<int, 3>{x, x, x}; });
+
+        ASSERT_TRUE(ltl::equal(array2, std::array{0, 0, 0, 1, 1, 1, 2, 2, 2}));
+    }
 }
 
 TEST(LTL_test, test_and_or) {

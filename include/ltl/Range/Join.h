@@ -27,6 +27,28 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
             ++this->m_it;
     }
 
+    JoinIterator(const JoinIterator &it) : BaseIterator<JoinIterator<It>, It, Nothing, false, false>{it} {
+        if (this->m_it != this->m_sentinelEnd) {
+            m_currentContainer = ContainerPtr{*this->m_it};
+            m_sentinelBeginContainer = begin(**m_currentContainer);
+            m_sentinelEndContainer = end(**m_currentContainer);
+            m_containerIterator =
+                std::next(m_sentinelBeginContainer, std::distance(it.m_sentinelBeginContainer, it.m_containerIterator));
+        }
+    }
+
+    JoinIterator &operator=(const JoinIterator &it) noexcept {
+        static_cast<BaseIterator<JoinIterator<It>, It, Nothing, false, false> &>(*this) = it;
+        if (this->m_it != this->m_sentinelEnd) {
+            m_currentContainer = ContainerPtr{*this->m_it};
+            m_sentinelBeginContainer = begin(**m_currentContainer);
+            m_sentinelEndContainer = end(**m_currentContainer);
+            m_containerIterator =
+                std::next(m_sentinelBeginContainer, std::distance(it.m_sentinelBeginContainer, it.m_containerIterator));
+        }
+        return *this;
+    }
+
     JoinIterator &operator++() noexcept {
         if (m_containerIterator != m_sentinelEndContainer) {
             ++m_containerIterator;
