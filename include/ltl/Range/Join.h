@@ -18,36 +18,6 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
     using reference = typename std::iterator_traits<ContainerIterator>::reference;
     DECLARE_EVERYTHING_BUT_REFERENCE(typename std::iterator_traits<It>::iterator_category)
 
-  private:
-    struct ContainerWrapper {
-        ContainerWrapper(ContainerPtr ptr) noexcept : ptr{std::move(ptr)} { computeIterators(0); }
-
-        ContainerWrapper(const ContainerWrapper &wrapper) noexcept : ptr{wrapper.ptr} {
-            computeIterators(std::distance(wrapper.beginSentinel, wrapper.current));
-        }
-
-        ContainerWrapper(ContainerWrapper &&wrapper) noexcept : ptr{std::move(wrapper.ptr)} {
-            computeIterators(std::distance(wrapper.beginSentinel, wrapper.current));
-        }
-
-        ContainerWrapper &operator=(ContainerWrapper wrapper) noexcept {
-            ptr = std::move(wrapper.ptr);
-            computeIterators(std::distance(wrapper.beginSentinel, wrapper.current));
-            return *this;
-        }
-
-        void computeIterators(long long int distance) {
-            current = std::next(begin(*ptr), distance);
-            beginSentinel = begin(*ptr);
-            endSentinel = end(*ptr);
-        }
-
-        ContainerPtr ptr;
-        ContainerIterator current;
-        ContainerIterator beginSentinel;
-        ContainerIterator endSentinel;
-    };
-
   public:
     using BaseIterator<JoinIterator<It>, It, Nothing, false, false>::BaseIterator;
 
@@ -59,36 +29,33 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
     }
 
     JoinIterator &operator++() noexcept {
-        if (m_wrapper->current != m_wrapper->endSentinel) {
-            ++m_wrapper->current;
+        if (m_current != m_end) {
+            ++m_current;
         }
 
-        if (m_wrapper->current == m_wrapper->endSentinel) {
+        if (m_current == m_end) {
             assert(this->m_it != this->m_sentinelEnd);
             do {
                 ++this->m_it;
             } while (!assignContainerValues());
         }
-
         return *this;
     }
 
     JoinIterator &operator--() noexcept {
-        if (m_wrapper->current == m_wrapper->beginSentinel) {
+        if (m_current == 0) {
             assert(this->m_it != this->m_sentinelBegin);
             do {
                 --this->m_it;
             } while (!assignContainerValues());
-            m_wrapper->current = std::prev(m_wrapper->endSentinel);
+            m_current = m_end - 1;
         } else {
-            --m_wrapper->current;
+            --m_current;
         }
-
         return *this;
     }
 
-    reference operator*() const { return *m_wrapper->current; }
-    pointer operator->() const { return *m_wrapper->current; }
+    reference operator*() const { return *std::next(begin(**const_cast<JoinIterator &>(*this).m_ptr), m_current); }
 
     friend std::size_t operator-(const JoinIterator &b, JoinIterator a) {
         std::size_t res = 0;
@@ -103,7 +70,7 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
         if (a.m_it == b.m_it) {
             if (a.m_it == a.m_sentinelEnd)
                 return true;
-            return a.m_wrapper->current == b.m_wrapper->current;
+            return a.m_current == b.m_current;
         }
         return false;
     }
@@ -113,11 +80,15 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
         if (this->m_it == this->m_sentinelEnd) {
             return true;
         }
-        m_wrapper.emplace(ContainerPtr{*this->m_it});
-        return m_wrapper->current != m_wrapper->endSentinel;
+        m_ptr.emplace(*this->m_it);
+        m_current = 0;
+        m_end = std::distance(begin(**m_ptr), end(**m_ptr));
+        return m_end > 0;
     }
 
-    std::optional<ContainerWrapper> m_wrapper;
+    std::optional<ContainerPtr> m_ptr;
+    long long int m_current;
+    long long int m_end;
 };
 
 struct join_t {};

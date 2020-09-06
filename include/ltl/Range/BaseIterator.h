@@ -58,7 +58,7 @@ class BaseIterator :
         return *it.m_it;
     }
 
-    auto operator-> () const noexcept {
+    auto operator->() const noexcept {
         const DerivedIt &it = underlying();
         return AsPointer<decltype(*it)>{*it};
     }

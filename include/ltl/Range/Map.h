@@ -16,7 +16,6 @@ struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
     using BaseIterator<MapIterator<It, Function>, It, Function>::BaseIterator;
 
     reference operator*() const { return this->m_function(*this->m_it); }
-    pointer operator->() const { return this->m_function(*this->m_it); }
 };
 
 template <typename F>

@@ -36,12 +36,6 @@ class repeater_iterator :
         return *m_value;
     }
 
-    pointer operator->() const noexcept {
-        assert(m_value);
-        assert(m_current != m_end);
-        return {*m_value};
-    }
-
     repeater_iterator &operator+=(long long int n) noexcept {
         assert(m_value);
         assert(0 <= m_current + n && m_current + n <= m_end);
