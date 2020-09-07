@@ -23,23 +23,6 @@ constexpr auto getQualifiedTypeList(type_t<List<Types...> &&>) {
 }
 
 template <typename F, typename Tuple>
-constexpr decltype(auto) apply(Tuple &&tuple, F &&f) noexcept(noexcept(FWD(tuple)(FWD(f)))) {
-    typed_static_assert(is_tuple_t(tuple));
-    return FWD(tuple)(FWD(f));
-}
-
-constexpr auto get_tail = [](auto &&, auto &&... ts) { return ltl::tuple_t{FWD(ts)...}; };
-
-template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
-F for_each(Tuple &&tuple, F &&f) {
-    typed_static_assert(is_tuple_t(tuple));
-
-    auto retrieveAllArgs = [&f](auto &&... xs) { (std::forward<F>(f)(FWD(xs)), ...); };
-    ltl::apply(FWD(tuple), retrieveAllArgs);
-    return FWD(f);
-}
-
-template <typename F, typename Tuple>
 constexpr auto transform_type(Tuple &&tuple, F &&f) {
     typed_static_assert(is_tuple_t(tuple));
     auto build_tuple = [&f](auto &&... xs) {

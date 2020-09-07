@@ -100,7 +100,7 @@ constexpr auto not_equal_to(T t) {
 
 template <typename F>
 constexpr auto unzip(F f) {
-    return [f](auto &&tuple) { return FWD(tuple)(f); };
+    return [f = std::move(f)](auto &&tuple) { return apply(f, FWD(tuple)); };
 }
 
 namespace detail {

@@ -89,7 +89,7 @@ TEST(LTL_test, constexpr_tuple_test) {
     constexpr ltl::tuple_t tuple{5, 3.0, 4};
 
     static_assert(decay_from(tuple) == ltl::type_v<ltl::tuple_t<int, double, int>>);
-    static_assert(apply(tuple, [](auto a, auto b, auto c) { return a + b + c; }) == 12.0);
+    static_assert(apply([](auto a, auto b, auto c) { return a + b + c; }, tuple) == 12.0);
 
     static_assert(tuple.get(0_n) == 5 && tuple.get(1_n) == 3.0);
     static_assert(ltl::tuple_t{5, 3.0}.get(0_n) == 5 && ltl::tuple_t{5, 3.0}.get(1_n) == 3.0);
@@ -128,7 +128,7 @@ TEST(LTL_test, constexpr_tuple_test) {
 TEST(LTL_test, tuple_test) {
     ltl::tuple_t _tuple{5, 3.0};
 
-    ASSERT_EQ(apply(_tuple, [](auto a, auto b) { return a + b; }), 8.0);
+    ASSERT_EQ(apply([](auto a, auto b) { return a + b; }, _tuple), 8.0);
     for_each(_tuple, ltl::overloader{[](int v) { ASSERT_EQ(v, 5); }, [](double v) { ASSERT_EQ(v, 3.0); }});
     auto tuple = _tuple.push_front(8).push_back(95);
     ASSERT_EQ(tuple[3_n], 95);

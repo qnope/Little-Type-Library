@@ -225,13 +225,13 @@ class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...
     [[nodiscard]] constexpr auto pop_front() const & {
         auto extracter = [this](auto... numbers) { return this->extract(numbers...); };
         constexpr auto numbers = build_index_sequence(1_n, length);
-        return apply(numbers, extracter);
+        return apply(extracter, numbers);
     }
 
     [[nodiscard]] constexpr auto pop_front() && {
         auto extracter = [this](auto... numbers) { return std::move(*this).extract(numbers...); };
         constexpr auto numbers = build_index_sequence(1_n, length);
-        return apply(numbers, extracter);
+        return apply(extracter, numbers);
     }
 
     static constexpr auto make_indexer() noexcept { return build_index_sequence(length); }
@@ -307,6 +307,21 @@ constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
     return indices1([indices2, &t1, &t2](auto... n1s) {
         return indices2([&t1, &t2, n1s...](auto... n2s) { return tuple_t<T1..., T2...>{t1[n1s]..., t2[n2s]...}; });
     });
+}
+
+template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
+constexpr decltype(auto) apply(F &&f, Tuple &&tuple) noexcept(noexcept(FWD(tuple)(FWD(f)))) {
+    typed_static_assert(is_tuple_t(tuple));
+    return FWD(tuple)(FWD(f));
+}
+
+template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
+F for_each(Tuple &&tuple, F &&f) {
+    typed_static_assert(is_tuple_t(tuple));
+
+    auto retrieveAllArgs = [&f](auto &&... xs) { (std::forward<F>(f)(FWD(xs)), ...); };
+    FWD(tuple)(retrieveAllArgs);
+    return FWD(f);
 }
 
 } // namespace ltl
