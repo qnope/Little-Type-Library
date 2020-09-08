@@ -22,7 +22,6 @@ set(HEADERS_RANGE
     include/ltl/Range/Filter.h
     include/ltl/Range/GroupBy.h
     include/ltl/Range/actions.h
-    include/ltl/Range/Repeater.h
     include/ltl/Range/AsPointer.h
     include/ltl/Range/enumerate.h
     include/ltl/Range/DefaultView.h
@@ -32,24 +31,24 @@ set(HEADERS_RANGE
 
 set(HEADERS
     include/ltl/ltl.h
-    include/ltl/movable_any.h
-    include/ltl/Tuple.h
-    include/ltl/StrongType.h
+    include/lpl/lpl.h
     include/ltl/algos.h
-    include/ltl/stream.h
-    include/ltl/functional.h
-    include/ltl/operator.h
-    include/ltl/concept.h
-    include/ltl/VariantUtils.h
     include/ltl/crtp.h
+    include/ltl/Tuple.h
+    include/ltl/stream.h
     include/ltl/invoke.h
     include/ltl/traits.h
-    include/ltl/tuple_algos.h
-	include/ltl/expected.h
-    include/ltl/optional_type.h
+    include/ltl/concept.h
+    include/ltl/expected.h
+    include/ltl/operator.h
     include/ltl/condition.h
+    include/ltl/StrongType.h
     include/ltl/TypedTuple.h
-    include/lpl/lpl.h
+    include/ltl/functional.h
+    include/ltl/tuple_algos.h
+    include/ltl/movable_any.h
+    include/ltl/VariantUtils.h
+    include/ltl/optional_type.h
     ${HEADERS_RANGE}
     )
 
