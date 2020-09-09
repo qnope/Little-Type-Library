@@ -128,13 +128,13 @@ constexpr auto construct_with_tuple(Tuple &&... tuple) noexcept {
 
 constexpr auto identity = [](auto &&t) -> remove_rvalue_reference_t<decltype(FWD(t))> { return FWD(t); };
 
-constexpr auto ascending = [](auto f) {
+constexpr auto byAscending = [](auto f) {
     return [f = std::move(f)](const auto &x, const auto &y) noexcept { //
         return ltl::invoke(f, x) < ltl::invoke(f, y);
     };
 };
 
-constexpr auto descending = [](auto f) {
+constexpr auto byDescending = [](auto f) {
     return [f = std::move(f)](const auto &x, const auto &y) noexcept { //
         return ltl::invoke(f, x) > ltl::invoke(f, y);
     };
