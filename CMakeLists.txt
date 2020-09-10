@@ -55,24 +55,28 @@ set(HEADERS
 enable_testing()
 add_subdirectory(googletest)
 
+option(LTL_BUILD_TESTS "To generate test for Little Type Library" ON)
+
 add_library(LTL INTERFACE)
 target_include_directories(LTL INTERFACE include/)
 
-add_executable(LittleTypeLibrary "test.cpp" ${HEADERS})
+if(LTL_BUILD_TESTS)
+    add_executable(LittleTypeLibrary "test.cpp" ${HEADERS})
 
-string(TOLOWER ${CMAKE_BUILD_TYPE} build_type)
-string(TOLOWER ${CMAKE_CXX_COMPILER} compiler)
-if(MSVC AND ${build_type} STREQUAL "debug")
-    message("using MSVC to build in full debug")
-    target_compile_options(LittleTypeLibrary PUBLIC /Zi /DEBUG:FULL)
+    string(TOLOWER ${CMAKE_BUILD_TYPE} build_type)
+    string(TOLOWER ${CMAKE_CXX_COMPILER} compiler)
+    if(MSVC AND ${build_type} STREQUAL "debug")
+        message("using MSVC to build in full debug")
+        target_compile_options(LittleTypeLibrary PUBLIC /Zi /DEBUG:FULL)
+    endif()
+
+    if(${compiler} MATCHES ".*clang.*")
+        message("using clang to build LTL")
+        target_compile_options(LittleTypeLibrary PUBLIC -ftime-trace)
+    endif()
+
+    target_link_libraries(LittleTypeLibrary
+        LTL
+        gtest_main)
+    add_test(NAME test COMMAND LittleTypeLibrary)
 endif()
-
-if(${compiler} MATCHES ".*clang.*")
-    message("using clang to build LTL")
-    target_compile_options(LittleTypeLibrary PUBLIC -ftime-trace)
-endif()
-
-target_link_libraries(LittleTypeLibrary
-    LTL
-    gtest_main)
-add_test(NAME test COMMAND LittleTypeLibrary)
