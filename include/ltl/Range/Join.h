@@ -87,8 +87,8 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
     }
 
     std::optional<ContainerPtr> m_ptr;
-    long long int m_current;
-    long long int m_end;
+    long long int m_current{0};
+    long long int m_end{0};
 };
 
 struct join_t {};
