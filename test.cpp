@@ -203,6 +203,20 @@ TEST(LTL_test, tuple_test) {
     typed_static_assert((ltl::type_v<ltl::tuple_t<int, int, int &, int, const int &>> == type_from(secondAdd)));
     typed_static_assert((ltl::type_v<ltl::tuple_t<int, int, int &, int, const int &>> == type_from(thirdAdd)));
     typed_static_assert((ltl::type_v<ltl::tuple_t<int, const int &, int, int, int &>> == type_from(lastAdd)));
+
+    {
+        ltl::tuple_t<int, double, std::string> tuple = {0, 0.0, ""};
+
+        ASSERT_EQ(tuple[0_n], 0);
+        ASSERT_EQ(tuple[1_n], 0.0);
+        ASSERT_EQ(tuple[2_n], "");
+
+        tuple = {1, 2.0, "three"};
+
+        ASSERT_EQ(tuple[0_n], 1);
+        ASSERT_EQ(tuple[1_n], 2.0);
+        ASSERT_EQ(tuple[2_n], "three");
+    }
 }
 
 TEST(LTL_test, tuple_test_algo) {
@@ -446,6 +460,14 @@ TEST(LTL_test, test_trait) {
         typed_static_assert(!ltl::is_fixed_size_array(x));
         typed_static_assert(!ltl::is_fixed_size_array(y));
         typed_static_assert(!ltl::is_fixed_size_array(z));
+    }
+
+    {
+        using namespace ltl;
+        typed_static_assert(type_v<remove_rvalue_reference_t<const int>> == ltl::type_v<int>);
+        typed_static_assert(type_v<remove_rvalue_reference_t<const int &>> == ltl::type_v<const int &>);
+        typed_static_assert(type_v<remove_rvalue_reference_t<int &>> == ltl::type_v<int &>);
+        typed_static_assert(type_v<remove_rvalue_reference_t<int &&>> == ltl::type_v<int>);
     }
 }
 

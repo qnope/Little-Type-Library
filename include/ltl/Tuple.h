@@ -16,20 +16,12 @@ using safe_add_rvalue_reference = std::conditional_t<std::is_reference_v<T>, T, 
 
 template <int I, typename T>
 struct Value {
-    constexpr Value() noexcept : m_value{} {}
-    constexpr Value(T &&t) noexcept : m_value{FWD(t)} {}
-    constexpr Value(const Value &v) noexcept : m_value{v.m_value} {}
-    constexpr Value(Value &&v) noexcept : m_value{FWD(v.m_value)} {}
+    constexpr explicit Value() noexcept : m_value{} {}
 
-    template <typename _T, typename = std::enable_if_t<ltl::type_v<std::decay_t<_T>> != ltl::type_v<Value>>>
-    constexpr Value(_T &&t) noexcept : m_value{FWD(t)} {}
+    template <typename _T>
+    constexpr explicit Value(_T &&t) noexcept : m_value{FWD(t)} {}
 
-    constexpr Value &operator=(Value v) noexcept {
-        m_value = std::move(v.m_value);
-        return *this;
-    }
-
-    template <typename _T, typename = std::enable_if_t<ltl::type_v<std::decay_t<_T>> != ltl::type_v<Value>>>
+    template <typename _T>
     constexpr Value &operator=(_T &&t) noexcept {
         m_value = FWD(t);
         return *this;
@@ -163,7 +155,18 @@ class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...
     using super::isEmpty;
     using super::length;
     using super::super;
-    using super::operator=;
+
+    template <typename... _Ts>
+    tuple_t &operator=(const tuple_t<_Ts...> &t) {
+        static_cast<super &>(*this) = t;
+        return *this;
+    }
+
+    template <typename... _Ts>
+    tuple_t &operator=(tuple_t<_Ts...> &&t) {
+        static_cast<super &>(*this) = std::move(t);
+        return *this;
+    }
 
     static constexpr auto getTypes() noexcept { return tuple_t<type_t<Ts>...>{}; }
 
