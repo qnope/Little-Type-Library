@@ -16,12 +16,13 @@ set(HEADERS_RANGE
     include/ltl/Range/Map.h
     include/ltl/Range/Zip.h
     include/ltl/Range/Join.h
+    include/ltl/Range/Split.h
     include/ltl/Range/Range.h
     include/ltl/Range/Taker.h
     include/ltl/Range/Value.h
     include/ltl/Range/Filter.h
-    include/ltl/Range/GroupBy.h
     include/ltl/Range/actions.h
+    include/ltl/Range/Reverse.h
     include/ltl/Range/AsPointer.h
     include/ltl/Range/enumerate.h
     include/ltl/Range/DefaultView.h

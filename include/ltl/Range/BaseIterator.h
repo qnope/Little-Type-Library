@@ -12,94 +12,112 @@
 #define DECLARE_EVERYTHING_BUT_REFERENCE(tag)                                                                          \
     using pointer = ::ltl::AsPointer<reference>;                                                                       \
     using value_type = std::decay_t<reference>;                                                                        \
-    using difference_type = std::size_t;                                                                               \
-    using iterator_category = tag;
+    using difference_type = long long int;                                                                             \
+    using iterator_category = tag
 
 namespace ltl {
 
-template <typename DerivedIt, typename It, typename Function, bool CreateMinusOperator = true,
-          bool CreateEqualOperator = true>
+template <typename It>
+using get_iterator_category = typename std::iterator_traits<It>::iterator_category;
+
+constexpr struct increment_tag_t {
+} increment_tag;
+constexpr struct decrement_tag_t {
+} decrement_tag;
+
+template <typename DerivedIt, typename It>
 class BaseIterator :
-    public PostIncrementable<DerivedIt>,
-    public PostDecrementable<DerivedIt>,
     public Comparable<DerivedIt>,
     public Additionnable<DerivedIt>,
-    public Substractable<DerivedIt> {
+    public Substractable<DerivedIt>,
+    public PostIncrementable<DerivedIt>,
+    public PostDecrementable<DerivedIt> {
     ENABLE_CRTP(DerivedIt)
   public:
     BaseIterator() = default;
-
-    BaseIterator(It it) : m_it{it}, m_sentinelBegin{it}, m_sentinelEnd{it} {}
-
-    BaseIterator(It it, It sentinelBegin, It sentinelEnd, Function function) noexcept :
-        m_it{std::move(it)}, m_sentinelBegin{std::move(sentinelBegin)}, m_sentinelEnd{std::move(sentinelEnd)},
-        m_function{std::move(function)} {}
-
-    template <bool create = CreateEqualOperator, typename = std::enable_if_t<create>>
-    friend bool operator==(const DerivedIt &a, const DerivedIt &b) noexcept {
-        return a.m_it == b.m_it;
-    }
+    BaseIterator(It it) noexcept : m_it{std::move(it)} {}
 
     DerivedIt &operator++() noexcept {
-        assert(m_it != m_sentinelEnd);
         ++m_it;
         return underlying();
     }
 
     DerivedIt &operator--() noexcept {
-        assert(m_it != m_sentinelBegin);
         --m_it;
         return underlying();
     }
 
     decltype(auto) operator*() const noexcept {
         const DerivedIt &it = underlying();
-        assert(it.m_it != it.m_sentinelEnd);
         return *it.m_it;
     }
 
-    auto operator->() const noexcept {
+    auto operator-> () const noexcept {
         const DerivedIt &it = underlying();
         return AsPointer<decltype(*it)>{*it};
     }
 
-    DerivedIt &operator+=(long long int n) noexcept {
-        DerivedIt &it = underlying();
-        if (n > 0) {
-            while (n--)
-                ++it;
-        }
+    DerivedIt &operator-=(long long int n) noexcept { return underlying() += -n; }
 
-        else {
-            while (n++)
-                --it;
-        }
-        return it;
-    }
-
-    DerivedIt &operator-=(long long int n) noexcept {
-        DerivedIt &it = underlying();
-        if (n > 0) {
-            while (n--)
-                --it;
-        }
-
-        else {
-            while (n++)
-                ++it;
-        }
-        return it;
-    }
-
-    template <bool createMinus = CreateMinusOperator, typename = std::enable_if_t<createMinus>>
-    friend std::size_t operator-(const DerivedIt &b, const DerivedIt &a) noexcept {
-        return std::distance(a.m_it, b.m_it);
-    }
-
-  protected:
     It m_it{};
-    It m_sentinelBegin{};
-    It m_sentinelEnd{};
+};
+
+template <typename Function>
+struct WithFunction {
+    WithFunction() = default;
+    WithFunction(Function f) noexcept : m_function{std::move(f)} {}
     NullableFunction<Function> m_function{};
 };
+
+template <typename Derived>
+struct IteratorSimpleComparator {
+    friend bool operator==(const Derived &a, const Derived &b) noexcept { return a.m_it == b.m_it; }
+};
+
+template <typename Derived>
+struct IteratorOperationWithDistance {
+    ENABLE_CRTP(Derived)
+
+    Derived &operator+=(long long int n) noexcept {
+        Derived &it = underlying();
+        std::advance(it.m_it, n);
+        return it;
+    }
+
+    friend std::size_t operator-(const Derived &b, const Derived &a) noexcept { //
+        return std::distance(a.m_it, b.m_it);
+    }
+};
+
+template <typename Derived>
+struct IteratorOperationByIterating {
+    ENABLE_CRTP(Derived)
+
+    Derived &operator+=(long long int n) noexcept {
+        Derived &it = underlying();
+        if (n > 0) {
+            while (n--)
+                ++it;
+        } else {
+            while (n++)
+                --it;
+        }
+        return it;
+    }
+
+    friend std::size_t operator-(const Derived &b, Derived a) {
+        std::size_t res = 0;
+        for (; a != b; ++res, ++a)
+            ;
+        return res;
+    }
+};
+
+template <typename It>
+auto safe_advance(It beg, It end, std::size_t n) {
+    while (n-- && beg != end)
+        ++beg;
+    return beg;
+}
+
 } // namespace ltl

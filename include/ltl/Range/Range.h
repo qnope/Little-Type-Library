@@ -3,7 +3,6 @@
 #include <cassert>
 #include <iterator>
 
-#include "actions.h"
 #include "../crtp.h"
 #include "../Tuple.h"
 #include "../concept.h"
@@ -33,7 +32,7 @@ class AbstractRange {
 
     decltype(auto) operator[](std::size_t idx) const noexcept {
         assert(idx < size());
-        return *(underlying().begin() + idx);
+        return *std::next(underlying().begin(), idx);
     }
 
     decltype(auto) front() const noexcept {
@@ -43,7 +42,7 @@ class AbstractRange {
 
     decltype(auto) back() const noexcept {
         assert(!empty());
-        return *(underlying().begin() + std::size_t{size() - 1});
+        return *std::next(underlying().begin(), std::size_t{size() - 1});
     }
 
     template <typename T>
@@ -115,6 +114,15 @@ auto size(const AbstractRange<R> &r) noexcept {
 }
 
 LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
+
+namespace actions {
+struct AbstractAction {};
+
+constexpr auto is_action = ltl::is_derived_from(ltl::type_v<AbstractAction>);
+
+template <typename T>
+constexpr bool IsAction = decltype(is_action(std::declval<T>()))::value;
+} // namespace actions
 
 template <typename T>
 constexpr bool IsForOwningRange = IsIterable<T> &&IsRValueReference<T> && !IsRange<T>;

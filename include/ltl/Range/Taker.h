@@ -8,13 +8,6 @@ namespace ltl {
 using std::begin;
 using std::end;
 
-template <typename It>
-auto safe_advance(It beg, It end, std::size_t n) {
-    while (n-- && beg != end)
-        ++beg;
-    return beg;
-}
-
 struct TakeNType {
     std::size_t n;
 };
@@ -45,10 +38,6 @@ auto drop_while(F f) {
     return DropWhileType<F>{std::move(f)};
 }
 
-// reverse iterator
-struct reverse_t {};
-constexpr reverse_t reversed;
-
 template <typename F>
 struct is_chainable_operation<TakeWhileType<F>> : true_t {};
 
@@ -60,14 +49,6 @@ struct is_chainable_operation<DropNType> : true_t {};
 
 template <>
 struct is_chainable_operation<TakeNType> : true_t {};
-
-template <>
-struct is_chainable_operation<reverse_t> : true_t {};
-
-template <typename T1, requires_f(IsIterableRef<T1>)>
-constexpr decltype(auto) operator|(T1 &&a, reverse_t) {
-    return Range{FWD(a).rbegin(), FWD(a).rend()};
-}
 
 template <typename T1, requires_f(IsIterableRef<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, TakeNType b) {
