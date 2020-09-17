@@ -6,21 +6,22 @@
 
 namespace ltl {
 template <typename... Iterators>
-struct ZipIterator : BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>, Nothing> {
+struct ZipIterator :
+    BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>>,
+    IteratorOperationByIterating<ZipIterator<Iterators...>>,
+    IteratorSimpleComparator<ZipIterator<Iterators...>> {
     using reference = tuple_t<typename std::iterator_traits<Iterators>::reference...>;
 
-    using BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>, Nothing>::BaseIterator;
+    using BaseIterator<ZipIterator, tuple_t<Iterators...>>::BaseIterator;
 
-    DECLARE_EVERYTHING_BUT_REFERENCE(std::forward_iterator_tag)
+    DECLARE_EVERYTHING_BUT_REFERENCE(std::common_type_t<get_iterator_category<Iterators>...>);
 
     ZipIterator &operator++() {
-        assert(this->m_it != this->m_sentinelEnd);
         this->m_it([](auto &... xs) { (++xs, ...); });
         return *this;
     }
 
     ZipIterator &operator--() {
-        assert(this->m_it != this->m_sentinelBegin);
         this->m_it([](auto &... xs) { (--xs, ...); });
         return *this;
     }
@@ -36,9 +37,7 @@ using std::end;
 
 template <typename... Containers>
 auto build_begin_zip_iterator(Containers &&... containers) {
-    return ZipIterator<decltype(begin(FWD(containers)))...>{tuple_t{begin(FWD(containers))...},
-                                                            tuple_t{begin(FWD(containers))...},
-                                                            tuple_t{end(FWD(containers))...}, Nothing{}};
+    return ZipIterator<decltype(begin(FWD(containers)))...>{tuple_t{begin(FWD(containers))...}};
 }
 
 template <typename... Containers>
@@ -67,8 +66,8 @@ auto zip(Containers &&... containers) {
     typed_static_assert(!types.isEmpty);
     typed_static_assert_msg(all_of_type(types, is_iterable), "Zip operations must be used with containers");
 
-    assert(tuple_t{std::cref(containers)...}([](auto &&c1, auto &&... cs) {
-        return (true && ... && (std::size_t(size(FWD(c1))) == std::size_t(size(FWD(cs)))));
+    assert(tuple_t{std::cref(containers)...}([](const auto &c1, const auto &... cs) {
+        return (true && ... && (std::size_t(size(c1)) == std::size_t(size(cs))));
     }));
 
     return ZipRange<Containers...>{FWD(containers)...};

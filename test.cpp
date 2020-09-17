@@ -30,6 +30,11 @@
 
 #include <gtest/gtest.h>
 
+#include <ltl/Range/Split.h>
+#include <ltl/Range/Reverse.h>
+
+using namespace std::literals;
+
 TEST(LTL_test, bool_test) {
     static_assert(false_v == false_v);
     static_assert(false_v != true_v);
@@ -561,7 +566,7 @@ TEST(LTL_test, test_algos) {
     ASSERT_TRUE(ltl::count(odds, 5) == 1);
     ASSERT_TRUE(ltl::count(odds, 1) == 0);
     ASSERT_TRUE(ltl::count_if(odds, isSuperiorTo(4)) == 4);
-    ASSERT_TRUE(*ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
+    ASSERT_TRUE(ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
     ASSERT_TRUE(ltl::index_of(odds, 5) == 1);
     ASSERT_FALSE(ltl::index_of(odds, 6).has_value());
     ASSERT_TRUE(ltl::index_if(odds, isSuperiorTo(10)) == 4);
@@ -579,7 +584,7 @@ TEST(LTL_test, test_algos) {
     ASSERT_TRUE(ltl::map_find_ptr(unordered_map, "one") == &unordered_map["one"]);
     ASSERT_TRUE(ltl::map_find_ptr(unordered_map, "three") == nullptr);
     ASSERT_TRUE(ltl::map_find(unordered_map, "two") == unordered_map.find("two"));
-    ASSERT_FALSE(ltl::map_find(unordered_map, "three").has_value());
+    ASSERT_FALSE(ltl::map_find(unordered_map, "three") != end(unordered_map));
 
     std::array<int, 5> reverseOdds = {11, 9, 7, 5, 3};
     ASSERT_TRUE(!ltl::equal(reverseOdds, odds));
@@ -607,7 +612,7 @@ TEST(LTL_test, test_algos) {
 
     {
         auto emptyArray = std::vector<int>{};
-        ASSERT_FALSE(ltl::minmax_element(emptyArray));
+        ASSERT_TRUE((ltl::minmax_element(emptyArray) == std::pair{end(emptyArray), end(emptyArray)}));
         ASSERT_FALSE(ltl::minmax_element_value(std::array<int, 0>{}));
     }
 }
@@ -619,10 +624,9 @@ TEST(LTL_test, test_find_range) {
         auto find = ltl::find(v, 2);
         auto notFind = ltl::find(v, 25);
 
-        ASSERT_TRUE(find);
-        ASSERT_TRUE(!notFind);
-        ASSERT_TRUE(**find == 2);
-        ASSERT_TRUE(*find == v.begin() + 2);
+        ASSERT_TRUE(notFind == end(v));
+        ASSERT_TRUE(*find == 2);
+        ASSERT_TRUE(find == v.begin() + 2);
     }
 
     {
@@ -651,12 +655,12 @@ TEST(LTL_test, test_find_range) {
         auto findOneOf = ltl::find_first_of(v, toFind);
         auto notFindOneOf = ltl::find_first_of(v, std::array{87, 25, 65});
 
-        ASSERT_TRUE(find);
-        ASSERT_TRUE(!notFind);
-        ASSERT_TRUE(findOneOf);
-        ASSERT_TRUE(*find == v.begin() + 3);
-        ASSERT_TRUE(*findOneOf == v.begin() + 3);
-        ASSERT_FALSE(notFindOneOf);
+        ASSERT_TRUE(find != end(v));
+        ASSERT_TRUE(notFind == end(v));
+        ASSERT_TRUE(findOneOf != end(v));
+        ASSERT_TRUE(find == v.begin() + 3);
+        ASSERT_TRUE(findOneOf == v.begin() + 3);
+        ASSERT_TRUE(notFindOneOf == end(v));
     }
 }
 
@@ -721,7 +725,7 @@ TEST(LTL_test, test_filter) {
     auto oddSuperiorThan5Filter = filter(isOdd) | filter(superiorThan(5));
     auto oddsSuperiorThan5 = array | oddSuperiorThan5Filter;
     ASSERT_TRUE(odds.size() == 6 && evens.size() == 7 && oddsSuperiorThan5.size() == 3);
-    auto [min, max] = *ltl::minmax_element(oddsSuperiorThan5);
+    auto [min, max] = ltl::minmax_element(oddsSuperiorThan5);
     ASSERT_TRUE(*min == 7 && *max == 11);
     ASSERT_TRUE(&*min == &array[7] && max.operator->().operator->() == &array[11]);
     ASSERT_TRUE((min + 2) == max);
@@ -949,7 +953,6 @@ TEST(LTL_test, test_functional) {
 /// Issues are:
 /// contains algos for transformed iterator
 /// for_each for tuple called instead of algos
-/// reverse iterator
 /// std invoke
 TEST(LTL_test, test_fix_issue_1) {
     std::array a = {0, 1, 2, 3, 4};
@@ -958,8 +961,6 @@ TEST(LTL_test, test_fix_issue_1) {
     ASSERT_TRUE(!ltl::contains(a | ltl::map(square), 2));
 
     ltl::for_each(a, [](auto x) { ASSERT_TRUE(x == 0 || x == 1 || x == 2 || x == 3 || x == 4); });
-
-    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::map(square), std::array{16, 9, 4, 1, 0}));
 
     struct obj {
         bool isSet() const { return m_isSet; }
@@ -1476,50 +1477,6 @@ TEST(LTL_test, test_rvalue) {
     ASSERT_EQ(any.size(), anyRValueReference.size());
 }
 
-TEST(LTL_test, test_group_by) {
-    enum class PlayerGenre { MALE, FEMALE };
-    struct Player {
-        std::string team;
-        std::string name;
-        PlayerGenre genre;
-    };
-
-    std::vector<Player> players = {{"FRA", "Antoine", PlayerGenre::MALE},  {"FRA", "Boris", PlayerGenre::MALE},
-                                   {"FRA", "Ludi", PlayerGenre::FEMALE},   {"FRA", "Baptou", PlayerGenre::MALE},
-                                   {"ENG", "Rowena", PlayerGenre::FEMALE}, {"ENG", "Hermione", PlayerGenre::FEMALE},
-                                   {"ENG", "John", PlayerGenre::MALE},     {"POR", "Christiano", PlayerGenre::MALE},
-                                   {"POR", "Jose", PlayerGenre::MALE},     {"POR", "Raul", PlayerGenre::MALE},
-                                   {"JPN", "Stef", PlayerGenre::MALE},     {"JPN", "Hishiro", PlayerGenre::FEMALE},
-                                   {"JPN", "Kariu", PlayerGenre::FEMALE},  {"JPN", "An", PlayerGenre::FEMALE}};
-
-    auto group_by_team = ltl::group_by(&Player::team);
-    auto groupped_by_team = players | group_by_team;
-
-    ASSERT_TRUE(size(groupped_by_team) == 4);
-    ASSERT_TRUE(size(groupped_by_team[2][1_n]) == 3);
-    ASSERT_TRUE(size((*((groupped_by_team.begin() + 2) - 1))[1_n]) == 3);
-    ASSERT_TRUE(size((*((groupped_by_team.begin() + 2) - 2))[1_n]) == 4);
-    ASSERT_TRUE(std::addressof(groupped_by_team[3][0_n]) == std::addressof(players[10].team));
-    ASSERT_TRUE(std::addressof(groupped_by_team[3][1_n][2]) == std::addressof(players[12]));
-
-    auto onlyFemale = ltl::filter(_((x), x.genre == PlayerGenre::FEMALE));
-    auto femaleTeams = players | onlyFemale | group_by_team;
-
-    static_assert(type_from(femaleTeams[0][0_n]) == ltl::type_v<std::string &>);
-    static_assert(type_from(femaleTeams[0][1_n][0]) == ltl::type_v<Player &>);
-
-    ASSERT_TRUE(size(femaleTeams) == 3);
-    ASSERT_TRUE(size(femaleTeams[1][1_n]) == 2);
-    ASSERT_TRUE(std::addressof(femaleTeams[2][1_n][2]) == std::addressof(players[13]));
-    ASSERT_TRUE(std::addressof((*(((femaleTeams.begin() + 2) - 1) - 1))[1_n][0]) == std::addressof(players[2]));
-
-    auto japan = groupped_by_team.begin() + 3;
-    auto portugal = japan - 1;
-
-    ASSERT_EQ((*japan)[0_n], "JPN");
-    ASSERT_EQ((*portugal)[0_n], "POR");
-}
-
 TEST(LTL_test, test_zip_tuple) {
     ltl::tuple_t<int, double> a{1, 3.0};
     ltl::tuple_t<int, double> b{4, 10.0};
@@ -1632,37 +1589,6 @@ TEST(LTL_test, test_actions) {
 
     e |= ltl::actions::sort_by(ltl::byDescending(ltl::identity));
     ASSERT_TRUE(ltl::equal(e, std::array{10, 9, 8, 6, 5, 5, 4, 2, 1}));
-}
-
-TEST(LTL_test, test_complexe_range) {
-    using namespace ltl;
-    std::string text =
-        "My name is Antoine. I own a Hyundai i30N. She has 275 horses power, she is beautiful. The idea "
-        "of this test is to test the range thing with a complex thing : So I wrote a random text to test "
-        "this thing. This test is about having the five first words the most used.";
-
-    std::istringstream iss{std::move(text)};
-    auto onlyAlphaNum = [](const auto &s) -> std::string { return s | filter(lift(std::isalnum)); };
-    auto toLower = [](const auto &s) -> std::string { return s | map(lift(std::tolower)); };
-    auto count_group = [](const auto &tupleWordRange) { //
-        return tuple_t{tupleWordRange[1_n].size(), tupleWordRange[0_n]};
-    };
-
-    auto words = make_istream_range<std::string>(iss) | //
-                 map(onlyAlphaNum) |                    //
-                 filter(not_(&std::string::empty)) |    //
-                 map(toLower) | to_vector |             //
-                 actions::sort |                        //
-                 group_by(identity) |                   //
-                 map(count_group) | to_vector |         //
-                 actions::sort_by(std::greater<>{}) |   //
-                 ltl::get(1_n) |                        //
-                 ltl::take_n(5) | to_vector;
-
-    static_assert(type_from(words) == ltl::type_v<std::vector<std::string>>);
-
-    ASSERT_EQ(words.size(), 5);
-    ASSERT_TRUE(ltl::equal(words, std::array{"the", "test", "is", "this", "thing"}));
 }
 
 TEST(LTL_test, test_move_range) {
@@ -1815,4 +1741,224 @@ TEST(LTL_test, test_repeater) {
     auto sum =
         ltl::accumulate(ltl::valueRange(0, 10) >> ltl::map([](auto x) { return ltl::yield_if(x % 2 == 1, x); }), 0);
     ASSERT_EQ(sum, 0 + 1 + 3 + 5 + 7 + 9);
+}
+
+TEST(LTL_test, test_reverse) {
+    std::array a = {0, 1, 2, 3, 4};
+    std::vector<int> b;
+    auto square = [](auto x) { return x * x; };
+    auto isOdd = [](auto x) { return ((x & 1) == 1); };
+    auto isEven = ltl::not_(isOdd);
+
+    ASSERT_EQ((a | ltl::reversed).size(), 5);
+    ASSERT_EQ((a | ltl::reversed | ltl::reversed).size(), 5);
+
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed, std::array{4, 3, 2, 1, 0}));
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::map(square), std::array{16, 9, 4, 1, 0}));
+
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::reversed, std::array{0, 1, 2, 3, 4}));
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::map(square) | ltl::reversed, std::array{0, 1, 4, 9, 16}));
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::reversed | ltl::map(square), std::array{0, 1, 4, 9, 16}));
+
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::filter(isOdd), std::array{3, 1}));
+    ASSERT_TRUE(ltl::equal(a | ltl::filter(isOdd) | ltl::reversed, std::array{3, 1}));
+
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::filter(isEven), std::array{4, 2, 0}));
+    ASSERT_TRUE(ltl::equal(a | ltl::filter(isEven) | ltl::reversed, std::array{4, 2, 0}));
+
+    ASSERT_EQ((b | ltl::reversed).size(), 0);
+}
+
+TEST(LTL_test, test_split) {
+    auto to_view = [](auto &&r) { return std::string_view(&*r.begin(), r.size()); };
+
+    {
+        std::string to_split = "";
+        auto splitted = to_split | ltl::split(' ') | ltl::map(to_view);
+        ASSERT_EQ(splitted.size(), 0);
+        ASSERT_TRUE(ltl::equal(splitted, std::vector<std::string_view>{}));
+    }
+
+    {
+        std::string to_split = "My name is Antoine and I live in France";
+        auto splitted = to_split | ltl::split(',') | ltl::map(to_view);
+
+        ASSERT_EQ(splitted.size(), 1);
+        ASSERT_TRUE(ltl::equal(splitted, std::array{"My name is Antoine and I live in France"}));
+    }
+
+    {
+        std::string to_split = "My name is Antoine and I live in France";
+        auto splitted = to_split | ltl::split(' ') | ltl::map(to_view);
+
+        auto beg = splitted.begin();
+
+        ASSERT_EQ(*(beg + 1), "name"sv);
+        ASSERT_EQ(*((beg + 1) - 1), "My"sv);
+        ASSERT_EQ(*(beg + 2), "is"sv);
+        ASSERT_EQ(*((beg + 2) - 1), "name"sv);
+        ASSERT_EQ(*((beg + 2) - 2), "My"sv);
+        ASSERT_EQ(*(beg + 8), "France"sv);
+        ASSERT_EQ(*((beg + 8) - 3), "I"sv);
+        ASSERT_EQ(*(((beg + 8) - 3) + 3), "France"sv);
+        ASSERT_EQ(*((beg + 9) - 1), "France"sv);
+        ASSERT_EQ(splitted.size(), 9);
+        ASSERT_TRUE(
+            ltl::equal(splitted, std::array{"My", "name", "is", "Antoine", "and", "I", "live", "in", "France"}));
+    }
+
+    {
+        std::string to_split = "My name is Antoine and I live in France";
+        auto splitted1 = to_split | ltl::split(' ') | ltl::map(to_view) | ltl::reversed;
+        auto splitted2 = to_split | ltl::split(' ') | ltl::reversed | ltl::map(to_view);
+
+        ASSERT_TRUE(
+            ltl::equal(splitted1, std::array{"France", "in", "live", "I", "and", "Antoine", "is", "name", "My"}));
+        ASSERT_TRUE(ltl::equal(splitted2, splitted1));
+    }
+}
+
+TEST(LTL_test, test_chunks) {
+    std::vector<int> vect(20);
+    ltl::iota(vect, 0);
+
+    {
+        auto view = vect | ltl::chunks(5);
+
+        ASSERT_EQ(view.size(), 4);
+        ASSERT_TRUE(ltl::equal(view[0], std::array{0, 1, 2, 3, 4}));
+        ASSERT_TRUE(ltl::equal(view[1], std::array{5, 6, 7, 8, 9}));
+        ASSERT_TRUE(ltl::equal(view[2], std::array{10, 11, 12, 13, 14}));
+        ASSERT_TRUE(ltl::equal(view[3], std::array{15, 16, 17, 18, 19}));
+    }
+
+    {
+        auto view = std::move(vect) | ltl::chunks(5) | ltl::reversed;
+
+        ASSERT_EQ(vect.size(), 0);
+        ASSERT_EQ(view.size(), 4);
+        ASSERT_TRUE(ltl::equal(view[0], std::array{15, 16, 17, 18, 19}));
+        ASSERT_TRUE(ltl::equal(view[1], std::array{10, 11, 12, 13, 14}));
+        ASSERT_TRUE(ltl::equal(view[2], std::array{5, 6, 7, 8, 9}));
+        ASSERT_TRUE(ltl::equal(view[3], std::array{0, 1, 2, 3, 4}));
+    }
+
+    {
+        auto view = std::vector{0, 1, 2, 3, 4, 5, 6} | ltl::chunks(3);
+
+        ASSERT_EQ(view.size(), 3);
+        ASSERT_TRUE(ltl::equal(view[0], std::array{0, 1, 2}));
+        ASSERT_TRUE(ltl::equal(view[1], std::array{3, 4, 5}));
+        ASSERT_TRUE(ltl::equal(view[2], std::array{6}));
+    }
+
+    {
+        auto view = std::vector{0, 1, 2, 3, 4, 5, 6} | ltl::chunks(3) | ltl::reversed;
+
+        ASSERT_EQ(view.size(), 3);
+        ASSERT_TRUE(ltl::equal(view[0], std::array{6}));
+        ASSERT_TRUE(ltl::equal(view[1], std::array{3, 4, 5}));
+        ASSERT_TRUE(ltl::equal(view[2], std::array{0, 1, 2}));
+    }
+}
+
+TEST(LTL_test, test_group_by) {
+    enum class PlayerGenre { MALE, FEMALE };
+    struct Player {
+        std::string team;
+        std::string name;
+        PlayerGenre genre;
+    };
+
+    std::vector<Player> players = {{"FRA", "Antoine", PlayerGenre::MALE},  {"FRA", "Boris", PlayerGenre::MALE},
+                                   {"FRA", "Ludi", PlayerGenre::FEMALE},   {"FRA", "Baptou", PlayerGenre::MALE},
+                                   {"ENG", "Rowena", PlayerGenre::FEMALE}, {"ENG", "Hermione", PlayerGenre::FEMALE},
+                                   {"ENG", "John", PlayerGenre::MALE},     {"POR", "Christiano", PlayerGenre::MALE},
+                                   {"POR", "Jose", PlayerGenre::MALE},     {"POR", "Raul", PlayerGenre::MALE},
+                                   {"JPN", "Stef", PlayerGenre::MALE},     {"JPN", "Hishiro", PlayerGenre::FEMALE},
+                                   {"JPN", "Kariu", PlayerGenre::FEMALE},  {"JPN", "An", PlayerGenre::FEMALE}};
+
+    auto group_by_team = ltl::group_by(&Player::team);
+    auto groupped_by_team = players | group_by_team;
+
+    ASSERT_EQ(size(groupped_by_team), 4);
+    ASSERT_EQ(size(groupped_by_team[2][1_n]), 3);
+    ASSERT_EQ((*((groupped_by_team.begin() + 2) - 1))[0_n], "ENG");
+    ASSERT_EQ((*((groupped_by_team.begin() + 2) - 2))[0_n], "FRA");
+    ASSERT_EQ(size((*((groupped_by_team.begin() + 2) - 1))[1_n]), 3);
+    ASSERT_EQ(size((*((groupped_by_team.begin() + 2) - 2))[1_n]), 4);
+    ASSERT_EQ((*(groupped_by_team.begin() + 3))[0_n], "JPN");
+    ASSERT_EQ((*((groupped_by_team.begin() + 4) - 1))[0_n], "JPN");
+    ASSERT_EQ((*((groupped_by_team.begin() + 4) - 2))[0_n], "POR");
+    ASSERT_EQ((*((groupped_by_team.begin() + 4) - 3))[0_n], "ENG");
+    ASSERT_EQ((*((groupped_by_team.begin() + 4) - 4))[0_n], "FRA");
+    ASSERT_TRUE(std::addressof(groupped_by_team[3][0_n]) == std::addressof(players[10].team));
+    ASSERT_TRUE(std::addressof(groupped_by_team[3][1_n][2]) == std::addressof(players[12]));
+
+    auto onlyFemale = ltl::filter(_((x), x.genre == PlayerGenre::FEMALE));
+    auto femaleTeams = players | onlyFemale | group_by_team;
+
+    static_assert(type_from(femaleTeams[0][0_n]) == ltl::type_v<std::string &>);
+    static_assert(type_from(femaleTeams[0][1_n][0]) == ltl::type_v<Player &>);
+
+    ASSERT_EQ(size(femaleTeams), 3);
+    ASSERT_EQ(size(femaleTeams[1][1_n]), 2);
+    ASSERT_TRUE(std::addressof(femaleTeams[2][1_n][2]) == std::addressof(players[13]));
+    ASSERT_TRUE(std::addressof((*(((femaleTeams.begin() + 2) - 1) - 1))[1_n][0]) == std::addressof(players[2]));
+
+    auto japan = groupped_by_team.begin() + 3;
+    auto portugal = japan - 1;
+
+    ASSERT_EQ((*japan)[0_n], "JPN");
+    ASSERT_EQ((*portugal)[0_n], "POR");
+
+    auto reversedTeams = groupped_by_team | ltl::reversed;
+
+    ASSERT_EQ(size(reversedTeams), 4);
+    ASSERT_EQ(reversedTeams[0][0_n], "JPN");
+    ASSERT_EQ(reversedTeams[1][0_n], "POR");
+    ASSERT_EQ(reversedTeams[2][0_n], "ENG");
+    ASSERT_EQ(reversedTeams[3][0_n], "FRA");
+
+    auto reversedFemaleTeams = femaleTeams | ltl::reversed;
+
+    ASSERT_EQ(size(reversedFemaleTeams), 3);
+    ASSERT_EQ(reversedFemaleTeams[0][0_n], "JPN");
+    ASSERT_EQ(reversedFemaleTeams[1][0_n], "ENG");
+    ASSERT_EQ(reversedFemaleTeams[2][0_n], "FRA");
+    ASSERT_TRUE(std::addressof(reversedFemaleTeams[1][1_n][1]) == std::addressof(players[5]));
+    ASSERT_TRUE(std::addressof(reversedFemaleTeams[1][1_n][0]) == std::addressof(players[4]));
+    ASSERT_TRUE(std::addressof(reversedFemaleTeams[0][1_n][0]) == std::addressof(players[11]));
+    ASSERT_TRUE(std::addressof(reversedFemaleTeams[2][1_n][0]) == std::addressof(players[2]));
+}
+
+TEST(LTL_test, test_complexe_range) {
+    using namespace ltl;
+    std::string text =
+        "My name is Antoine. I own a Hyundai i30N. She has 275 horses power, she is beautiful. The idea "
+        "of this test is to test the range thing with a complex thing : So I wrote a random text to test "
+        "this thing. This test is about having the five first words the most used.";
+
+    std::istringstream iss{std::move(text)};
+    auto onlyAlphaNum = [](const auto &s) -> std::string { return s | filter(lift(std::isalnum)); };
+    auto toLower = [](const auto &s) -> std::string { return s | map(lift(std::tolower)); };
+    auto count_group = [](const auto &tupleWordRange) { //
+        return tuple_t{tupleWordRange[1_n].size(), tupleWordRange[0_n]};
+    };
+
+    auto words = make_istream_range<std::string>(iss) | //
+                 map(onlyAlphaNum) |                    //
+                 filter(not_(&std::string::empty)) |    //
+                 map(toLower) | to_vector |             //
+                 actions::sort |                        //
+                 group_by(identity) |                   //
+                 map(count_group) | to_vector |         //
+                 actions::sort_by(std::greater<>{}) |   //
+                 ltl::get(1_n) |                        //
+                 ltl::take_n(5) | to_vector;
+
+    static_assert(type_from(words) == ltl::type_v<std::vector<std::string>>);
+
+    ASSERT_EQ(words.size(), 5);
+    ASSERT_TRUE(ltl::equal(words, std::array{"the", "test", "is", "this", "thing"}));
 }

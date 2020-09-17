@@ -17,18 +17,13 @@ class repeater_iterator :
   public:
     using reference = const T &;
 
-    DECLARE_EVERYTHING_BUT_REFERENCE(std::random_access_iterator_tag)
+    DECLARE_EVERYTHING_BUT_REFERENCE(std::random_access_iterator_tag);
 
     repeater_iterator() noexcept {};
 
     repeater_iterator(long long int n, const T *value) noexcept : m_current{0}, m_end{n}, m_value{value} {}
 
     repeater_iterator(long long int n) noexcept : m_current{n} {}
-
-    repeater_iterator(repeater_iterator &&) = default;
-    repeater_iterator(const repeater_iterator &) = default;
-    repeater_iterator &operator=(repeater_iterator &&) = default;
-    repeater_iterator &operator=(const repeater_iterator &it) = default;
 
     reference operator*() const noexcept {
         assert(m_value);

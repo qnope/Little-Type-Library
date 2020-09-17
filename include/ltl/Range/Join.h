@@ -3,27 +3,29 @@
 #include <optional>
 
 #include "Range.h"
+#include "Reverse.h"
 #include "BaseIterator.h"
 
 namespace ltl {
 template <typename It>
-class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, false> {
-    friend BaseIterator<JoinIterator, It, Nothing, false, false>;
-
+class JoinIterator :
+    public BaseIterator<JoinIterator<It>, It>,
+    public WithSentinel<It>,
+    public IteratorOperationByIterating<JoinIterator<It>> {
   public:
     using Container = typename std::iterator_traits<It>::reference;
     using ContainerIterator = decltype(std::declval<Container>().begin());
     using ContainerPtr = AsPointer<Container>;
 
     using reference = typename std::iterator_traits<ContainerIterator>::reference;
-    DECLARE_EVERYTHING_BUT_REFERENCE(typename std::iterator_traits<It>::iterator_category)
+    DECLARE_EVERYTHING_BUT_REFERENCE(get_iterator_category<It>);
 
   public:
-    using BaseIterator<JoinIterator<It>, It, Nothing, false, false>::BaseIterator;
+    JoinIterator() = default;
 
     JoinIterator(It it, It sentinelBegin, It sentinelEnd) :
-        BaseIterator<JoinIterator<It>, It, Nothing, false, false>{std::move(it), std::move(sentinelBegin),
-                                                                  std::move(sentinelEnd), Nothing{}} {
+        BaseIterator<JoinIterator, It>{std::move(it)}, //
+        WithSentinel<It>{std::move(sentinelBegin), std::move(sentinelEnd)} {
         while (!assignContainerValues())
             ++this->m_it;
     }
@@ -44,7 +46,7 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
 
     JoinIterator &operator--() noexcept {
         if (m_current == 0) {
-            assert(this->m_it != this->m_sentinelBegin);
+            assert(this->reverse(this->m_it) != this->m_sentinelBegin);
             do {
                 --this->m_it;
             } while (!assignContainerValues());
@@ -56,15 +58,6 @@ class JoinIterator : public BaseIterator<JoinIterator<It>, It, Nothing, false, f
     }
 
     reference operator*() const { return *std::next(begin(**const_cast<JoinIterator &>(*this).m_ptr), m_current); }
-
-    friend std::size_t operator-(const JoinIterator &b, JoinIterator a) {
-        std::size_t res = 0;
-        while (a != b) {
-            ++res;
-            ++a;
-        }
-        return res;
-    }
 
     friend bool operator==(const JoinIterator &a, const JoinIterator &b) noexcept {
         if (a.m_it == b.m_it) {
@@ -102,6 +95,7 @@ constexpr decltype(auto) operator|(T1 &&a, join_t) {
     using std::begin;
     using std::end;
     using it = decltype(begin(FWD(a)));
-    return Range{JoinIterator<it>{begin(FWD(a)), begin(FWD(a)), end(FWD(a))}, JoinIterator<it>{end(FWD(a))}};
+    return Range{JoinIterator<it>{begin(FWD(a)), begin(FWD(a)), end(FWD(a))},
+                 JoinIterator<it>{end(FWD(a)), begin(FWD(a)), end(FWD(a))}};
 }
 } // namespace ltl

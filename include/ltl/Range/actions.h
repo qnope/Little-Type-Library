@@ -6,8 +6,6 @@
 namespace ltl {
 namespace actions {
 
-struct AbstractAction {};
-
 constexpr struct Sort : AbstractAction {
 } sort;
 
@@ -24,11 +22,6 @@ constexpr auto sort_by(F f) {
 
 constexpr struct Unique : AbstractAction {
 } unique;
-
-constexpr auto is_action = ltl::is_derived_from(ltl::type_v<AbstractAction>);
-
-template <typename T>
-constexpr bool IsAction = decltype(is_action(std::declval<T>()))::value;
 
 template <typename Action1, typename Action2, requires_f(IsAction<Action1>), requires_f(IsAction<Action2>)>
 constexpr auto operator|(Action1 a, Action2 b) {

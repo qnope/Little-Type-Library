@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "Range/Filter.h"
-#include "Range/GroupBy.h"
 #include "Range/Join.h"
 #include "Range/Map.h"
 #include "Range/Range.h"

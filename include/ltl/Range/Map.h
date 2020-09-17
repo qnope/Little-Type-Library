@@ -9,11 +9,19 @@
 
 namespace ltl {
 template <typename It, typename Function>
-struct MapIterator : BaseIterator<MapIterator<It, Function>, It, Function> {
+struct MapIterator :
+    BaseIterator<MapIterator<It, Function>, It>,
+    WithFunction<Function>,
+    IteratorOperationWithDistance<MapIterator<It, Function>>,
+    IteratorSimpleComparator<MapIterator<It, Function>> {
     using reference = std::invoke_result_t<Function, typename std::iterator_traits<It>::reference>;
-    DECLARE_EVERYTHING_BUT_REFERENCE(typename std::iterator_traits<It>::iterator_category)
+    DECLARE_EVERYTHING_BUT_REFERENCE(get_iterator_category<It>);
 
-    using BaseIterator<MapIterator<It, Function>, It, Function>::BaseIterator;
+    MapIterator() = default;
+
+    MapIterator(It current, Function f) noexcept :
+        BaseIterator<MapIterator, It>{std::move(current)}, //
+        WithFunction<Function>{std::move(f)} {}
 
     reference operator*() const { return this->m_function(*this->m_it); }
 };
@@ -39,9 +47,8 @@ constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
     using std::begin;
     using std::end;
     using it = decltype(begin(FWD(a)));
-    return Range{MapIterator<it, std::decay_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)),
-                                                                         std::move(b.f)},
-                 MapIterator<it, std::decay_t<decltype(std::move(b.f))>>{end(FWD(a))}};
+    return Range{MapIterator<it, decltype(b.f)>{begin(FWD(a)), b.f}, //
+                 MapIterator<it, decltype(b.f)>{end(FWD(a)), b.f}};
 }
 
 template <typename T1, typename F, requires_f(IsOptional<T1>)>

@@ -1,22 +1,26 @@
 #pragma once
 
 #include "Range.h"
-#include "BaseIterator.h"
+#include "Reverse.h"
 
 namespace ltl {
 template <typename It, typename Predicate>
-class FilterIterator : public BaseIterator<FilterIterator<It, Predicate>, It, Predicate, false> {
-    friend BaseIterator<FilterIterator, It, Predicate, false>;
-
+class FilterIterator :
+    public BaseIterator<FilterIterator<It, Predicate>, It>,
+    public WithSentinel<It>,
+    public WithFunction<Predicate>,
+    public IteratorOperationByIterating<FilterIterator<It, Predicate>>,
+    public IteratorSimpleComparator<FilterIterator<It, Predicate>> {
   public:
     using reference = typename std::iterator_traits<It>::reference;
-    DECLARE_EVERYTHING_BUT_REFERENCE(typename std::iterator_traits<It>::iterator_category)
+    DECLARE_EVERYTHING_BUT_REFERENCE(get_iterator_category<It>);
 
-    using BaseIterator<FilterIterator<It, Predicate>, It, Predicate, false>::BaseIterator;
+    FilterIterator() = default;
 
     FilterIterator(It it, It sentinelBegin, It sentinelEnd, Predicate function) :
-        BaseIterator<FilterIterator<It, Predicate>, It, Predicate, false>{std::move(it), std::move(sentinelBegin),
-                                                                          std::move(sentinelEnd), std::move(function)} {
+        BaseIterator<FilterIterator, It>{std::move(it)},                    //
+        WithSentinel<It>{std::move(sentinelBegin), std::move(sentinelEnd)}, //
+        WithFunction<Predicate>{std::move(function)} {
         this->m_it = std::find_if(this->m_it, this->m_sentinelEnd, this->m_function);
     }
 
@@ -26,21 +30,8 @@ class FilterIterator : public BaseIterator<FilterIterator<It, Predicate>, It, Pr
     }
 
     FilterIterator &operator--() noexcept {
-        --this->m_it;
-        while (!this->m_function(*this->m_it) && this->m_it != this->m_sentinelBegin) {
-            --this->m_it;
-        }
-        assert(this->m_function(*this->m_it));
+        this->m_it = std::find_if(std::next(this->reverse(this->m_it)), this->m_sentinelBegin, this->m_function).m_it;
         return *this;
-    }
-
-    friend std::size_t operator-(const FilterIterator &b, FilterIterator a) {
-        std::size_t res = 0;
-        while (a != b) {
-            ++res;
-            ++a;
-        }
-        return res;
     }
 };
 
@@ -61,8 +52,7 @@ constexpr decltype(auto) operator|(T1 &&a, FilterType<F> b) {
     using std::begin;
     using std::end;
     using it = decltype(begin(FWD(a)));
-    return Range{FilterIterator<it, std::decay_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)),
-                                                                            std::move(b.f)},
-                 FilterIterator<it, std::decay_t<decltype(std::move(b.f))>>{end(FWD(a))}};
+    return Range{FilterIterator<it, decltype(b.f)>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)), b.f},
+                 FilterIterator<it, decltype(b.f)>{end(FWD(a)), begin(FWD(a)), end(FWD(a)), b.f}};
 }
 } // namespace ltl

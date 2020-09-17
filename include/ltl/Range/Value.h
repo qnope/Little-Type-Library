@@ -5,33 +5,29 @@
 
 namespace ltl {
 template <typename ValueType>
-struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing, false, true> {
+struct ValueIterator :
+    BaseIterator<ValueIterator<ValueType>, ValueType>,
+    IteratorSimpleComparator<ValueIterator<ValueType>> {
     using reference = ValueType;
-    DECLARE_EVERYTHING_BUT_REFERENCE(std::random_access_iterator_tag)
+    DECLARE_EVERYTHING_BUT_REFERENCE(std::random_access_iterator_tag);
 
-    ValueIterator() noexcept {
-        this->m_sentinelBegin = std::numeric_limits<ValueType>::lowest();
-        this->m_sentinelEnd = std::numeric_limits<ValueType>::max();
-        this->m_it = this->m_sentinelBegin;
-        m_step = 1;
-    }
+    ValueIterator() noexcept : BaseIterator<ValueIterator, ValueType>{std::numeric_limits<ValueType>::lowest()} {}
 
-    ValueIterator(ValueType value, ValueType step = 1) noexcept {
-        this->m_sentinelBegin = std::numeric_limits<ValueType>::lowest();
-        this->m_sentinelEnd = std::numeric_limits<ValueType>::max();
-        this->m_it = value;
-        m_step = step;
-    }
+    ValueIterator(ValueType value, ValueType step = 1) noexcept :
+        BaseIterator<ValueIterator, ValueType>{std::move(value)}, m_step{std::move(step)} {}
 
     ValueIterator &operator++() noexcept {
-        assert(this->m_it != this->m_sentinelEnd);
         this->m_it += m_step;
         return *this;
     }
 
     ValueIterator &operator--() noexcept {
-        assert(this->m_it != this->m_sentinelBegin);
         this->m_it -= m_step;
+        return *this;
+    }
+
+    ValueIterator &operator+=(long long int n) noexcept {
+        this->m_it += static_cast<ValueType>(m_step * n);
         return *this;
     }
 
@@ -41,7 +37,7 @@ struct ValueIterator : BaseIterator<ValueIterator<ValueType>, ValueType, Nothing
         return (b.m_it - a.m_it) / (b.m_step);
     }
 
-    ValueType m_step;
+    ValueType m_step{static_cast<ValueType>(1)};
 };
 
 template <typename ValueType>
