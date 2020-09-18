@@ -14,6 +14,10 @@ class ReverseIterator :
     public IteratorOperationByIterating<ReverseIterator<It>> {
   public:
     using reference = typename std::iterator_traits<It>::reference;
+
+    static_assert(std::is_base_of_v<std::bidirectional_iterator_tag, get_iterator_category<It>>,
+                  "It must be a reversible iterator to use a reversed range");
+
     DECLARE_EVERYTHING_BUT_REFERENCE(std::random_access_iterator_tag);
 
     ReverseIterator() = default;
@@ -56,20 +60,26 @@ struct WithSentinelImpl;
 
 template <typename It>
 struct WithSentinelImpl<It, false> {
+    using reverse_iterator = Nothing;
+
     WithSentinelImpl() = default;
 
     template <typename T>
     WithSentinelImpl(T &&, It e) noexcept : m_sentinelEnd{std::move(e)} {}
+
+    Nothing reverse(const It &) const noexcept { return {}; }
 
     It m_sentinelEnd{};
 };
 
 template <typename It>
 struct WithSentinelImpl<It, true> {
+    using reverse_iterator = ReverseIterator<It>;
+
     WithSentinelImpl() = default;
     WithSentinelImpl(It b, It e) noexcept : m_sentinelBegin{b, b, true}, m_sentinelEnd{std::move(e)} {}
 
-    ReverseIterator<It> reverse(const It &it) {
+    ReverseIterator<It> reverse(const It &it) const noexcept {
         return {it, m_sentinelBegin.m_it, m_sentinelBegin.m_it == m_sentinelEnd};
     }
 
@@ -78,8 +88,8 @@ struct WithSentinelImpl<It, true> {
 };
 
 template <typename It>
-using WithSentinel = WithSentinelImpl<
-    It, std::is_base_of_v<std::bidirectional_iterator_tag, typename std::iterator_traits<It>::iterator_category>>;
+using WithSentinel =
+    WithSentinelImpl<It, std::is_base_of_v<std::bidirectional_iterator_tag, get_iterator_category<It>>>;
 
 struct reverse_t {};
 constexpr reverse_t reversed;

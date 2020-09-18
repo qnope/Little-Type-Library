@@ -26,11 +26,13 @@ class SplitIterator :
         m_advance{advanceIt},                           //
         m_dereference{dereference},                     //
         m_nextIterator{m_advance(increment_tag, this->m_it, this->m_sentinelEnd)} {
-        if (it != sentinelBegin) {
-            SplitIterator i{sentinelBegin, sentinelBegin, sentinelEnd, advanceIt, dereference};
-            for (; i != *this; ++i)
-                ;
-            m_previousIterator = i.m_previousIterator;
+        if_constexpr(type_from(m_previousIterator) != type_v<Nothing>) {
+            if (it != sentinelBegin) {
+                SplitIterator i{sentinelBegin, sentinelBegin, sentinelEnd, advanceIt, dereference};
+                for (; i != *this; ++i)
+                    ;
+                m_previousIterator = i.m_previousIterator;
+            }
         }
     }
 
@@ -54,7 +56,7 @@ class SplitIterator :
   private:
     NullableFunction<AdvanceIt> m_advance;
     NullableFunction<Dereference> m_dereference;
-    ReverseIterator<It> m_previousIterator;
+    typename WithSentinel<It>::reverse_iterator m_previousIterator;
     It m_nextIterator;
 };
 

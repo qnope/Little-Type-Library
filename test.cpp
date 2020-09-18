@@ -1,9 +1,10 @@
 #include <any>
 #include <array>
+#include <string>
 #include <cassert>
 #include <cstddef>
 #include <functional>
-#include <string>
+#include <forward_list>
 #include <unordered_map>
 
 #include <ltl/algos.h>
@@ -20,7 +21,6 @@
 #include <ltl/Range/DefaultView.h>
 #include <ltl/Range/Value.h>
 #include <ltl/Range/enumerate.h>
-
 #include <ltl/stream.h>
 
 #include <ltl/TypedTuple.h>
@@ -2039,5 +2039,44 @@ TEST(LTL_test, test_join_with) {
         std::array array = {"id=0"s, "name=Antoine"s};
         auto result = array | actions::join_with(" AND ");
         ASSERT_EQ(result, "id=0 AND name=Antoine");
+    }
+}
+
+TEST(LTL_test, test_forward_iterator) {
+    using namespace ltl;
+
+    {
+        std::forward_list array = {0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3};
+
+        auto is_odd = [](auto x) { return x % 2 == 1; };
+        auto square = [](auto x) { return x * x; };
+        auto filtered = array | filter(is_odd);
+        ASSERT_TRUE(equal(filtered, std::array{1, 1, 1, 3, 3, 3}));
+
+        auto mapped = array | map(square);
+        ASSERT_TRUE(equal(mapped, std::array{0, 0, 0, 1, 1, 1, 4, 4, 4, 9, 9, 9}));
+
+        auto groupped = array | group_by(identity);
+        ASSERT_EQ(groupped.size(), 4);
+        ASSERT_EQ(groupped[0][0_n], 0);
+        ASSERT_EQ(groupped[1][0_n], 1);
+        ASSERT_EQ(groupped[2][0_n], 2);
+        ASSERT_EQ(groupped[3][0_n], 3);
+
+        ASSERT_TRUE(equal(groupped[0][1_n], std::array{0, 0, 0}));
+        ASSERT_TRUE(equal(groupped[1][1_n], std::array{1, 1, 1}));
+        ASSERT_TRUE(equal(groupped[2][1_n], std::array{2, 2, 2}));
+        ASSERT_TRUE(equal(groupped[3][1_n], std::array{3, 3, 3}));
+
+        auto chunked = array | chunks(6);
+
+        ASSERT_EQ(chunked.size(), 2);
+        ASSERT_TRUE(equal(chunked[0], std::array{0, 0, 0, 1, 1, 1}));
+        ASSERT_TRUE(equal(chunked[1], std::array{2, 2, 2, 3, 3, 3}));
+
+        auto joined = chunked | join;
+
+        ASSERT_EQ(joined.size(), 12);
+        ASSERT_TRUE(equal(joined, std::array{0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3}));
     }
 }
