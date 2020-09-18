@@ -2,6 +2,7 @@
 
 #include "../algos.h"
 #include "../concept.h"
+#include "../functional.h"
 
 namespace ltl {
 namespace actions {
@@ -22,6 +23,68 @@ constexpr auto sort_by(F f) {
 
 constexpr struct Unique : AbstractAction {
 } unique;
+
+constexpr struct Reverse : AbstractAction {
+} reverse;
+
+template <typename T>
+struct Find {
+    T elem;
+};
+
+template <typename T>
+struct FindValue {
+    T elem;
+};
+
+template <typename T>
+struct FindPtr {
+    T elem;
+};
+
+template <typename F>
+struct FindIf {
+    F f;
+};
+
+template <typename F>
+struct FindIfValue {
+    F f;
+};
+
+template <typename F>
+struct FindIfPtr {
+    F f;
+};
+
+template <typename T>
+constexpr auto find(T &&e) {
+    return Find<T>{FWD(e)};
+}
+template <typename T>
+constexpr auto find_value(T &&e) {
+    return FindValue<T>{FWD(e)};
+}
+template <typename T>
+constexpr auto find_ptr(T &&e) {
+    return FindPtr<T>{FWD(e)};
+}
+
+template <typename... Fs>
+constexpr auto find_if(Fs... fs) {
+    auto foo = compose(std::move(fs)...);
+    return FindIf<decltype(foo)>{compose(std::move(fs)...)};
+}
+template <typename... Fs>
+constexpr auto find_if_value(Fs... fs) {
+    auto foo = compose(std::move(fs)...);
+    return FindIfValue<decltype(foo)>{compose(std::move(fs)...)};
+}
+template <typename... Fs>
+constexpr auto find_if_ptr(Fs... fs) {
+    auto foo = compose(std::move(fs)...);
+    return FindIfPtr<decltype(foo)>{compose(std::move(fs)...)};
+}
 
 template <typename Action1, typename Action2, requires_f(IsAction<Action1>), requires_f(IsAction<Action2>)>
 constexpr auto operator|(Action1 a, Action2 b) {
@@ -52,6 +115,42 @@ template <typename C, requires_f(ltl::IsIterable<C>)>
 auto &operator|=(C &c, Unique) {
     c.erase(ltl::unique(c), end(c));
     return c;
+}
+
+template <typename C, requires_f(ltl::IsIterable<C>)>
+auto &operator|=(C &c, Reverse) {
+    ::ltl::reverse(c);
+    return c;
+}
+
+template <typename C, typename T, requires_f(ltl::IsIterable<C>)>
+auto operator|(C &c, Find<T> e) {
+    return ::ltl::find(c, e.elem);
+}
+
+template <typename C, typename T, requires_f(ltl::IsIterable<C>)>
+auto operator|(C &c, FindValue<T> e) {
+    return ::ltl::find_value(c, e.elem);
+}
+
+template <typename C, typename T, requires_f(ltl::IsIterable<C>)>
+auto operator|(C &c, FindPtr<T> e) {
+    return ::ltl::find_ptr(c, e.elem);
+}
+
+template <typename C, typename F, requires_f(ltl::IsIterable<C>)>
+auto operator|(C &c, FindIf<F> e) {
+    return ::ltl::find_if(c, e.f);
+}
+
+template <typename C, typename F, requires_f(ltl::IsIterable<C>)>
+auto operator|(C &c, FindIfValue<F> e) {
+    return ::ltl::find_if_value(c, e.f);
+}
+
+template <typename C, typename F, requires_f(ltl::IsIterable<C>)>
+auto operator|(C &c, FindIfPtr<F> e) {
+    return ::ltl::find_if_ptr(c, e.f);
 }
 
 template <typename C, typename Action, requires_f(ltl::IsIterable<C>), requires_f(IsAction<Action>)>

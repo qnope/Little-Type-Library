@@ -2,6 +2,7 @@
 
 #include "Range.h"
 #include "Reverse.h"
+#include "../functional.h"
 
 namespace ltl {
 template <typename It, typename Predicate>
@@ -39,9 +40,17 @@ template <typename F>
 struct FilterType {
     F f;
 };
-template <typename F>
-auto filter(F &&f) {
-    return FilterType<std::decay_t<F>>{FWD(f)};
+
+template <typename... Fs>
+constexpr auto filter(Fs... fs) {
+    auto foo = compose(std::move(fs)...);
+    return FilterType<decltype(foo)>{std::move(foo)};
+}
+
+template <typename F, typename... Fs, requires_f(!IsIterable<F>)>
+constexpr auto remove_if(F f, Fs... fs) {
+    auto foo = not_(compose(std::move(f), std::move(fs)...));
+    return FilterType<decltype(foo)>{std::move(foo)};
 }
 
 template <typename F>

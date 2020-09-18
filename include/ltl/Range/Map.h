@@ -30,13 +30,16 @@ template <typename F>
 struct MapType {
     F f;
 };
-template <typename F>
-constexpr auto map(F &&f) {
-    return MapType<std::decay_t<F>>{FWD(f)};
-}
+
 template <typename... Fs>
 constexpr auto map(Fs... fs) {
-    return map(compose(std::move(fs)...));
+    auto foo = compose(std::move(fs)...);
+    return MapType<decltype(foo)>{std::move(foo)};
+}
+
+template <typename F, typename... Fs, requires_f(!IsIterable<F>)>
+constexpr auto transform(F f, Fs... fs) {
+    return map(std::move(f), std::move(fs)...);
 }
 
 template <typename F>

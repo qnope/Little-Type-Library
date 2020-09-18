@@ -345,7 +345,7 @@ void fill(C &c, const V &v) {
     std::fill(begin(c), end(c), v);
 }
 
-template <typename C, typename It, typename F>
+template <typename C, typename It, typename F, requires_f(IsIterable<C>)>
 auto transform(const C &c, It &&it, F &&f) {
     typed_static_assert_msg(is_iterable(c), "C must be iterable");
     return std::transform(begin(c), end(c), FWD(it), MAKE_CALLER(f));
@@ -363,7 +363,7 @@ auto remove(C &c, const V &v) {
     return std::remove(begin(c), end(c), v);
 }
 
-template <typename C, typename F>
+template <typename C, typename F, requires_f(IsIterable<C>)>
 auto remove_if(C &c, F &&f) {
     typed_static_assert_msg(is_iterable(c) && !is_const(c), "C must be iterable and not const");
     return std::remove_if(begin(c), end(c), MAKE_CALLER(f));

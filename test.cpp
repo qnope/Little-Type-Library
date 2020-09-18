@@ -1589,6 +1589,9 @@ TEST(LTL_test, test_actions) {
 
     e |= ltl::actions::sort_by(ltl::byDescending(ltl::identity));
     ASSERT_TRUE(ltl::equal(e, std::array{10, 9, 8, 6, 5, 5, 4, 2, 1}));
+
+    e |= ltl::actions::reverse;
+    ASSERT_TRUE(ltl::equal(e, std::array{1, 2, 4, 5, 5, 6, 8, 9, 10}));
 }
 
 TEST(LTL_test, test_move_range) {
@@ -1609,6 +1612,35 @@ TEST(LTL_test, test_map_composed) {
     std::vector<int> array = {0, 10, 20, 100, 320, 1456, 85};
     auto arrayTransformed = array | map(lift(std::to_string), &std::string::size);
     ASSERT_TRUE(equal(arrayTransformed, std::array{1, 2, 2, 3, 3, 4, 2}));
+}
+
+TEST(LTL_test, test_filter_composed) {
+    using namespace ltl;
+    std::array array = {0, 1, 2, 3, 4, 5, 6};
+    auto square = [](auto x) { return x * x; };
+    auto sup_than10 = [](auto x) { return x > 10; };
+
+    auto result = array | filter(square, sup_than10);
+
+    ASSERT_EQ(result.size(), 3);
+    ASSERT_TRUE(equal(result, std::array{4, 5, 6}));
+}
+
+TEST(LTL_test, test_remove_if) {
+    using namespace ltl;
+    std::array array = {0, 1, 2, 3, 4, 5, 6, 7};
+    auto is_odd = [](auto x) { return x % 2 == 1; };
+    auto result = array | remove_if(is_odd);
+
+    ASSERT_TRUE(equal(result, std::array{0, 2, 4, 6}));
+}
+
+TEST(LTL_test, test_transform) {
+    using namespace ltl;
+    std::array array = {0, 1, 2, 3, 4, 5, 6, 7};
+    auto square = [](auto x) { return x * x; };
+    auto result = array | transform(square);
+    ASSERT_TRUE(equal(result, std::array{0, 1, 4, 9, 16, 25, 36, 49}));
 }
 
 TEST(LTL_test, test_expected) {
@@ -1860,6 +1892,35 @@ TEST(LTL_test, test_chunks) {
         ASSERT_TRUE(ltl::equal(view[1], std::array{3, 4, 5}));
         ASSERT_TRUE(ltl::equal(view[2], std::array{0, 1, 2}));
     }
+}
+
+TEST(LTL_test, test_actions_find) {
+    using namespace ltl;
+    using namespace std::literals;
+
+    std::array array_string = {"Antoine"s, "Nicolas"s, "Baptiste"s, "Luc"s, "Jean-Pierre"s, "Jean-Francois-Michel"s};
+
+    auto itNicolas = array_string | actions::find("Nicolas");
+    auto valueLuc = array_string | actions::find_value("Luc");
+    auto ptrJP = array_string | actions::find_ptr("Jean-Pierre");
+    auto nulptr = array_string | actions::find_ptr("Wattt");
+    auto nulopt = array_string | actions::find_value("WATTTT");
+    auto nulit = array_string | actions::find("WATTTTTTTT");
+
+    ASSERT_EQ(itNicolas, array_string.begin() + 1);
+    ASSERT_EQ(valueLuc, "Luc");
+    ASSERT_EQ(ptrJP, std::addressof(array_string[4]));
+    ASSERT_EQ(nulptr, nullptr);
+    ASSERT_EQ(nulopt, std::nullopt);
+    ASSERT_EQ(nulit, end(array_string));
+
+    auto itJFM = array_string | actions::find_if(&std::string::size, greater_than(12));
+    auto optJFM = array_string | actions::find_if_value(&std::string::size, greater_than(12));
+    auto ptrJFM = array_string | actions::find_if_ptr(&std::string::size, greater_than(12));
+
+    ASSERT_EQ(itJFM, begin(array_string) + 5);
+    ASSERT_EQ(optJFM, "Jean-Francois-Michel");
+    ASSERT_EQ(ptrJFM, std::addressof(array_string.back()));
 }
 
 TEST(LTL_test, test_group_by) {

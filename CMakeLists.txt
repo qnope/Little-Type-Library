@@ -7,6 +7,7 @@ if(MSVC)
             /permissive-
             /d2cgsummary
             /Wv:18
+            /bigobj
             /MT)
 endif(MSVC)
 

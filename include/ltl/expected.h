@@ -12,7 +12,7 @@ struct value_tag {};
 struct error_tag {};
 
 template <typename Result, typename Err>
-class expected {
+class [[nodiscard]] expected {
     template <typename T>
     static constexpr int getIndex(T type) {
         if (is_convertible(type, type_v<Result>))
@@ -30,13 +30,13 @@ class expected {
     template <typename T,
               bool same = std::is_convertible_v<value_type, error_type> &&std::is_convertible_v<error_type, value_type>,
               std::enable_if_t<!same> * = nullptr>
-    constexpr expected(T &&t) : m_result{std::in_place_index<getIndex(decay_from(t))>, FWD(t)} {}
+    constexpr expected(T && t) : m_result{std::in_place_index<getIndex(decay_from(t))>, FWD(t)} {}
 
     template <typename T>
-    constexpr expected(value_tag, T &&t) : m_result{std::in_place_index<0>, FWD(t)} {}
+    constexpr expected(value_tag, T && t) : m_result{std::in_place_index<0>, FWD(t)} {}
 
     template <typename T>
-    constexpr expected(error_tag, T &&t) : m_result{std::in_place_index<1>, FWD(t)} {}
+    constexpr expected(error_tag, T && t) : m_result{std::in_place_index<1>, FWD(t)} {}
 
     template <typename R, typename E>
     constexpr expected &operator=(expected<R, E> t) {

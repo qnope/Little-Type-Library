@@ -148,7 +148,7 @@ class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
 } // namespace detail
 
 template <typename... Ts>
-class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...> {
+class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...> {
   public:
     using super = detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...>;
 
@@ -181,7 +181,7 @@ class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto push_back(T &&newValue) const & {
+    [[nodiscard]] constexpr auto push_back(T && newValue) const & {
         auto fwdAll = [&newValue](auto &... xs) {
             return tuple_t<Ts..., decay_reference_wrapper_t<T>>{xs..., std::forward<T>(newValue)};
         };
@@ -190,7 +190,7 @@ class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto push_back(T &&newValue) && {
+    [[nodiscard]] constexpr auto push_back(T && newValue) && {
         auto fwdAll = [&newValue](Ts &&... xs) {
             return tuple_t<Ts..., decay_reference_wrapper_t<T>>{FWD(xs)..., std::forward<T>(newValue)};
         };
@@ -198,7 +198,7 @@ class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto push_front(T &&newValue) const & {
+    [[nodiscard]] constexpr auto push_front(T && newValue) const & {
         auto fwdAll = [&newValue](auto &... xs) {
             return tuple_t<decay_reference_wrapper_t<T>, Ts...>{std::forward<T>(newValue), xs...};
         };
@@ -206,7 +206,7 @@ class tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto push_front(T &&newValue) && {
+    [[nodiscard]] constexpr auto push_front(T && newValue) && {
         auto fwdAll = [&newValue](Ts &&... xs) {
             return tuple_t<decay_reference_wrapper_t<T>, Ts...>{std::forward<T>(newValue), FWD(xs)...};
         };
