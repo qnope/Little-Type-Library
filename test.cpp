@@ -2023,3 +2023,21 @@ TEST(LTL_test, test_complexe_range) {
     ASSERT_EQ(words.size(), 5);
     ASSERT_TRUE(ltl::equal(words, std::array{"the", "test", "is", "this", "thing"}));
 }
+
+TEST(LTL_test, test_join_with) {
+    using namespace ltl;
+    using namespace std::literals;
+
+    {
+        std::array array = {"My"s, "name"s, "is"s, "Antoine"s};
+
+        auto result = array | actions::join_with(' ');
+        ASSERT_EQ(result, "My name is Antoine");
+    }
+
+    {
+        std::array array = {"id=0"s, "name=Antoine"s};
+        auto result = array | actions::join_with(" AND ");
+        ASSERT_EQ(result, "id=0 AND name=Antoine");
+    }
+}

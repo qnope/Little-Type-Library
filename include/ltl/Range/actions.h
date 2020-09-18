@@ -4,6 +4,8 @@
 #include "../concept.h"
 #include "../functional.h"
 
+#include "Taker.h"
+
 namespace ltl {
 namespace actions {
 
@@ -86,6 +88,16 @@ constexpr auto find_if_ptr(Fs... fs) {
     return FindIfPtr<decltype(foo)>{compose(std::move(fs)...)};
 }
 
+template <typename D>
+struct JoinWith {
+    D d;
+};
+
+template <typename D>
+constexpr auto join_with(D &&d) {
+    return JoinWith<D>{FWD(d)};
+}
+
 template <typename Action1, typename Action2, requires_f(IsAction<Action1>), requires_f(IsAction<Action2>)>
 constexpr auto operator|(Action1 a, Action2 b) {
     return ltl::tuple_t{std::move(a), std::move(b)};
@@ -129,7 +141,7 @@ auto operator|(C &c, Find<T> e) {
 }
 
 template <typename C, typename T, requires_f(ltl::IsIterable<C>)>
-auto operator|(C &c, FindValue<T> e) {
+auto operator|(const C &c, FindValue<T> e) {
     return ::ltl::find_value(c, e.elem);
 }
 
@@ -144,13 +156,23 @@ auto operator|(C &c, FindIf<F> e) {
 }
 
 template <typename C, typename F, requires_f(ltl::IsIterable<C>)>
-auto operator|(C &c, FindIfValue<F> e) {
+auto operator|(const C &c, FindIfValue<F> e) {
     return ::ltl::find_if_value(c, e.f);
 }
 
 template <typename C, typename F, requires_f(ltl::IsIterable<C>)>
 auto operator|(C &c, FindIfPtr<F> e) {
     return ::ltl::find_if_ptr(c, e.f);
+}
+
+template <typename C, typename D, requires_f(ltl::IsIterable<C>)>
+auto operator|(const C &c, JoinWith<D> d) {
+    if (size(c) == 0) {
+        return decltype(c[0]){};
+    } else {
+        return ltl::accumulate(c | ltl::drop_n(1), *c.begin(),
+                               [&d](auto init, auto other) { return std::move(init) + d.d + std::move(other); });
+    }
 }
 
 template <typename C, typename Action, requires_f(ltl::IsIterable<C>), requires_f(IsAction<Action>)>
