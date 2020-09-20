@@ -37,4 +37,29 @@ meta programming will be easier. LTL provides `ltl::type_v<typename>` constexpr 
   * `compile_time_error(msg, T)`: Can be used to generate compile time error.
   * `FWD(x)`: For perfect forwarding : does not work for lambda capture !
   * `lift(f)`: Wraps a function within a generic lambda.
+  * `typed_static_assert(c)` : equivalent to `static_assert` but works directly with the type
+  * `typed_static_assert_msg(c, msg)`
+  
+## CRTP
 
+Let's say you have an object that can be `Comparable`. You are going to write all the following operators : `==,!=,<,<=,>,>=`. However, some are deducible from other. Using `ltl::Comparable` base class will let you to just write `==`and `<` and other will be automatically deduced.
+
+```cpp
+class MyObject : public ltl::Comparable<MyObject> {
+public:
+    friend auto operator<(const MyObject&);
+    friend auto operator==(const MyObject&);
+private:
+};
+``` 
+
+If you just provide the `==` operator, only the `!=` operator will be deduced.
+
+You have the same behaviour for :
+
+  * PostIncremental
+  * PostDecremental
+  * Additionnable
+  * Subtractable
+  
+When you want to make a crtp base class, you can use `ENABLE_CRTP` macro.

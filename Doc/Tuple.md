@@ -17,14 +17,14 @@ They are some helpers type:
 
 ```cpp
 /// Convenience types
-template <typename... Types> using type_list_t = tuple_t<type_t<Types>...>;
-template <int... Ns> using number_list_t = tuple_t<number_t<Ns>...>;
 template <bool... Bs> using bool_list_t = tuple_t<bool_t<Bs>...>;
+template <int... Ns> using number_list_t = tuple_t<number_t<Ns>...>;
+template <typename... Types> using type_list_t = tuple_t<type_t<Types>...>;
 
 // Convenience variables
-template <typename... Types> constexpr type_list_t<Types...> type_list_v{};
-template <int... Ns> constexpr number_list_t<Ns...> number_list_v{};
 template <bool... Bs> constexpr bool_list_t<Bs...> bool_list_v{};
+template <int... Ns> constexpr number_list_t<Ns...> number_list_v{};
+template <typename... Types> constexpr type_list_t<Types...> type_list_v{};
 ```
 
 ## Tuple algorithms
@@ -57,3 +57,8 @@ When you are dealing with a `type_list_t`, you can use following algorithms:
   * `none_of_type(tuple, predicate)` : Returns `!any_of_type(tuple, predicat)`
   * `unique_type(tuple)`: Returns a `type_list_t` without duplicates
   * `filter_type(tuple, predicate)` : Filter the list and remove types that does not satisfy the predicate
+  * `transform_type` : Apply f to each element in a tuple and builds a tuple from each results
+  * `zip_with(f, tuples...)`: Call f(tuples[0][0], tuples[1][0]...), f(tuples[1][0], tuples[1][1])...
+  * `zip_type(tuples...)`: return tuple<tuple<tuples[0][0], tuples[1][0]...>, tuple<tuples[1][0], tuples[1][1]...>>
+  * `enumerate_type(tuple)`: return tuple<tuple<number_t<0>, tuple[0]>, tuple<number_t<1>, tuple[1]>>
+  * `scanl(f, init, tuple)`: compute the partial sum of tuple by applying f

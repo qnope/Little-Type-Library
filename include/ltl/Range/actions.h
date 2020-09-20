@@ -98,6 +98,17 @@ constexpr auto join_with(D &&d) {
     return JoinWith<D>{FWD(d)};
 }
 
+template <typename T, typename F>
+struct Accumulate {
+    T init;
+    F f;
+};
+
+template <typename T, typename F = std::plus<>>
+constexpr auto accumulate(T &&init, F f = F{}) {
+    return Accumulate<T, F>{FWD(init), std::move(f)};
+}
+
 template <typename Action1, typename Action2, requires_f(IsAction<Action1>), requires_f(IsAction<Action2>)>
 constexpr auto operator|(Action1 a, Action2 b) {
     return ltl::tuple_t{std::move(a), std::move(b)};
@@ -167,12 +178,17 @@ auto operator|(C &c, FindIfPtr<F> e) {
 
 template <typename C, typename D, requires_f(ltl::IsIterable<C>)>
 auto operator|(const C &c, JoinWith<D> d) {
-    if (size(c) == 0) {
+    if (c.empty()) {
         return decltype(c[0]){};
     } else {
         return ltl::accumulate(c | ltl::drop_n(1), *c.begin(),
                                [&d](auto init, auto other) { return std::move(init) + d.d + std::move(other); });
     }
+}
+
+template <typename C, typename T, typename F, requires_f(ltl::IsIterable<C>)>
+auto operator|(const C &c, Accumulate<T, F> a) {
+    return ltl::accumulate(c, FWD(a.init), a.f);
 }
 
 template <typename C, typename Action, requires_f(ltl::IsIterable<C>), requires_f(IsAction<Action>)>
