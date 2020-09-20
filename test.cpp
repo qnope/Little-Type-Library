@@ -8,30 +8,25 @@
 #include <unordered_map>
 
 #include <ltl/algos.h>
+#include <ltl/stream.h>
 #include <ltl/traits.h>
 #include <ltl/operator.h>
+#include <ltl/expected.h>
 #include <ltl/condition.h>
 #include <ltl/functional.h>
 #include <ltl/StrongType.h>
-#include <ltl/movable_any.h>
+#include <ltl/TypedTuple.h>
+#include <ltl/Range/Split.h>
+#include <ltl/Range/Value.h>
 #include <ltl/VariantUtils.h>
+#include <ltl/Range/Reverse.h>
 #include <ltl/optional_type.h>
 #include <ltl/Range/actions.h>
 #include <ltl/Range/Repeater.h>
-#include <ltl/Range/DefaultView.h>
-#include <ltl/Range/Value.h>
 #include <ltl/Range/enumerate.h>
-#include <ltl/stream.h>
-
-#include <ltl/TypedTuple.h>
-#include <ltl/movable_any.h>
-
-#include <ltl/expected.h>
+#include <ltl/Range/DefaultView.h>
 
 #include <gtest/gtest.h>
-
-#include <ltl/Range/Split.h>
-#include <ltl/Range/Reverse.h>
 
 using namespace std::literals;
 
@@ -838,7 +833,7 @@ TEST(LTL_test, test_default_view) {
     array[4] = 14;
 
     std::array<std::size_t, 2> indices{1, 4};
-    for (auto [i, e] : ltl::enumerate(array | ltl::remove_null() | ltl::dereference())) {
+    for (auto [i, e] : ltl::enumerate(array | ltl::remove_null() | ltl::map(ltl::dereference()))) {
         ASSERT_TRUE(&e == std::addressof(*array[indices[i]]));
     }
 
@@ -2040,6 +2035,18 @@ TEST(LTL_test, test_join_with) {
         auto result = array | actions::join_with(" AND ");
         ASSERT_EQ(result, "id=0 AND name=Antoine");
     }
+
+    {
+        std::array<std::string, 0> array = {};
+        auto result = array | actions::join_with(" ");
+        ASSERT_EQ(result, "");
+    }
+
+    {
+        std::array array = {"Antoine"s};
+        auto result = array | actions::join_with(" ");
+        ASSERT_EQ(result, "Antoine");
+    }
 }
 
 TEST(LTL_test, test_forward_iterator) {
@@ -2079,4 +2086,14 @@ TEST(LTL_test, test_forward_iterator) {
         ASSERT_EQ(joined.size(), 12);
         ASSERT_TRUE(equal(joined, std::array{0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3}));
     }
+}
+
+TEST(LTL_test, test_accumulate) {
+    std::array array = {0, 1, 2, 3, 4, 5, 6};
+
+    auto result1 = array | ltl::actions::accumulate(10);
+    auto result2 = array | ltl::actions::accumulate(0, std::minus<>{});
+
+    ASSERT_EQ(result1, 10 + 0 + 1 + 2 + 3 + 4 + 5 + 6);
+    ASSERT_EQ(result2, 0 - 0 - 1 - 2 - 3 - 4 - 5 - 6);
 }

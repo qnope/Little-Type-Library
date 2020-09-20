@@ -6,7 +6,7 @@
 
 namespace ltl {
 inline auto dereference() noexcept {
-    return map([](auto &&x) noexcept -> remove_rvalue_reference_t<decltype(*FWD(x))> { return *FWD(x); });
+    return [](auto &&x) noexcept -> remove_rvalue_reference_t<decltype(*FWD(x))> { return *FWD(x); };
 }
 
 inline auto remove_null() noexcept {
