@@ -1,7 +1,7 @@
 ![](LTL.png)
 
 ## Introduction
-**Little Type Library** or **LTL** for short is a lightweight library that can be used for meta programming and / or functional programming. It can be used instead of **boost::hana** or equivalent because they are too heavy or for whatever reason.
+**Little Type Library** or **LTL** for short is a lightweight library that can be used for meta programming and / or functional programming.
 **LTL** is under MIT license, and as such, you can use it without any limitation. I just ask you to signal me every bugs you are going to experience.
 This library works under C++ 17.
 
