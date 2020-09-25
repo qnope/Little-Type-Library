@@ -249,13 +249,13 @@ auto adjacent_find_value(const C &c, F &&f) {
 }
 
 template <typename C1, typename C2>
-auto search(C1 &c1, C2 &c2) {
+auto search(C1 &c1, const C2 &c2) {
     typed_static_assert_msg(is_iterable(c1) && is_iterable(c2), "C1 and C2 must be iterable");
     return std::search(begin(c1), end(c1), begin(c2), end(c2));
 }
 
 template <typename C1, typename C2, typename F>
-auto search(C1 &c1, C2 &c2, F &&f) {
+auto search(C1 &c1, const C2 &c2, F &&f) {
     typed_static_assert_msg(is_iterable(c1) && is_iterable(c2), "C1 and C2 must be iterable");
     return std::search(begin(c1), end(c1), begin(c2), end(c2), MAKE_CALLER(f));
 }
