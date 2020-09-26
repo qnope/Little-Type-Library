@@ -24,20 +24,20 @@ endif()
 
 # ---- Declare library ----
 
-add_library(LittleTypeLibrary INTERFACE)
-add_library(LittleTypeLibrary::LTL ALIAS LittleTypeLibrary)
+add_library(LTL INTERFACE)
+add_library(LittleTypeLibrary::LTL ALIAS LTL)
 
-target_include_directories(LittleTypeLibrary
+target_include_directories(LTL
         ${littletypelibrary_warning_guard}
         INTERFACE
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:${littletypelibrary_include_directory}>")
 
-target_compile_features(LittleTypeLibrary INTERFACE cxx_std_17)
+target_compile_features(LTL INTERFACE cxx_std_17)
 
 # ---- Install ----
 
-install(TARGETS LittleTypeLibrary
+install(TARGETS LTL
         EXPORT LittleTypeLibraryTargets
         RUNTIME #
         DESTINATION "${CMAKE_INSTALL_BINDIR}"
