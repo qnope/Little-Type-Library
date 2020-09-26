@@ -30,8 +30,7 @@ add_library(LittleTypeLibrary::LTL ALIAS LTL)
 target_include_directories(LTL
         ${littletypelibrary_warning_guard}
         INTERFACE
-        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
-        "$<INSTALL_INTERFACE:${littletypelibrary_include_directory}>")
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
 
 target_compile_features(LTL INTERFACE cxx_std_17)
 
@@ -39,16 +38,7 @@ target_compile_features(LTL INTERFACE cxx_std_17)
 
 install(TARGETS LTL
         EXPORT LittleTypeLibraryTargets
-        RUNTIME #
-        DESTINATION "${CMAKE_INSTALL_BINDIR}"
-        COMPONENT LittleTypeLibrary_Runtime
-        LIBRARY #
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT LittleTypeLibrary_Runtime
-        NAMELINK_COMPONENT LittleTypeLibrary_Development
-        ARCHIVE #
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        COMPONENT LittleTypeLibrary_Development)
+        INCLUDES DESTINATION "${littletypelibrary_include_directory}")
 
 set(littletypelibrary_install_cmakedir
         "${CMAKE_INSTALL_LIBDIR}/cmake/${littletypelibrary_directory}")
