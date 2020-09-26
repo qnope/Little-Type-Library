@@ -18,7 +18,7 @@ set(littletypelibrary_include_directory "${CMAKE_INSTALL_INCLUDEDIR}/${littletyp
 
 # Protect dependents from this project's warnings if the guard isn't disabled
 set(littletypelibrary_warning_guard "SYSTEM")
-if(littletypelibrary_INCLUDE_WITHOUT_SYSTEM)
+if(LittleTypeLibrary_INCLUDE_WITHOUT_SYSTEM)
   set(littletypelibrary_warning_guard "")
 endif()
 
