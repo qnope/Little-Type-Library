@@ -41,9 +41,9 @@ class [[nodiscard]] expected {
     template <typename R, typename E>
     constexpr expected &operator=(expected<R, E> t) {
         if (t)
-            m_result = std::move(t).result();
+            m_result = static_cast<value_type&&>(std::move(t).result());
         else
-            m_result = std::move(t).error();
+            m_result = static_cast<error_type&&>(std::move(t).error());
         return *this;
     }
 
