@@ -1,3 +1,4 @@
+
 # Functional library
 It is one of the core library of **LTL**. The idea is to try to write code in a functional style keeping high performances and expressiveness.
 ## Pipelining operations
@@ -196,7 +197,32 @@ std::vector<int> ints;
 std::map<std::string, int> map = zip(strings, ints) | to_pair;
 ```
 
-## Actions
+### Infinite sequences
+Let's say you want to have an infinite sequence fed by a nullary callable.
+You can use the `seq` function to transform your function into a kind of generator and apply operation on it through the `|` operator.
+
+```cpp
+auto generator = [i = 0]() mutable { return  i++; };
+for(auto i : seq(generator) | take_n(5)) {
+    std::cout << i << " "; // 0 1 2 3 4
+}
+```
+
+You can also use the `end_seq` function to stop a sequence :
+
+```cpp
+auto generator = [i = 0]() mutable {
+    if(i == 5)
+        end_seq();
+    return i++;
+};
+
+for(auto i : seq(generator)) {
+    std::cout << i << " "; //0 1 2 3 4
+}
+```
+
+### Actions
 Actions are a beautiful way to compose modifying algorithms, or to reduce a range to one value (like a find, or fold left)
 
 There is currently 4 kinds of actions that modify a container:

@@ -30,11 +30,12 @@ There is some features that are heavily inspired from C++20 range proposal.
   6. index and enumerate
 + [Functional library](documentation/Functional.md)
   1. Pipeline
-  2. Actions
-  3. List monad
-  3. Option monad
-  4. Error monad
-  5. Currying
+  2. Infinite sequence
+  3. Actions
+  4. List monad
+  5. Option monad
+  6. Error monad
+  7. Currying
 + [Other utilities](documentation/Other.md)
   1. Condition helpers (`AllOf`, `AnyOf`, `NoneOf`)
   2. Streambuf for write into an array thanks to standard streams

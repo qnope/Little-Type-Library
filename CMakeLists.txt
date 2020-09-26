@@ -33,8 +33,8 @@ target_include_directories(LTL
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
 
 target_compile_features(LTL INTERFACE cxx_std_17)
-
 target_compile_options(LTL INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
+
 
 # ---- Install ----
 
