@@ -41,4 +41,5 @@ There is some features that are heavily inspired from C++20 range proposal.
   3. Strong types
   4. Variant helpers and `recursive_variant`
 
-I would like to thanks Gaétan Bahl and Nicolas Tollenaere for their advices
+I would like to thanks Gaétan Bahl and Nicolas Tollenaere for their advice
+I would also thank [friendlyanon](https://github.com/friendlyanon) for the better CMake usage
