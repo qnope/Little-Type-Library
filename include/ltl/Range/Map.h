@@ -8,6 +8,7 @@
 #include "Range.h"
 
 namespace ltl {
+
 template <typename It, typename Function>
 struct MapIterator :
     BaseIterator<MapIterator<It, Function>, It>,
@@ -93,6 +94,77 @@ constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
     else {
         return ltl::nullopt_type;
     }
+}
+
+template <typename It, typename Function>
+struct MapCachedIterator :
+    BaseIterator<MapCachedIterator<It, Function>, It>,
+    WithFunction<Function>,
+    WithSentinel<It>,
+    IteratorSimpleComparator<MapCachedIterator<It, Function>> {
+    using result_type = std::invoke_result_t<Function, typename std::iterator_traits<It>::reference>;
+    using reference = typename std::decay_t<decltype(*std::declval<result_type>())>::underlying_type;
+    DECLARE_EVERYTHING_BUT_REFERENCE(std::input_iterator_tag);
+
+    MapCachedIterator() = default;
+
+    MapCachedIterator(It current, It end, Function f) noexcept :
+        BaseIterator<MapCachedIterator, It>{std::move(current)}, //
+        WithFunction<Function>{std::move(f)}, WithSentinel<It>{{}, std::move(end)} {
+        if (this->m_it != this->m_sentinelEnd) {
+            m_result = this->m_function(*this->m_it);
+        }
+    }
+
+    reference operator*() const { return **const_cast<MapCachedIterator &>(*this).m_result; }
+
+    MapCachedIterator &operator++() noexcept {
+        ++this->m_it;
+        if (this->m_it != this->m_sentinelEnd) {
+            m_result = this->m_function(*this->m_it);
+        }
+        if (!m_result)
+            this->m_it = this->m_sentinelEnd;
+        return *this;
+    }
+
+    MapCachedIterator &operator--() = delete;
+
+  private:
+    result_type m_result;
+};
+
+template <typename F>
+struct MapCachedType {
+    F f;
+};
+
+template <typename... Fs>
+constexpr auto map_cached(Fs... fs) {
+    auto foo = compose(std::move(fs)...);
+    return MapCachedType<decltype(foo)>{std::move(foo)};
+}
+
+template <typename F, typename... Fs, requires_f(!IsIterable<F>)>
+constexpr auto transform_cached(F f, Fs... fs) {
+    return map_cached(std::move(f), std::move(fs)...);
+}
+
+template <typename F>
+struct is_chainable_operation<MapCachedType<F>> : true_t {};
+
+template <typename T1, typename F, requires_f(IsIterableRef<T1>)>
+constexpr decltype(auto) operator|(T1 &&a, MapCachedType<F> b) {
+    using std::begin;
+    using std::end;
+    using it = decltype(begin(FWD(a)));
+    return Range{MapCachedIterator<it, decltype(b.f)>{begin(FWD(a)), end(FWD(a)), b.f}, //
+                 MapCachedIterator<it, decltype(b.f)>{end(FWD(a)), end(FWD(a)), b.f}};
+}
+
+template <typename T1, typename F, requires_f(IsIterable<T1>)>
+constexpr decltype(auto) operator>>(T1 &&a, MapCachedType<F> b) {
+    return FWD(a) | std::move(b) | join;
 }
 
 template <typename T>

@@ -25,7 +25,10 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(LTLtest source/test.cpp)
+# ---- Retrieve files ----
+file(GLOB_RECURSE FileList "${CMAKE_CURRENT_LIST_DIR}/../include/*.h")
+message(${CMAKE_CURRENT_LIST_DIR})
+add_executable(LTLtest source/test.cpp ${FileList})
 
 target_link_libraries(LTLtest PRIVATE
         LittleTypeLibrary::LTL

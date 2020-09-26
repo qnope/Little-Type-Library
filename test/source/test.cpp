@@ -13,6 +13,7 @@
 #include <ltl/operator.h>
 #include <ltl/expected.h>
 #include <ltl/condition.h>
+#include <ltl/Range/seq.h>
 #include <ltl/functional.h>
 #include <ltl/StrongType.h>
 #include <ltl/TypedTuple.h>
@@ -1018,6 +1019,7 @@ TEST(LTL_test, test_join) {
         std::array array = {0, 1, 2, 3, 4, 5};
         auto to_range = [](auto n) { return valueRange(0, n); };
         auto arrayRange = array >> map(to_range);
+        std::vector<int> a = arrayRange;
         ASSERT_TRUE(equal(arrayRange, std::array{0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4}));
 
         std::array array2 = {Test{0}, Test{1}, Test{2}, Test{3}, Test{4}, Test{5}};
@@ -1751,7 +1753,6 @@ TEST(LTL_test, test_repeater) {
     ASSERT_TRUE(ltl::equal(strings | ltl::join, string_vector));
 
     auto continuous = ltl::valueRange(0, 5) >> ltl::map([](auto x) { return ltl::make_repeater_range(x, x); });
-    std::vector<int> x = ltl::valueRange(0, 5) >> ltl::map([](auto x) { return ltl::make_repeater_range(x, x); });
 
     ASSERT_TRUE(ltl::equal(continuous, std::array{1, 2, 2, 3, 3, 3, 4, 4, 4, 4}));
 
@@ -2096,4 +2097,40 @@ TEST(LTL_test, test_accumulate) {
 
     ASSERT_EQ(result1, 10 + 0 + 1 + 2 + 3 + 4 + 5 + 6);
     ASSERT_EQ(result2, 0 - 0 - 1 - 2 - 3 - 4 - 5 - 6);
+}
+
+TEST(LTL_test, test_seq) {
+    using namespace ltl;
+    auto is_even = [](auto x) { return x % 2 == 0; };
+
+    {
+        auto generator = [i = 0]() mutable { return i++; };
+
+        auto range1 = seq(generator) | filter(is_even) | take_n(5);
+        auto range2 = seq(generator) | filter(is_even) | map([](auto x) { return x + 1; }) | take_n(10);
+        auto range3 = seq(generator) | filter(is_even) | map([](auto x) { return x + 1; }) | drop_n(5) | take_n(10);
+
+        ASSERT_TRUE(equal(range1, std::array{0, 2, 4, 6, 8}));
+        ASSERT_TRUE(equal(range2, std::array{1, 3, 5, 7, 9, 11, 13, 15, 17, 19}));
+        ASSERT_TRUE(equal(range3, std::array{11, 13, 15, 17, 19, 21, 23, 25, 27, 29}));
+    }
+
+    {
+        auto generator = [i = 0]() mutable {
+            if (i == 10) {
+                end_seq();
+            }
+            return i++;
+        };
+
+        auto range1 = seq(generator);
+        auto range2 = seq(generator) | filter(is_even);
+        auto range3 = seq(generator) | filter(is_even) | map([](auto x) { return x + 1; });
+        auto range4 = seq(generator) | filter(is_even) | map([](auto x) { return x + 1; }) | drop_n(5);
+
+        ASSERT_TRUE(equal(range1, std::array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+        ASSERT_TRUE(equal(range2, std::array{0, 2, 4, 6, 8}));
+        ASSERT_TRUE(equal(range3, std::array{1, 3, 5, 7, 9}));
+        ASSERT_TRUE(range4.empty());
+    }
 }
