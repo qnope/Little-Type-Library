@@ -35,6 +35,14 @@ target_compile_features(LTLtest PRIVATE cxx_std_17)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   target_compile_options(LTLtest PRIVATE -ftime-trace)
+elseif(MSVC)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(LTLtest PRIVATE /MTd /Zi /DEBUG:FULL)
+  else()
+    target_compile_options(LTLtest PRIVATE /MT)
+  endif()
+
+  target_compile_options(LTLtest PRIVATE /permissive- /d2cgsummary /Wv:18 /bigobj)
 endif()
 
 add_test(NAME LTLtest COMMAND LTLtest)
