@@ -1,4 +1,4 @@
-![](LTL.png)
+![](asset/LTL.png)
 
 ## Introduction
 **Little Type Library** or **LTL** for short is a lightweight library that can be used for meta programming and / or functional programming.
