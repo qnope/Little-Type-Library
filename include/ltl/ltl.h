@@ -5,7 +5,7 @@
 
 #include "invoke.h"
 
-#include "../lpl/lpl.h"
+#include "lpl/lpl.h"
 
 #define decltype_t(t) ltl::extract_type<decltype(t)>
 

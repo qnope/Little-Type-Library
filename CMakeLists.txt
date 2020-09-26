@@ -1,84 +1,64 @@
-cmake_minimum_required(VERSION 3.8)
-project(LittleTypeLibrary)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
-if(MSVC)
-        add_compile_options(
-            /Zc:preprocessor
-            /permissive-
-            /d2cgsummary
-            /Wv:18
-            /bigobj
-            /MT)
-endif(MSVC)
+project(LittleTypeLibrary
+        VERSION 0.0.1
+        LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+# ---- Includes ----
 
-set(HEADERS_RANGE
-    include/ltl/Range/Map.h
-    include/ltl/Range/Zip.h
-    include/ltl/Range/Join.h
-    include/ltl/Range/Split.h
-    include/ltl/Range/Range.h
-    include/ltl/Range/Taker.h
-    include/ltl/Range/Value.h
-    include/ltl/Range/Filter.h
-    include/ltl/Range/actions.h
-    include/ltl/Range/Reverse.h
-    include/ltl/Range/AsPointer.h
-    include/ltl/Range/enumerate.h
-    include/ltl/Range/DefaultView.h
-    include/ltl/Range/BaseIterator.h
-    include/ltl/Range/NullableFunction.h
-    )
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
 
-set(HEADERS
-    include/ltl/ltl.h
-    include/lpl/lpl.h
-    include/ltl/algos.h
-    include/ltl/crtp.h
-    include/ltl/Tuple.h
-    include/ltl/stream.h
-    include/ltl/invoke.h
-    include/ltl/traits.h
-    include/ltl/concept.h
-    include/ltl/expected.h
-    include/ltl/operator.h
-    include/ltl/condition.h
-    include/ltl/StrongType.h
-    include/ltl/TypedTuple.h
-    include/ltl/functional.h
-    include/ltl/tuple_algos.h
-    include/ltl/movable_any.h
-    include/ltl/VariantUtils.h
-    include/ltl/optional_type.h
-    ${HEADERS_RANGE}
-    )
+# ---- Install directories ----
 
-enable_testing()
-add_subdirectory(googletest)
+set(littletypelibrary_directory "littletypelibrary-${PROJECT_VERSION}")
+set(littletypelibrary_include_directory "${CMAKE_INSTALL_INCLUDEDIR}/${littletypelibrary_directory}")
 
-option(LTL_BUILD_TESTS "To generate test for Little Type Library" ON)
+# ---- Warning guard ----
+
+# Protect dependents from this project's warnings if the guard isn't disabled
+set(littletypelibrary_warning_guard "SYSTEM")
+if(LittleTypeLibrary_INCLUDE_WITHOUT_SYSTEM)
+  set(littletypelibrary_warning_guard "")
+endif()
+
+# ---- Declare library ----
 
 add_library(LTL INTERFACE)
-target_include_directories(LTL INTERFACE include/)
+add_library(LittleTypeLibrary::LTL ALIAS LTL)
 
-if(LTL_BUILD_TESTS)
-    add_executable(LittleTypeLibrary "test.cpp" ${HEADERS})
+target_include_directories(LTL
+        ${littletypelibrary_warning_guard}
+        INTERFACE
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>")
 
-    string(TOLOWER ${CMAKE_BUILD_TYPE} build_type)
-    string(TOLOWER ${CMAKE_CXX_COMPILER} compiler)
-    if(MSVC AND ${build_type} STREQUAL "debug")
-        message("using MSVC to build in full debug")
-        target_compile_options(LittleTypeLibrary PUBLIC /Zi /DEBUG:FULL)
-    endif()
+target_compile_features(LTL INTERFACE cxx_std_17)
 
-    if(${compiler} MATCHES ".*clang.*")
-        message("using clang to build LTL")
-        target_compile_options(LittleTypeLibrary PUBLIC -ftime-trace)
-    endif()
+target_compile_options(LTL INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>)
 
-    target_link_libraries(LittleTypeLibrary
-        LTL
-        gtest_main)
-    add_test(NAME test COMMAND LittleTypeLibrary)
-endif()
+# ---- Install ----
+
+install(TARGETS LTL
+        EXPORT LittleTypeLibraryTargets
+        INCLUDES DESTINATION "${littletypelibrary_include_directory}")
+
+set(littletypelibrary_install_cmakedir
+        "${CMAKE_INSTALL_LIBDIR}/cmake/${littletypelibrary_directory}")
+
+write_basic_package_version_file(
+        LittleTypeLibraryConfigVersion.cmake
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+        ARCH_INDEPENDENT)
+
+install(EXPORT LittleTypeLibraryTargets
+        NAMESPACE LittleTypeLibrary::
+        DESTINATION "${littletypelibrary_install_cmakedir}")
+
+install(FILES
+        "${PROJECT_SOURCE_DIR}/cmake/LittleTypeLibraryConfig.cmake"
+        "${PROJECT_BINARY_DIR}/LittleTypeLibraryConfigVersion.cmake"
+        DESTINATION "${littletypelibrary_install_cmakedir}")
+
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
+        DESTINATION "${littletypelibrary_include_directory}")

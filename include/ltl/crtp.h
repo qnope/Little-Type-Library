@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../lpl/lpl.h"
+#include "lpl/lpl.h"
 
 #define ENABLE_CRTP(DerivedType)                                                                                       \
     constexpr DerivedType &underlying() noexcept { return static_cast<DerivedType &>(*this); }                         \
