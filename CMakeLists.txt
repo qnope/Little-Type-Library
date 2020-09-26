@@ -53,13 +53,6 @@ install(TARGETS LittleTypeLibrary
 set(littletypelibrary_install_cmakedir
         "${CMAKE_INSTALL_LIBDIR}/cmake/${littletypelibrary_directory}")
 
-configure_package_config_file(
-        cmake/LittleTypeLibraryConfig.cmake.in
-        "${PROJECT_BINARY_DIR}/LittleTypeLibraryConfig.cmake"
-        INSTALL_DESTINATION "${littletypelibrary_install_cmakedir}"
-        NO_SET_AND_CHECK_MACRO
-        NO_CHECK_REQUIRED_COMPONENTS_MACRO)
-
 write_basic_package_version_file(
         LittleTypeLibraryConfigVersion.cmake
         VERSION ${PROJECT_VERSION}
@@ -71,7 +64,7 @@ install(EXPORT LittleTypeLibraryTargets
         DESTINATION "${littletypelibrary_install_cmakedir}")
 
 install(FILES
-        "${PROJECT_BINARY_DIR}/LittleTypeLibraryConfig.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/LittleTypeLibraryConfig.cmake"
         "${PROJECT_BINARY_DIR}/LittleTypeLibraryConfigVersion.cmake"
         DESTINATION "${littletypelibrary_install_cmakedir}")
 
