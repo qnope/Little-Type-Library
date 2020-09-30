@@ -12,11 +12,20 @@ class Comparable {
   public:
     friend constexpr auto operator!=(const Derived &a, const Derived &b) noexcept { return !(a == b); }
 
-    friend constexpr auto operator<=(const Derived &a, const Derived &b) noexcept { return !(b < a); }
+    template <typename = Derived>
+    friend constexpr auto operator<=(const Derived &a, const Derived &b) noexcept {
+        return !(b < a);
+    }
 
-    friend constexpr auto operator>(const Derived &a, const Derived &b) noexcept { return b < a; }
+    template <typename = Derived>
+    friend constexpr auto operator>(const Derived &a, const Derived &b) noexcept {
+        return b < a;
+    }
 
-    friend constexpr auto operator>=(const Derived &a, const Derived &b) noexcept { return !(a < b); }
+    template <typename = Derived>
+    friend constexpr auto operator>=(const Derived &a, const Derived &b) noexcept {
+        return !(a < b);
+    }
 };
 
 #define OP(name, op)                                                                                                   \
