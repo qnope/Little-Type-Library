@@ -1,0 +1,36 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: friendlyanon/fetch-core-count@v1
+        id: cores
+
+      - name: Configure
+        run: cmake -S test -B build -DCMAKE_BUILD_TYPE:STRING=Debug
+
+      - name: Build
+        run: cmake --build build --config Debug
+          -j ${{ steps.cores.outputs.plus_one }}
+
+      - name: Test
+        working-directory: build
+        run: ctest -C Debug -VV -j ${{ steps.cores.outputs.plus_one }}
