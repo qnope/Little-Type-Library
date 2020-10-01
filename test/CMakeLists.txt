@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14)
 
 project(LittleTypeLibraryTests LANGUAGES CXX)
 
@@ -13,12 +13,10 @@ FetchContent_MakeAvailable(LittleTypeLibrary)
 
 # ---- Add googletest ----
 
-# Download only the first time
-set(FETCHCONTENT_UPDATES_DISCONNECTED ON)
-
 FetchContent_Declare(googletest
         GIT_REPOSITORY "https://github.com/google/googletest.git"
-        GIT_TAG aee0f9d9b5b87796ee8a0ab26b7587ec30e8858e)
+        GIT_TAG aee0f9d9b5b87796ee8a0ab26b7587ec30e8858e
+        UPDATE_DISCONNECTED YES)
 FetchContent_MakeAvailable(googletest)
 
 # ---- Tests ----
