@@ -149,7 +149,7 @@ constexpr decltype(auto) operator|(OwningRange<Ts...> &&a, T2 b) {
 template <typename T1, typename... Ts, requires_f(IsIterableRef<T1>),
           requires_f((true && ... && IsChainableOperation<Ts>))>
 constexpr decltype(auto) operator|(T1 &&a, tuple_t<Ts...> b) {
-    return std::move(b)([&a](auto &&... xs) { return (std::forward<T1>(a) | ... | (std::move(xs))); });
+    return std::move(b)([&a](auto &&... xs) { return (static_cast<T1 &&>(a) | ... | (std::move(xs))); });
 }
 
 template <typename T1, typename T2, requires_f(IsChainableOperation<T1> &&IsChainableOperation<T2>)>

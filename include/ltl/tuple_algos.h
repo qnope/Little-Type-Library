@@ -26,7 +26,7 @@ template <typename F, typename Tuple>
 constexpr auto transform_type(Tuple &&tuple, F &&f) {
     typed_static_assert(is_tuple_t(tuple));
     auto build_tuple = [&f](auto &&... xs) {
-        return ltl::tuple_t<decltype(std::forward<F>(f)(FWD(xs)))...>{std::forward<F>(f)(FWD(xs))...};
+        return ltl::tuple_t<decltype(static_cast<F &&>(f)(FWD(xs)))...>{static_cast<F &&>(f)(FWD(xs))...};
     };
     return FWD(tuple)(build_tuple);
 }
@@ -176,7 +176,7 @@ constexpr void zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
     typed_static_assert_msg(((ltl::is_tuple_t(tuples)) && ... && true_v), "All tuples must be tuples");
     typed_static_assert_msg((... && (tuples.length == indexer.length)), "All tuples must be of the same length");
     for_each(indexer,
-             [&f, &tuple, &tuples...](auto indices) { std::forward<F>(f)(tuple[indices], tuples[indices]...); });
+             [&f, &tuple, &tuples...](auto indices) { static_cast<F &&>(f)(tuple[indices], tuples[indices]...); });
 }
 
 template <typename T, typename... Tuples, requires_f(ltl::IsTuple<T>)>
@@ -192,7 +192,7 @@ constexpr auto zip_type(T &&tuple, Tuples &&... tuples) {
 
     auto get_tuple_for_index = [&tuple, &tuples...](auto index) {
         return ltl::tuple_t<decltype_t(tuple.getTypes()[index]), decltype_t(tuples.getTypes()[index])...>{
-            std::forward<T>(tuple)[index], std::forward<Tuples>(tuples)[index]...};
+            static_cast<T &&>(tuple)[index], static_cast<Tuples &&>(tuples)[index]...};
     };
 
     return indexer([get_types_for_index, get_tuple_for_index](auto... indices) {

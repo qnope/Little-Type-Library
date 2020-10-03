@@ -11,7 +11,7 @@
 #include "Range/Range.h"
 
 namespace ltl {
-#define MAKE_CALLER(f) [&f](auto &&... xs) { return ltl::invoke(std::forward<F>(f), FWD(xs)...); }
+#define MAKE_CALLER(f) [&f](auto &&... xs) { return ltl::invoke(static_cast<F &&>(f), FWD(xs)...); }
 
 using std::begin;
 using std::end;
@@ -1075,8 +1075,8 @@ auto inner_product(const C &c, It &&it, T &&init, F1 &&f1, F2 &&f2) {
     typed_static_assert_msg(is_iterable(c), "C must be iterable");
     return std::inner_product(
         begin(c), end(c), FWD(it), FWD(init),
-        [&f1](auto &&... xs) { return ltl::invoke(std::forward<F1>(f1), FWD(xs)...); },
-        [&f2](auto &&... xs) { return ltl::invoke(std::forward<F2>(f2), FWD(xs)...); });
+        [&f1](auto &&... xs) { return ltl::invoke(static_cast<F1 &&>(f1), FWD(xs)...); },
+        [&f2](auto &&... xs) { return ltl::invoke(static_cast<F2 &&>(f2), FWD(xs)...); });
 }
 
 template <typename C, typename It>
