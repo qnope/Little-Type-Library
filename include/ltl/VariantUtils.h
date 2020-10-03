@@ -25,7 +25,7 @@ auto match_result(Variant &&variant, Fs... fs) {
 
 template <typename F, typename Variant>
 constexpr auto is_callable_from(F &&f, Variant &&variant) {
-    auto is_f_invocable = [&f](auto x) { return ltl::is_invocable(std::forward<F>(f), declval(x)); };
+    auto is_f_invocable = [&f](auto x) { return ltl::is_invocable(static_cast<F &&>(f), declval(x)); };
 
     constexpr auto qualified_types = types_from(variant);
     return all_of_type(qualified_types, is_f_invocable);
@@ -97,7 +97,7 @@ class recursive_variant {
                         return (x);
                     }
                 };
-                ltl::invoke(std::forward<F>(f), unwrap(FWD(xs))...);
+                ltl::invoke(static_cast<F &&>(f), unwrap(FWD(xs))...);
             },
             FWD(variants).m_variant...);
     }

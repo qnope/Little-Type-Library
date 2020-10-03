@@ -19,7 +19,7 @@
 
 #define compile_time_error(msg, T) static_assert(ltl::always_false<T>, msg);
 
-#define FWD(x) std::forward<decltype(x)>(x)
+#define FWD(x) static_cast<decltype(x) &&>(x)
 
 #define lift(f) [](auto &&... xs) -> decltype(f(FWD(xs)...)) { return f(FWD(xs)...); }
 

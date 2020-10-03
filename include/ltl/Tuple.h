@@ -183,7 +183,7 @@ class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<
     template <typename T>
     [[nodiscard]] constexpr auto push_back(T && newValue) const & {
         auto fwdAll = [&newValue](auto &... xs) {
-            return tuple_t<Ts..., decay_reference_wrapper_t<T>>{xs..., std::forward<T>(newValue)};
+            return tuple_t<Ts..., decay_reference_wrapper_t<T>>{xs..., static_cast<T &&>(newValue)};
         };
 
         return (*this)(fwdAll);
@@ -192,7 +192,7 @@ class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<
     template <typename T>
     [[nodiscard]] constexpr auto push_back(T && newValue) && {
         auto fwdAll = [&newValue](Ts &&... xs) {
-            return tuple_t<Ts..., decay_reference_wrapper_t<T>>{FWD(xs)..., std::forward<T>(newValue)};
+            return tuple_t<Ts..., decay_reference_wrapper_t<T>>{FWD(xs)..., static_cast<T &&>(newValue)};
         };
         return std::move(*this)(fwdAll);
     }
@@ -200,7 +200,7 @@ class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<
     template <typename T>
     [[nodiscard]] constexpr auto push_front(T && newValue) const & {
         auto fwdAll = [&newValue](auto &... xs) {
-            return tuple_t<decay_reference_wrapper_t<T>, Ts...>{std::forward<T>(newValue), xs...};
+            return tuple_t<decay_reference_wrapper_t<T>, Ts...>{static_cast<T &&>(newValue), xs...};
         };
         return (*this)(fwdAll);
     }
@@ -208,7 +208,7 @@ class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<
     template <typename T>
     [[nodiscard]] constexpr auto push_front(T && newValue) && {
         auto fwdAll = [&newValue](Ts &&... xs) {
-            return tuple_t<decay_reference_wrapper_t<T>, Ts...>{std::forward<T>(newValue), FWD(xs)...};
+            return tuple_t<decay_reference_wrapper_t<T>, Ts...>{static_cast<T &&>(newValue), FWD(xs)...};
         };
         return std::move(*this)(fwdAll);
     }
@@ -322,7 +322,7 @@ template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
 F for_each(Tuple &&tuple, F &&f) {
     typed_static_assert(is_tuple_t(tuple));
 
-    auto retrieveAllArgs = [&f](auto &&... xs) { (std::forward<F>(f)(FWD(xs)), ...); };
+    auto retrieveAllArgs = [&f](auto &&... xs) { (static_cast<F &&>(f)(FWD(xs)), ...); };
     FWD(tuple)(retrieveAllArgs);
     return FWD(f);
 }
