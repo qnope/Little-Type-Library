@@ -283,17 +283,15 @@ constexpr auto is_valid(F &&) {
         [] LPL_IDENTITY(LTL_WRITE_AUTO_IMPL LTL_ENSURE_NOT_EMPTY variables) -> decltype(__VA_ARGS__, void()) {})
 
 #define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                                                        \
-    constexpr ltl::false_t LPL_CAT(name, Impl)(...);                                                                   \
+    template <typename>                                                                                                \
+    struct LPL_CAT(name, Impl) : ltl::false_t {};                                                                      \
     template <templateType... Ts>                                                                                      \
-    constexpr ltl::true_t LPL_CAT(name, Impl)(const type<Ts...> &);                                                    \
-    [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr noexcept {                                           \
-        return decltype(LPL_CAT(name, Impl)(::ltl::declval(FWD(x)))){};                                                \
-    };                                                                                                                 \
+    struct LPL_CAT(name, Impl)<type<Ts...>> : ltl::true_t {};                                                          \
     template <typename T>                                                                                              \
-    [[maybe_unused]] constexpr bool conceptName = decltype(name(std::declval<T>()))::value
-
-LTL_MAKE_IS_KIND(number_t, is_number_t, IsNumber, int);
-LTL_MAKE_IS_KIND(bool_t, is_bool_t, IsBool, bool);
+    [[maybe_unused]] constexpr bool conceptName = LPL_CAT(name, Impl)<std::decay_t<T>>::value;                         \
+    [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr noexcept {                                           \
+        return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
+    }
 
 template <typename T>
 constexpr auto is_type(type_t<T> type) {

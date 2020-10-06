@@ -18,16 +18,16 @@ template <typename T>
 constexpr bool IsIterable = decltype(is_iterable(std::declval<T>()))::value;
 
 template <typename T>
-constexpr bool IsConst = decltype(is_const(std::declval<T>()))::value;
+constexpr bool IsConst = std::is_const_v<T>;
 
 template <typename T>
-constexpr bool IsFloatingPoint = decltype(is_floating_point(std::declval<T>()))::value;
+constexpr bool IsFloatingPoint = std::is_floating_point_v<T>;
 
 template <typename T>
-constexpr bool IsIntegral = decltype(is_integral(std::declval<T>()))::value;
+constexpr bool IsIntegral = std::is_integral_v<T>;
 
 template <typename T, typename... Ts>
-constexpr bool IsSame = (true_v && ... && (ltl::type_v<T> == ltl::type_v<Ts>));
+constexpr bool IsSame = (... && (std::is_same_v<T, Ts>));
 
 template <typename T>
 constexpr bool IsRValueReference = std::is_rvalue_reference_v<T &&>;
