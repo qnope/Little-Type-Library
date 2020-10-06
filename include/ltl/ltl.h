@@ -214,6 +214,15 @@ template <typename T1, typename T2, typename... Ts>
 template <typename... Ts>
 struct Error;
 
-////////////////////////////// MAKE_IS_KIND //////////////////////////////////
+false_t is_bool_t(...) noexcept;
+false_t is_type_t(...) noexcept;
+false_t is_number_t(...) noexcept;
+
+template <bool B>
+true_t is_bool_t(bool_t<B>);
+template <typename T>
+true_t is_type_t(type_t<T>);
+template <int N>
+true_t is_number_t(number_t<N>);
 
 } // namespace ltl
