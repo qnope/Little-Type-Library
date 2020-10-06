@@ -27,9 +27,12 @@
 #include <ltl/Range/enumerate.h>
 #include <ltl/Range/DefaultView.h>
 
-#include <gtest/gtest.h>
-
 using namespace std::literals;
+
+#define LTL_TEST 1
+
+#if LTL_TEST
+#include <gtest/gtest.h>
 
 TEST(LTL_test, bool_test) {
     static_assert(false_v == false_v);
@@ -2048,6 +2051,19 @@ TEST(LTL_test, test_join_with) {
         auto result = array | actions::join_with(" ");
         ASSERT_EQ(result, "Antoine");
     }
+
+    {
+        struct A {
+            std::string str;
+        };
+        auto comp = [](const A &a, const A &b) { return a.str < b.str; };
+
+        std::array array = {A{"A2"}, A{"A3"}, A{"A4"}, A{"A1"}};
+
+        auto result = array | actions::sort_by(comp) | map(&A::str) | actions::join_with(", ");
+        static_assert(type_from(result) == ltl::type_v<std::string>);
+        ASSERT_EQ(result, "A1, A2, A3, A4"s);
+    }
 }
 
 TEST(LTL_test, test_forward_iterator) {
@@ -2134,3 +2150,16 @@ TEST(LTL_test, test_seq) {
         ASSERT_TRUE(range4.empty());
     }
 }
+
+#else
+int main() {
+    using namespace ltl;
+    // auto f = [](auto x) { return x + 1; };
+    // auto x = std::vector<int>{1, 2, 3} | (map(f) | map(f) | map(f) | map(f) | map(f) | map(f) | map(f));
+
+    constexpr ltl::tuple_t<int, int, int, int, int, int, int, int, int, int, int> t{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+
+    // ASSERT_TRUE(ltl::equal(std::array{8, 9, 10}, x));
+    static_assert((t([](auto... xs) { return (... + xs); }) == 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11));
+}
+#endif

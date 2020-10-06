@@ -69,13 +69,13 @@ class Range : public AbstractRange<Range<It>> {
 
 template <typename Container, typename... Operations>
 class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> {
-    using range_type = decltype(std::declval<Container &>() | std::declval<ltl::tuple_t<Operations...>>());
+    using range_type = decltype((std::declval<Container &>() | ... | std::declval<Operations>()));
 
   public:
-    OwningRange(Container container, Operations... operations) noexcept :
-        m_container(std::move(container)), //
-        m_operations{FWD(operations)...},  //
-        m_range{m_container | m_operations} {}
+    OwningRange(Container container, ltl::tuple_t<Operations...> operations) noexcept :
+        m_container(std::move(container)),   //
+        m_operations{std::move(operations)}, //
+        m_range{m_operations([&](auto &&... xs) { return (m_container | ... | xs); })} {}
 
     auto begin() const noexcept { return m_range.begin(); }
 
@@ -83,10 +83,8 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
 
     template <typename NewOperation>
     auto add_operation(NewOperation newOperation) && {
-        return std::move(m_operations)([this, &newOperation](auto &&... ops) mutable {
-            return OwningRange<Container, Operations..., NewOperation>{std::move(m_container), FWD(ops)...,
-                                                                       std::move(newOperation)};
-        });
+        return OwningRange<Container, Operations..., NewOperation>{
+            std::move(m_container), std::move(m_operations).push_back(std::move(newOperation))};
     }
 
   private:
@@ -117,11 +115,13 @@ LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
 
 namespace actions {
 struct AbstractAction {};
-
-constexpr auto is_action = ltl::is_derived_from(ltl::type_v<AbstractAction>);
+struct AbstractModifyingAction : AbstractAction {};
 
 template <typename T>
-constexpr bool IsAction = decltype(is_action(std::declval<T>()))::value;
+constexpr bool IsAction = std::is_base_of_v<AbstractAction, std::decay_t<T>>;
+
+template <typename T>
+constexpr bool IsModifyingAction = std::is_base_of_v<AbstractModifyingAction, std::decay_t<T>>;
 } // namespace actions
 
 template <typename T>
