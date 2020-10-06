@@ -9,11 +9,11 @@
 namespace ltl {
 namespace actions {
 
-constexpr struct Sort : AbstractAction {
+constexpr struct Sort : AbstractModifyingAction {
 } sort;
 
 template <typename F>
-struct SortBy : AbstractAction {
+struct SortBy : AbstractModifyingAction {
     SortBy(F &&f) : f{std::move(f)} {}
     F f;
 };
@@ -23,39 +23,46 @@ constexpr auto sort_by(F f) {
     return SortBy<F>{std::move(f)};
 }
 
-constexpr struct Unique : AbstractAction {
+constexpr struct Unique : AbstractModifyingAction {
 } unique;
 
-constexpr struct Reverse : AbstractAction {
+constexpr struct Reverse : AbstractModifyingAction {
 } reverse;
 
 template <typename T>
-struct Find {
+struct Find : AbstractAction {
+    Find(T &&t) : elem{static_cast<T &&>(t)} {}
     T elem;
 };
 
 template <typename T>
-struct FindValue {
+struct FindValue : AbstractAction {
+    FindValue(T &&t) : elem{static_cast<T &&>(t)} {}
     T elem;
 };
 
 template <typename T>
-struct FindPtr {
+struct FindPtr : AbstractAction {
+    FindPtr(T &&t) : elem{static_cast<T &&>(t)} {}
     T elem;
 };
 
 template <typename F>
-struct FindIf {
+struct FindIf : AbstractAction {
+    FindIf(F &&f) : f{static_cast<F &&>(f)} {}
+
     F f;
 };
 
 template <typename F>
-struct FindIfValue {
+struct FindIfValue : AbstractAction {
+    FindIfValue(F &&f) : f{static_cast<F &&>(f)} {}
     F f;
 };
 
 template <typename F>
-struct FindIfPtr {
+struct FindIfPtr : AbstractAction {
+    FindIfPtr(F &&f) : f{static_cast<F &&>(f)} {}
     F f;
 };
 
@@ -89,7 +96,8 @@ constexpr auto find_if_ptr(Fs... fs) {
 }
 
 template <typename D>
-struct JoinWith {
+struct JoinWith : AbstractAction {
+    JoinWith(D &&d) : d{static_cast<D &&>(d)} {}
     D d;
 };
 
@@ -99,7 +107,8 @@ constexpr auto join_with(D &&d) {
 }
 
 template <typename T, typename F>
-struct Accumulate {
+struct Accumulate : AbstractAction {
+    Accumulate(T &&init, F &&f) : init{FWD(init)}, f{static_cast<F &&>(f)} {}
     T init;
     F f;
 };
@@ -177,12 +186,14 @@ auto operator|(C &c, FindIfPtr<F> e) {
 }
 
 template <typename C, typename D, requires_f(ltl::IsIterable<C>)>
-auto operator|(const C &c, JoinWith<D> d) {
+auto operator|(const C &c, JoinWith<D> d) -> std::decay_t<decltype(*c.begin())> {
+    std::decay_t<decltype(*c.begin())> result{};
     if (c.empty()) {
-        return decltype(c[0]){};
+        return result;
     } else {
-        return ltl::accumulate(c | ltl::drop_n(1), *c.begin(),
-                               [&d](auto init, auto other) { return std::move(init) + d.d + std::move(other); });
+        return ltl::accumulate(c | ltl::drop_n(1), *c.begin(), [&d](auto init, auto other) { //
+            return std::move(init) + d.d + std::move(other);
+        });
     }
 }
 
@@ -191,7 +202,7 @@ auto operator|(const C &c, Accumulate<T, F> a) {
     return ltl::accumulate(c, FWD(a.init), a.f);
 }
 
-template <typename C, typename Action, requires_f(ltl::IsIterable<C>), requires_f(IsAction<Action>)>
+template <typename C, typename Action, requires_f(ltl::IsIterable<C>), requires_f(IsModifyingAction<Action>)>
 auto operator|(C c, Action a) {
     c |= a;
     return c;
@@ -208,10 +219,7 @@ auto &operator|=(C &c, ltl::tuple_t<Actions...> actions) {
 template <typename C, typename... Actions, requires_f(ltl::IsIterable<C>),
           requires_f((true && ... && IsAction<Actions>))>
 auto operator|(C c, ltl::tuple_t<Actions...> actions) {
-    return actions([c = std::move(c)](const auto &... xs) mutable {
-        ((c |= xs), ...);
-        return c;
-    });
+    return actions([c = std::move(c)](const auto &... xs) mutable { return (c | ... | xs); });
 }
 
 } // namespace actions
