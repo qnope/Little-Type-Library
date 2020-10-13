@@ -2157,9 +2157,9 @@ int main() {
     // auto f = [](auto x) { return x + 1; };
     // auto x = std::vector<int>{1, 2, 3} | (map(f) | map(f) | map(f) | map(f) | map(f) | map(f) | map(f));
 
-    constexpr ltl::tuple_t<int, int, int, int, int, int, int, int, int, int, int> t{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    constexpr auto list = ltl::build_index_sequence(0_n, 30_n);
+    constexpr auto filtered = ltl::filter_type(list, [](auto x) { return x % 2_n == 1_n; });
 
-    // ASSERT_TRUE(ltl::equal(std::array{8, 9, 10}, x));
-    static_assert((t([](auto... xs) { return (... + xs); }) == 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11));
+    static_assert(filtered == ltl::number_list_v<1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29>);
 }
 #endif

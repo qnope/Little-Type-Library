@@ -44,7 +44,38 @@ constexpr auto accumulate_type(Tuple &&tuple) {
 
 namespace details {
 constexpr auto is_type_related_list = ltl::or_(ltl::is_type_list_t, ltl::is_number_list_t, ltl::is_bool_list_t);
+
+template <std::size_t N>
+constexpr std::optional<int> get_index(std::array<bool, N> array, int first) {
+    for (int i = first; i < N; ++i)
+        if (array[i])
+            return i;
+    return std::nullopt;
 }
+
+template <std::size_t N>
+constexpr std::size_t count(std::array<bool, N> array) {
+    std::size_t r = 0;
+    for (auto x : array) {
+        if (x)
+            ++r;
+    }
+    return r;
+}
+
+template <std::size_t NewN, std::size_t N>
+constexpr auto convert_onces_to_indices(std::array<bool, N> array) {
+    std::array<int, NewN> result{};
+    int j = 0;
+    for (int i = 0; i < N; ++i) {
+        if (array[i]) {
+            result[j++] = i;
+        }
+    }
+    return result;
+}
+
+} // namespace details
 
 ////////////////////// Algorithm tuple
 template <typename... Ts, typename T>
@@ -54,17 +85,20 @@ constexpr auto contains_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] type_
 }
 
 template <typename... Ts, typename T>
-constexpr auto count_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] type_t<T> type) {
+constexpr auto count_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] T type) {
     if_constexpr(details::is_type_related_list(tuple)) return (0_n + ... + bool_to_number(Ts{} == type));
     else return count_type(type_list_v<Ts...>, type);
 }
 
 template <typename... Ts, typename T, int N = 0>
-constexpr auto find_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] type_t<T> type, number_t<N> first = {}) {
+constexpr auto find_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] T type, number_t<N> first = {}) {
     if_constexpr(details::is_type_related_list(tuple)) {
-        if_constexpr(first == tuple.length) return nullopt_type;
-        else_if_constexpr(tuple[first] == type) return optional_type{first};
-        else return find_type(tuple, type, first + 1_n);
+        constexpr std::array<bool, sizeof...(Ts)> array = {bool(Ts{} == T{})...};
+        constexpr auto result = details::get_index(array, N);
+        if constexpr (result)
+            return optional_type<number_t<*result>>{};
+        else
+            return nullopt_type;
     }
 
     else return find_type(type_list_v<Ts...>, type, first);
@@ -73,9 +107,12 @@ constexpr auto find_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] type_t<T>
 template <typename... Ts, typename P, int N = 0>
 constexpr auto find_if_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p, number_t<N> first = {}) {
     if_constexpr(details::is_type_related_list(tuple)) {
-        if_constexpr(first == tuple.length) return nullopt_type;
-        else_if_constexpr(p(tuple[first])) return optional_type{first};
-        else return find_if_type(tuple, p, first + 1_n);
+        constexpr std::array<bool, sizeof...(Ts)> array = {decltype(std::declval<P>()(Ts{}))::value...};
+        constexpr auto result = details::get_index(array, N);
+        if constexpr (result)
+            return optional_type<number_t<*result>>{};
+        else
+            return nullopt_type;
     }
     else return find_if_type(type_list_v<Ts...>, p, first);
 }
@@ -169,7 +206,25 @@ constexpr auto filter_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
         return filter_type(ltl::type_list_v<Ts...>, p);
     }
 }
-
+/*
+template <typename... Ts, typename P>
+constexpr auto filter_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
+    if_constexpr(details::is_type_related_list(tuple)) { //
+        // auto to_onces = [&](auto ...xs) {return bool_list_v<decltype(p(xs))::values...>;};
+        // constexpr auto onces = decltype(tuple(to_onces)){};
+        constexpr ::std::array<bool, sizeof...(Ts)> onces = {decltype(::std::declval<P>()(Ts{}))::value...};
+        constexpr auto newN = details::count(onces);
+        constexpr auto indices = details::convert_onces_to_indices<newN>(onces);
+        constexpr auto indexer = build_index_sequence(::number_v<newN>)([indices](auto... is) constexpr {
+            return decltype(ltl::number_list_v<indices[decltype(is)::value]...>){};
+        });
+        return indexer([&tuple](auto... ns) { return tuple.extract(ns...); });
+    }
+    else {
+        return filter_type(ltl::type_list_v<Ts...>, p);
+    }
+}
+*/
 template <typename F, typename T, typename... Tuples, requires_f(ltl::IsTuple<T>)>
 constexpr void zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
     auto indexer = tuple.make_indexer();
