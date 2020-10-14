@@ -2,6 +2,7 @@
 
 #include "traits.h"
 #include "Range/AsPointer.h"
+#include <optional>
 
 namespace ltl {
 
@@ -15,11 +16,11 @@ struct optional_type<T> {
     static constexpr true_t has_value{};
 
     constexpr auto operator*() const noexcept { return T{}; }
-    constexpr auto operator->() const noexcept { return AsPointer{T{}}; }
+    constexpr auto operator-> () const noexcept { return AsPointer{T{}}; }
 };
 
 template <typename T>
-optional_type(T) -> optional_type<T>;
+optional_type(T)->optional_type<T>;
 
 template <>
 struct optional_type<> {

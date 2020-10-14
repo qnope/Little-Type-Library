@@ -64,7 +64,7 @@ constexpr std::size_t count(std::array<bool, N> array) {
 }
 
 template <std::size_t NewN, std::size_t N>
-constexpr auto convert_onces_to_indices(std::array<bool, N> array) {
+constexpr auto convert_ones_to_indices(std::array<bool, N> array) {
     std::array<int, NewN> result{};
     int j = 0;
     for (int i = 0; i < N; ++i) {
@@ -146,29 +146,26 @@ constexpr auto none_of_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
     return !any_of_type(tuple, p);
 }
 
-namespace detail {
-template <typename T>
-struct unique_wrapper_t {};
-template <typename T>
-constexpr unique_wrapper_t<T> unique_wrapper_v{};
+namespace details {
+template <typename Tuple, typename IndexSequence>
+struct UniqueImpl {};
 
-template <typename... Ts, template <typename T> typename X, typename T>
-constexpr auto operator+(ltl::tuple_t<Ts...> list, unique_wrapper_t<X<T>>) {
-    constexpr auto to_add = X<T>{};
-    if_constexpr(contains_type(list, to_add)) { //
-        return list;
-    }
-    else {
-        return ltl::tuple_t<Ts..., X<T>>{};
-    }
-}
-
-} // namespace detail
+template <typename... Ts, std::size_t... Is>
+struct UniqueImpl<tuple_t<Ts...>, std::index_sequence<Is...>> {
+    static constexpr auto tuple = ltl::tuple_t<Ts...>{};
+    static constexpr auto total_size = sizeof...(Is);
+    static constexpr std::array<bool, total_size> ones = {
+        decltype(*::ltl::find_type(tuple, Ts{}) == number_v<Is>)::value...};
+    static constexpr auto new_size = count(ones);
+    static constexpr auto indices = convert_ones_to_indices<new_size>(ones);
+    static constexpr auto indexer = ::ltl::array_to_number_list_t<indices>{};
+};
+} // namespace details
 
 template <typename... Ts>
 constexpr auto unique_type(const tuple_t<Ts...> &tuple) {
     if_constexpr(details::is_type_related_list(tuple)) { //
-        return (tuple_t{} + ... + (detail::unique_wrapper_v<Ts>));
+        return tuple.extract(details::UniqueImpl<tuple_t<Ts...>, std::make_index_sequence<sizeof...(Ts)>>::indexer);
     }
     else { //
         return unique_type(ltl::type_list_v<Ts...>);
@@ -185,46 +182,25 @@ constexpr auto is_unique_type(const tuple_t<Ts...> &tuple) {
     }
 }
 
-namespace detail {
-template <typename T>
-constexpr auto optional_maker(T t, true_t) {
-    return ltl::tuple_t{t};
-}
-
-template <typename T>
-constexpr auto optional_maker(T, false_t) {
-    return ltl::tuple_t<>{};
-}
-} // namespace detail
-
+namespace details {
+template <typename Predicate, typename... Ts>
+struct FilterImpl {
+    static constexpr ::std::array<bool, sizeof...(Ts)> ones = {decltype(::std::declval<Predicate>()(Ts{}))::value...};
+    static constexpr auto newN = details::count(ones);
+    static constexpr auto indices = details::convert_ones_to_indices<newN>(ones);
+    static constexpr auto indexer = ::ltl::array_to_number_list_t<indices>{};
+};
+} // namespace details
 template <typename... Ts, typename P>
 constexpr auto filter_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
     if_constexpr(details::is_type_related_list(tuple)) { //
-        return (tuple_t{} + ... + (detail::optional_maker(Ts{}, p(Ts{}))));
+        return tuple.extract(details::FilterImpl<P, Ts...>::indexer);
     }
     else {
         return filter_type(ltl::type_list_v<Ts...>, p);
     }
 }
-/*
-template <typename... Ts, typename P>
-constexpr auto filter_type(const tuple_t<Ts...> &tuple, [[maybe_unused]] P p) {
-    if_constexpr(details::is_type_related_list(tuple)) { //
-        // auto to_onces = [&](auto ...xs) {return bool_list_v<decltype(p(xs))::values...>;};
-        // constexpr auto onces = decltype(tuple(to_onces)){};
-        constexpr ::std::array<bool, sizeof...(Ts)> onces = {decltype(::std::declval<P>()(Ts{}))::value...};
-        constexpr auto newN = details::count(onces);
-        constexpr auto indices = details::convert_onces_to_indices<newN>(onces);
-        constexpr auto indexer = build_index_sequence(::number_v<newN>)([indices](auto... is) constexpr {
-            return decltype(ltl::number_list_v<indices[decltype(is)::value]...>){};
-        });
-        return indexer([&tuple](auto... ns) { return tuple.extract(ns...); });
-    }
-    else {
-        return filter_type(ltl::type_list_v<Ts...>, p);
-    }
-}
-*/
+
 template <typename F, typename T, typename... Tuples, requires_f(ltl::IsTuple<T>)>
 constexpr void zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
     auto indexer = tuple.make_indexer();
