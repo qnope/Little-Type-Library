@@ -4,6 +4,9 @@
 #include "crtp.h"
 #include "ltl.h"
 
+#include <tuple>
+#include <array>
+
 namespace ltl {
 namespace detail {
 template <typename T>
@@ -178,6 +181,16 @@ class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<
         return tuple_t<decltype(std::move(*const_cast<tuple_t *>(this))[ns])...>{std::move(*this)[ns]...};
     }
 
+    template <int... Is>
+    [[nodiscard]] constexpr auto extract(std::integer_sequence<int, Is...>) const &noexcept {
+        return this->extract(number_v<Is>...);
+    }
+
+    template <int... Is>
+        [[nodiscard]] constexpr auto extract(std::integer_sequence<int, Is...>) && noexcept {
+        return std::move(*this).extract(number_v<Is>...);
+    }
+
     template <typename T>
     [[nodiscard]] constexpr auto push_back(T && newValue) const & {
         auto fwdAll = [&newValue](auto &... xs) {
@@ -299,6 +312,17 @@ template <typename N>
 [[nodiscard]] constexpr auto build_index_sequence(N n) {
     return tuple_t<>::build_index_sequence(0_n, n);
 }
+
+template <const auto &array, typename = std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(array)>>>>
+struct array_to_number_list;
+
+template <const auto &array, std::size_t... Is>
+struct array_to_number_list<array, std::index_sequence<Is...>> {
+    using type = std::integer_sequence<std::decay_t<decltype(array[0])>, array[Is]...>;
+};
+
+template <const auto &array>
+using array_to_number_list_t = typename array_to_number_list<array>::type;
 
 template <typename... T1, typename... T2>
 constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {

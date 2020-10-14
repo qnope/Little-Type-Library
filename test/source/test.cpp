@@ -2157,9 +2157,9 @@ int main() {
     // auto f = [](auto x) { return x + 1; };
     // auto x = std::vector<int>{1, 2, 3} | (map(f) | map(f) | map(f) | map(f) | map(f) | map(f) | map(f));
 
-    constexpr auto list = ltl::build_index_sequence(0_n, 30_n);
-    constexpr auto filtered = ltl::filter_type(list, [](auto x) { return x % 2_n == 1_n; });
-
-    static_assert(filtered == ltl::number_list_v<1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29>);
+    constexpr auto list = ltl::type_list_v<int, int, double, char, char *, char *, double *, int, double, short, double,
+                                           int *, char *, int>;
+    constexpr auto uniq = unique_type(list);
+    static_assert(uniq == ltl::type_list_v<int, double, char, char *, double *, short, int *>);
 }
 #endif
