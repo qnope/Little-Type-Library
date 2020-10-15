@@ -146,12 +146,24 @@ class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
     }
 };
 
+template <std::size_t N1, typename SequenceGenerator>
+struct make_integer_sequence_impl;
+
+template <std::size_t N1, int... Is>
+struct make_integer_sequence_impl<N1, std::integer_sequence<int, Is...>> {
+    using type = std::integer_sequence<int, (N1 + Is)...>;
+};
+
+template <std::size_t N1, std::size_t N2>
+using make_integer_sequence = typename make_integer_sequence_impl<N1, std::make_integer_sequence<int, N2 - N1>>::type;
+
 } // namespace detail
 
 template <typename... Ts>
 class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...> {
   public:
-    using super = detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...>;
+    using indexer_sequence_t = std::make_integer_sequence<int, sizeof...(Ts)>;
+    using super = detail::tuple_t<indexer_sequence_t, Ts...>;
 
     using super::isEmpty;
     using super::length;
@@ -225,51 +237,45 @@ class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<
     }
 
     [[nodiscard]] constexpr auto pop_back() const & {
-        auto extracter = [this](auto... numbers) { return this->extract(numbers...); };
-        constexpr auto numbers = build_index_sequence(length - 1_n);
-        return numbers(extracter);
+        return this->extract(std::make_integer_sequence<int, length.value - 1>{});
     }
 
     [[nodiscard]] constexpr auto pop_back() && {
-        auto extracter = [this](auto... numbers) { return std::move(*this).extract(numbers...); };
-        constexpr auto numbers = build_index_sequence(length - 1_n);
-        return numbers(extracter);
+        return std::move(*this).extract(std::make_integer_sequence<int, length.value - 1>{});
     }
 
     [[nodiscard]] constexpr auto pop_front() const & {
-        auto extracter = [this](auto... numbers) { return this->extract(numbers...); };
-        constexpr auto numbers = build_index_sequence(1_n, length);
-        return apply(extracter, numbers);
+        return this->extract(detail::make_integer_sequence<1, length.value>{});
     }
 
     [[nodiscard]] constexpr auto pop_front() && {
-        auto extracter = [this](auto... numbers) { return std::move(*this).extract(numbers...); };
-        constexpr auto numbers = build_index_sequence(1_n, length);
-        return apply(extracter, numbers);
+        return std::move(*this).extract(detail::make_integer_sequence<1, length.value>{});
     }
 
-    static constexpr auto make_indexer() noexcept { return build_index_sequence(length); }
+    static constexpr auto make_indexer_sequence() noexcept { return indexer_sequence_t{}; }
+
+    static constexpr auto make_indexer() noexcept { return build_index_list(length); }
 
     template <typename N1, typename N2>
-    [[nodiscard]] static constexpr auto build_index_sequence(N1 n1, N2 n2) {
-        return build_index_sequence_helper(n1, n2);
+    [[nodiscard]] static constexpr auto build_index_list(N1 n1, N2 n2) {
+        return build_index_list_helper(n1, n2);
     }
 
     template <typename N>
-    [[nodiscard]] static constexpr auto build_index_sequence(N n) {
-        return build_index_sequence(0_n, n);
+    [[nodiscard]] static constexpr auto build_index_list(N n) {
+        return build_index_list(0_n, n);
     }
 
   private:
     template <int N, int... Ns>
-    [[nodiscard]] static constexpr auto build_index_sequence_helper(number_t<N>, std::integer_sequence<int, Ns...>) {
+    [[nodiscard]] static constexpr auto build_index_list_helper(number_t<N>, std::integer_sequence<int, Ns...>) {
         return tuple_t<number_t<N + Ns>...>{};
     }
 
     template <int N1, int N2>
-    [[nodiscard]] static constexpr auto build_index_sequence_helper(number_t<N1> n1, number_t<N2> n2) {
+    [[nodiscard]] static constexpr auto build_index_list_helper(number_t<N1> n1, number_t<N2> n2) {
         typed_static_assert_msg(n1 <= n2, "n1 must be lesser or equal to n2");
-        return build_index_sequence_helper(n1, std::make_integer_sequence<int, N2 - N1>{});
+        return build_index_list_helper(n1, std::make_integer_sequence<int, N2 - N1>{});
     }
 };
 
@@ -304,30 +310,30 @@ LTL_MAKE_IS_KIND(number_list_t, is_number_list_t, IsNumberList, int);
 LTL_MAKE_IS_KIND(bool_list_t, is_bool_list_t, IsBoolList, bool);
 
 template <typename N1, typename N2>
-[[nodiscard]] constexpr auto build_index_sequence(N1 n1, N2 n2) {
-    return tuple_t<>::build_index_sequence(n1, n2);
+[[nodiscard]] constexpr auto build_index_list(N1 n1, N2 n2) {
+    return tuple_t<>::build_index_list(n1, n2);
 }
 
 template <typename N>
-[[nodiscard]] constexpr auto build_index_sequence(N n) {
-    return tuple_t<>::build_index_sequence(0_n, n);
+[[nodiscard]] constexpr auto build_index_list(N n) {
+    return tuple_t<>::build_index_list(0_n, n);
 }
 
 template <const auto &array, typename = std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(array)>>>>
-struct array_to_number_list;
+struct array_to_index_sequence;
 
 template <const auto &array, std::size_t... Is>
-struct array_to_number_list<array, std::index_sequence<Is...>> {
+struct array_to_index_sequence<array, std::index_sequence<Is...>> {
     using type = std::integer_sequence<std::decay_t<decltype(array[0])>, array[Is]...>;
 };
 
 template <const auto &array>
-using array_to_number_list_t = typename array_to_number_list<array>::type;
+using array_to_index_sequence_t = typename array_to_index_sequence<array>::type;
 
 template <typename... T1, typename... T2>
 constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
-    constexpr auto indices1 = build_index_sequence(number_v<sizeof...(T1)>);
-    constexpr auto indices2 = build_index_sequence(number_v<sizeof...(T2)>);
+    constexpr auto indices1 = build_index_list(number_v<sizeof...(T1)>);
+    constexpr auto indices2 = build_index_list(number_v<sizeof...(T2)>);
 
     return indices1([indices2, &t1, &t2](auto... n1s) {
         return indices2([&t1, &t2, n1s...](auto... n2s) { return tuple_t<T1..., T2...>{t1[n1s]..., t2[n2s]...}; });

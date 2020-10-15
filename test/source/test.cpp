@@ -126,7 +126,7 @@ TEST(LTL_test, constexpr_tuple_test) {
 
     static_assert(number_list.pop_back().pop_back() == ltl::number_list_v<2>);
     static_assert(number_list.pop_front().pop_front() == ltl::number_list_v<4>);
-    static_assert(ltl::build_index_sequence(5_n) == ltl::number_list_v<0, 1, 2, 3, 4>);
+    static_assert(ltl::build_index_list(5_n) == ltl::number_list_v<0, 1, 2, 3, 4>);
 }
 
 TEST(LTL_test, tuple_test) {
@@ -2154,12 +2154,10 @@ TEST(LTL_test, test_seq) {
 #else
 int main() {
     using namespace ltl;
-    // auto f = [](auto x) { return x + 1; };
-    // auto x = std::vector<int>{1, 2, 3} | (map(f) | map(f) | map(f) | map(f) | map(f) | map(f) | map(f));
+    constexpr auto big = ltl::build_index_list(1000_n);
+    constexpr auto little = build_index_list(5_n);
 
-    constexpr auto list = ltl::type_list_v<int, int, double, char, char *, char *, double *, int, double, short, double,
-                                           int *, char *, int>;
-    constexpr auto uniq = unique_type(list);
-    static_assert(uniq == ltl::type_list_v<int, double, char, char *, double *, short, int *>);
+    constexpr auto b = big.pop_front();
+    constexpr auto l = little.pop_front();
 }
 #endif
