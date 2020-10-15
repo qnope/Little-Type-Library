@@ -158,7 +158,7 @@ struct UniqueImpl<tuple_t<Ts...>, std::index_sequence<Is...>> {
         decltype(*::ltl::find_type(tuple, Ts{}) == number_v<Is>)::value...};
     static constexpr auto new_size = count(ones);
     static constexpr auto indices = convert_ones_to_indices<new_size>(ones);
-    static constexpr auto indexer = ::ltl::array_to_number_list_t<indices>{};
+    static constexpr auto indexer = ::ltl::array_to_index_sequence_t<indices>{};
 };
 } // namespace details
 
@@ -188,7 +188,7 @@ struct FilterImpl {
     static constexpr ::std::array<bool, sizeof...(Ts)> ones = {decltype(::std::declval<Predicate>()(Ts{}))::value...};
     static constexpr auto newN = details::count(ones);
     static constexpr auto indices = details::convert_ones_to_indices<newN>(ones);
-    static constexpr auto indexer = ::ltl::array_to_number_list_t<indices>{};
+    static constexpr auto indexer = ::ltl::array_to_index_sequence_t<indices>{};
 };
 } // namespace details
 template <typename... Ts, typename P>
