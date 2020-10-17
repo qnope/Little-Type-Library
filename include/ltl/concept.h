@@ -7,15 +7,15 @@
 #include "traits.h"
 
 namespace ltl {
-LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, typename);
+using std::begin;
+using std::end;
+LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, typename, );
 
-template <typename T, bool b>
-using requires_t = std::enable_if_t<b, T>;
-template <bool b>
-using requires_void = requires_t<void, b>;
+template <typename T, typename = void>
+constexpr bool IsIterable = false;
 
 template <typename T>
-constexpr bool IsIterable = decltype(is_iterable(std::declval<T>()))::value;
+constexpr bool IsIterable<T, std::void_t<decltype(begin(std::declval<T &>()), end(std::declval<T &>()))>> = true;
 
 template <typename T>
 constexpr bool IsConst = std::is_const_v<T>;
@@ -37,4 +37,4 @@ constexpr bool IsFixedSizeArray = decltype(is_fixed_size_array(std::declval<T>()
 
 } // namespace ltl
 
-#define requires_f(x) ::ltl::requires_t<bool, (x)> = true
+#define requires_f(x) ::std::enable_if_t<(x)> * = nullptr

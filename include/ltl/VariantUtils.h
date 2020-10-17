@@ -60,7 +60,7 @@ class recursive_wrapper {
     std::unique_ptr<T> m_ptr;
 };
 
-LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, IsRecursiveWrapper, typename);
+LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, IsRecursiveWrapper, typename, );
 
 template <typename... Ts>
 class recursive_variant {
@@ -90,10 +90,9 @@ class recursive_variant {
         std::visit(
             [&f](auto &&... xs) {
                 auto unwrap = [](auto &x) -> decltype(auto) {
-                    if_constexpr(is_recursive_wrapper(x)) { //
+                    if constexpr (IsRecursiveWrapper<decltype(x)>) { //
                         return *x;
-                    }
-                    else {
+                    } else {
                         return (x);
                     }
                 };

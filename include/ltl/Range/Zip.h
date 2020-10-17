@@ -64,7 +64,7 @@ auto zip(Containers &&... containers) {
     constexpr auto types = type_list_v<Containers...>;
     using std::size;
     typed_static_assert(!types.isEmpty);
-    typed_static_assert_msg(all_of_type(types, is_iterable), "Zip operations must be used with containers");
+    static_assert((IsIterable<Containers> && ...), "Zip operations must be used with containers");
 
     assert(tuple_t{std::cref(containers)...}([](const auto &c1, const auto &... cs) {
         return (true && ... && (std::size_t(size(c1)) == std::size_t(size(cs))));

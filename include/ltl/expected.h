@@ -41,9 +41,9 @@ class [[nodiscard]] expected {
     template <typename R, typename E>
     constexpr expected &operator=(expected<R, E> t) {
         if (t)
-            m_result = static_cast<value_type&&>(std::move(t).result());
+            m_result = static_cast<value_type &&>(std::move(t).result());
         else
-            m_result = static_cast<error_type&&>(std::move(t).error());
+            m_result = static_cast<error_type &&>(std::move(t).error());
         return *this;
     }
 
@@ -89,7 +89,7 @@ class [[nodiscard]] expected {
     std::variant<value_type, error_type> m_result;
 };
 
-LTL_MAKE_IS_KIND(expected, is_expected, IsExpected, typename);
+LTL_MAKE_IS_KIND(expected, is_expected, IsExpected, typename, ...);
 
 template <typename T1, typename F, requires_f(IsExpected<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
@@ -103,8 +103,8 @@ constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
 
 template <typename T1, typename F, requires_f(IsExpected<T1>)>
 constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
-    typed_static_assert_msg(is_expected(ltl::invoke(std::move(b.f), FWD(a).result())),
-                            "With >> notation, function must return an expected");
+    static_assert(IsExpected<decltype(ltl::invoke(std::move(b.f), FWD(a).result()))>,
+                  "With >> notation, function must return an expected");
     using old_error_type = typename std::decay_t<T1>::error_type;
     using return_type = std::decay_t<decltype(ltl::invoke(std::move(b.f), FWD(a).result()))>;
     using new_error_type = typename return_type::error_type;

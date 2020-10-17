@@ -254,23 +254,19 @@ template <qualifier_enum a, typename T>
 ///////////////////////// is_valid
 
 namespace detail {
-template <typename F>
-constexpr auto is_validImpl() -> decltype(ltl::invoke(std::declval<F>()), void(), true_t{});
+
+template <typename F, typename = void, typename... Args>
+constexpr bool is_validImpl = false;
 
 template <typename F, typename... Args>
-constexpr auto is_validImpl(Args &&... args)
-    -> decltype(ltl::invoke(std::declval<F>(), FWD(args)...), void(), true_t{});
-
-template <typename F>
-constexpr false_t is_validImpl(...);
+constexpr bool
+    is_validImpl<F, std::void_t<decltype(ltl::invoke(std::declval<F>(), declval(std::declval<Args>())...))>, Args...> =
+        true;
 } // namespace detail
 
 template <typename F>
 constexpr auto is_valid(F &&) {
-    return [](auto &&... xs) {
-        return decltype(detail::is_validImpl<F>(FWD(xs)...)){} || // for f(type_t)
-               decltype(detail::is_validImpl<F>(declval(FWD(xs))...)){};
-    };
+    return [](auto &&... xs) { return bool_t<detail::is_validImpl<F, void, decltype(xs)...>>{}; };
 }
 
 #define LTL_WRITE_AUTO_WITH_COMMA_IMPL(x) , auto &&x
@@ -282,13 +278,13 @@ constexpr auto is_valid(F &&) {
     ltl::is_valid(                                                                                                     \
         [] LPL_IDENTITY(LTL_WRITE_AUTO_IMPL LTL_ENSURE_NOT_EMPTY variables) -> decltype(__VA_ARGS__, void()) {})
 
-#define LTL_MAKE_IS_KIND(type, name, conceptName, templateType)                                                        \
-    template <typename>                                                                                                \
-    struct LPL_CAT(name, Impl) : ltl::false_t {};                                                                      \
-    template <templateType... Ts>                                                                                      \
-    struct LPL_CAT(name, Impl)<type<Ts...>> : ltl::true_t {};                                                          \
+#define LTL_MAKE_IS_KIND(type, name, conceptName, templateType, v)                                                     \
     template <typename T>                                                                                              \
-    [[maybe_unused]] constexpr bool conceptName = LPL_CAT(name, Impl)<std::decay_t<T>>::value;                         \
+    [[maybe_unused]] constexpr bool LPL_CAT(conceptName, Impl) = false;                                                \
+    template <templateType v Ts>                                                                                       \
+    [[maybe_unused]] constexpr bool LPL_CAT(conceptName, Impl)<type<Ts v>> = true;                                     \
+    template <typename T>                                                                                              \
+    [[maybe_unused]] constexpr bool conceptName = LPL_CAT(conceptName, Impl)<std::decay_t<T>>;                         \
     [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr noexcept {                                           \
         return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
     }
@@ -304,8 +300,7 @@ constexpr auto is_derived_from(type_t<T> type) {
 }
 
 constexpr auto is_invocable = [](auto &&f, auto &&... args) {
-    auto trait = ltl::is_valid(FWD(f));
-    return trait(FWD(args)...);
+    return bool_v<std::is_invocable_v<decltype(f), decltype(args)...>>;
 };
 
 template <typename F, typename... Ts>
