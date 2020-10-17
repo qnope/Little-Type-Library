@@ -34,6 +34,8 @@ target_link_libraries(LTLtest PRIVATE
 
 target_compile_features(LTLtest PRIVATE cxx_std_17)
 
+target_compile_definitions(LTLtest PRIVATE -D LTL_ALLOW_UNDEFINED_BEHAVIOUR)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   target_compile_options(LTLtest PRIVATE -ftime-trace)
 elseif(MSVC)

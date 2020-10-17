@@ -77,8 +77,8 @@ constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
 
 template <typename T1, typename F, requires_f(IsOptional<T1>)>
 constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
-    typed_static_assert_msg(is_optional(ltl::invoke(std::move(b.f), *a)),
-                            "With >> notation, function must return optional");
+    static_assert(IsOptional<decltype(ltl::invoke(std::move(b.f), *a))>,
+                  "With >> notation, function must return optional");
     if (a)
         return ltl::invoke(std::move(b.f), *FWD(a));
     return decltype(ltl::invoke(std::move(b.f), *FWD(a))){};
@@ -87,8 +87,8 @@ constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
 template <typename T1, typename F, requires_f(IsOptionalType<T1>)>
 constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
     if_constexpr(a.has_value) { //
-        typed_static_assert_msg(is_optional_type(ltl::invoke(std::move(b.f), *a)),
-                                "With >> notation, function must return optional_type");
+        static_assert(IsOptionalType<decltype(ltl::invoke(std::move(b.f), *a))>,
+                      "With >> notation, function must return optional_type");
         return ltl::invoke(std::move(b.f), *a);
     }
     else {

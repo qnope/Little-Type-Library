@@ -396,9 +396,9 @@ TEST(LTL_test, test_trait) {
     static_assert(ltl::extent(ltl::type_v<float[5][3]>, 0_n) == 5_n);
     static_assert(ltl::extent(ltl::type_v<float[5][3]>) == 5_n);
     static_assert(ltl::add_pointer(ltl::type_v<int>) == ltl::type_v<int *>);
-    static_assert(ltl::is_iterable(ltl::type_v<std::vector<int>>));
-    static_assert(!ltl::is_iterable(ltl::type_v<int>));
-    static_assert(ltl::is_iterable(ltl::type_v<std::array<int, 1>>));
+    typed_static_assert(ltl::is_iterable(ltl::type_v<std::vector<int>>));
+    typed_static_assert(!ltl::is_iterable(ltl::type_v<int>));
+    typed_static_assert(ltl::is_iterable(ltl::type_v<std::array<int, 1>>));
     typed_static_assert(!ltl::is_generic_callable(std::any{}));
 
     auto lambda_int = [](int) {};
@@ -425,9 +425,9 @@ TEST(LTL_test, test_trait) {
         static_assert(ltl::is_rvalue_reference(5));
         static_assert(ltl::is_const(clvalue));
         static_assert(ltl::is_optional(opt));
-        static_assert(!ltl::is_iterable(opt));
-        static_assert(ltl::is_iterable(array));
-        static_assert(ltl::is_iterable(array2));
+        typed_static_assert(!ltl::is_iterable(opt));
+        typed_static_assert(ltl::is_iterable(array));
+        typed_static_assert(ltl::is_iterable(array2));
     }
 
     {

@@ -21,8 +21,6 @@ constexpr decltype(auto) INVOKE(Type T::*f, T1 &&t1, Args &&... args) {
         else
             return ((*static_cast<T1 &&>(t1)).*f)(static_cast<Args &&>(args)...);
     } else {
-        static_assert(std::is_member_object_pointer_v<decltype(f)>);
-        static_assert(sizeof...(args) == 0);
         if constexpr (std::is_base_of_v<T, std::decay_t<T1>>)
             return static_cast<T1 &&>(t1).*f;
         else if constexpr (is_reference_wrapper_v<std::decay_t<T1>>)

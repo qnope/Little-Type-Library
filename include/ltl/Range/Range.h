@@ -67,6 +67,11 @@ class Range : public AbstractRange<Range<It>> {
     It m_end;
 };
 
+template <typename R>
+Range(R &r)->Range<decltype(std::begin(r))>;
+
+LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename, );
+
 template <typename Container, typename... Operations>
 class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> {
     using range_type = decltype((std::declval<Container &>() | ... | std::declval<Operations>()));
@@ -94,9 +99,6 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
 };
 
 template <typename R>
-Range(R &r)->Range<decltype(std::begin(r))>;
-
-template <typename R>
 auto begin(const AbstractRange<R> &r) noexcept {
     return static_cast<const R &>(r).begin();
 }
@@ -110,8 +112,6 @@ template <typename R>
 auto size(const AbstractRange<R> &r) noexcept {
     return static_cast<const R &>(r).size();
 }
-
-LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename);
 
 namespace actions {
 struct AbstractAction {};

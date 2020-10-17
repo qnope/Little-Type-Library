@@ -28,8 +28,13 @@ constexpr auto report_call(F f, Args... xs) {
 
 template <typename F, typename... Args>
 constexpr decltype(auto) curry(F f, Args &&... args) {
-    if_constexpr(ltl::is_invocable(f, FWD(args)...)) { return ltl::invoke(f, FWD(args)...); }
-    else {
+    if constexpr (std::is_invocable_v<F, Args...>) {
+        if constexpr (std::is_member_pointer_v<F>) {
+            return ltl::invoke(f, FWD(args)...);
+        } else {
+            return f(FWD(args)...);
+        }
+    } else {
         return report_call(lift(curry), std::move(f), FWD(args)...);
     }
 }
@@ -68,27 +73,27 @@ constexpr auto less_than(T t) {
 
 template <typename T>
 constexpr auto less_than_equal(T t) {
-    return [t = std::move(t)](auto x) { return x <= t; };
+    return [t = std::move(t)](const auto &x) { return x <= t; };
 }
 
 template <typename T>
 constexpr auto greater_than(T t) {
-    return [t = std::move(t)](auto x) { return x > t; };
+    return [t = std::move(t)](const auto &x) { return x > t; };
 }
 
 template <typename T>
 constexpr auto greater_than_equal(T t) {
-    return [t = std::move(t)](auto x) { return x >= t; };
+    return [t = std::move(t)](const auto &x) { return x >= t; };
 }
 
 template <typename T>
 constexpr auto equal_to(T t) {
-    return [t = std::move(t)](auto x) { return x == t; };
+    return [t = std::move(t)](const auto &x) { return x == t; };
 }
 
 template <typename T>
 constexpr auto not_equal_to(T t) {
-    return [t = std::move(t)](auto x) { return x != t; };
+    return [t = std::move(t)](const auto &x) { return x != t; };
 }
 
 template <typename F>
