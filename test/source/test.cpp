@@ -2156,17 +2156,17 @@ TEST(LTL_test, test_seq) {
 int main() {
     using namespace ltl;
 
-    struct a {
-        void f(int) {}
-
-        double d;
+    struct test {
+        int sum(int a, int b, int c) const noexcept { return a + b + c; }
     };
 
-    a b;
-    int c;
-    using g = decltype(ltl::details::type_from_member_pointer(&a::f, b));
+    test t;
+    int x = ltl::curry(&test::sum, t, 1, 2, 3);
 
-    ltl::Error<g>{};
+    static_assert(std::is_member_function_pointer_v<std::decay_t<decltype(&test::sum) &>>);
+    using g = fast_invoke_result_t<decltype(&test::sum) &, test &, int, int, int>;
+
+    // ltl::Error<g>{};
 
     //    auto plus_1 = [](auto x) { return x + 1; };
     //    auto values = std::array{0, 1, 2, 3, 4, 5};
