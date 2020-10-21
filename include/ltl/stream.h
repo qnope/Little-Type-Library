@@ -5,7 +5,6 @@
 #include <streambuf>
 
 #include "algos.h"
-#include "operator.h"
 #include "traits.h"
 
 namespace ltl {
@@ -45,9 +44,9 @@ class basic_readonly_streambuf final : public std::basic_streambuf<Char, Trait> 
     std::streamsize xsgetn(char_type *s, std::streamsize count) override {
         if (showmanyc() < count)
             return 0;
-        auto to_char = map([](auto x) { return static_cast<char_type>(x); });
-        ltl::copy(Range{m_current, m_end} | to_char | take_n(count), s);
-        std::advance(m_current, count);
+        for (int i = 0; i < count; ++i) {
+            *s++ = static_cast<char_type>(*m_current++);
+        }
         return count;
     }
 
@@ -132,9 +131,9 @@ class basic_writeonly_streambuf final : public std::basic_streambuf<Char, Trait>
 
   protected:
     std::streamsize xsputn(const typename Trait::char_type *s, std::streamsize count) override {
-        auto to_underlying_type = map([](auto x) { return static_cast<T>(x); });
         m_container.reserve(m_container.size() + count);
-        ltl::copy(Range{s, s + count} | to_underlying_type, std::back_inserter(m_container));
+        for (int i = 0; i < count; ++i)
+            m_container.push_back(static_cast<T>(*s++));
         return count;
     }
 

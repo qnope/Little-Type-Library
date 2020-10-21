@@ -1267,7 +1267,7 @@ std::istream &operator>>(std::istream &stream, Message &msg) {
     std::istream::sentry s{stream, true};
     if (s) {
         auto pos = stream.tellg();
-        unsigned int header;
+        unsigned int header{};
 
         stream >> ltl::as_byte{header};
         stream >> ltl::as_byte{msg.size};
@@ -2156,20 +2156,10 @@ TEST(LTL_test, test_seq) {
 int main() {
     using namespace ltl;
 
-    struct test {
-        int sum(int a, int b, int c) const noexcept { return a + b + c; }
-    };
+    //    ltl::Error<g>{};
 
-    test t;
-    int x = ltl::curry(&test::sum, t, 1, 2, 3);
-
-    static_assert(std::is_member_function_pointer_v<std::decay_t<decltype(&test::sum) &>>);
-    using g = fast_invoke_result_t<decltype(&test::sum) &, test &, int, int, int>;
-
-    // ltl::Error<g>{};
-
-    //    auto plus_1 = [](auto x) { return x + 1; };
-    //    auto values = std::array{0, 1, 2, 3, 4, 5};
-    //    auto x = values | map(plus_1) | map(plus_1) | to_vector;
+    auto plus_1 = [](auto x) { return x + 1; };
+    auto values = std::array{0, 1, 2, 3, 4, 5};
+    auto x = values | map(plus_1) | map(plus_1) | to_vector;
 }
 #endif
