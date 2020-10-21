@@ -34,10 +34,10 @@ struct type_from_attribute<std::void_t<decltype(std::declval<T>().*std::declval<
 
 template <typename F, typename... Args>
 using sfinae_helper =
-    typename std::conditional_t<std::is_member_function_pointer_v<std::decay_t<F>>,                     //
-                                type_from_method<void, std::decay_t<F>, Args...>,                       //
-                                std::conditional_t<std::is_member_object_pointer_v<std::decay_t<F>>,    //
-                                                   type_from_attribute<void, std::decay_t<F>, Args...>, //
+    typename std::conditional_t<std::is_member_function_pointer_v<std::remove_reference_t<F>>,                     //
+                                type_from_method<void, std::remove_reference_t<F>, Args...>,                       //
+                                std::conditional_t<std::is_member_object_pointer_v<std::remove_reference_t<F>>,    //
+                                                   type_from_attribute<void, std::remove_reference_t<F>, Args...>, //
                                                    type_from_function<void, F, Args...>>>::type;
 
 template <typename AlwaysVoid, typename... Args>
