@@ -12,23 +12,14 @@ namespace detail {
 template <typename T>
 using safe_add_lvalue_reference = std::conditional_t<std::is_reference_v<T>, T, std::add_lvalue_reference_t<T>>;
 
-template <typename T>
-using safe_add_rvalue_reference = std::conditional_t<std::is_reference_v<T>, T, std::add_rvalue_reference_t<T>>;
-
-template <int I, typename T>
+template <int I, typename T, bool = std::is_empty_v<T> && !std::is_final_v<T>>
 struct Value {
     constexpr explicit Value() noexcept : m_value{} {}
 
     template <typename _T>
     constexpr explicit Value(_T &&t) noexcept : m_value{FWD(t)} {}
 
-    template <typename _T>
-    constexpr Value &operator=(_T &&t) noexcept {
-        m_value = FWD(t);
-        return *this;
-    }
-
-    constexpr T operator[](ltl::number_t<I>) && noexcept { return static_cast<safe_add_rvalue_reference<T>>(m_value); }
+    constexpr T operator[](ltl::number_t<I>) && noexcept { return FWD(m_value); }
 
     constexpr safe_add_lvalue_reference<std::add_const_t<T>> operator[](ltl::number_t<I>) const &noexcept {
         return static_cast<safe_add_lvalue_reference<std::add_const_t<T>>>(m_value);
@@ -41,13 +32,24 @@ struct Value {
     T m_value;
 };
 
+template <int I, typename T>
+struct Value<I, T, true> : private T {
+    constexpr explicit Value() noexcept {}
+
+    template <typename _T>
+    constexpr explicit Value(_T &&t) noexcept : T{FWD(t)} {}
+
+    constexpr T &operator[](ltl::number_t<I>) & noexcept { return *this; }
+    constexpr const T &operator[](ltl::number_t<I>) const &noexcept { return *this; }
+
+    constexpr T operator[](ltl::number_t<I>) && noexcept { return static_cast<T &&>(*this); }
+};
+
 template <typename...>
-class tuple_t;
+class tuple_base_t;
 
 template <int... Is, typename... Ts>
-class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
-    public Value<Is, Ts>...,
-    public Comparable<tuple_t<std::integer_sequence<int, Is...>, Ts...>> {
+class tuple_base_t<std::integer_sequence<int, Is...>, Ts...> : public Value<Is, Ts>... {
   public:
     using Value<Is, Ts>::operator[]...;
 
@@ -55,19 +57,19 @@ class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
     constexpr static auto isEmpty = length == 0_n;
 
     template <bool isNotEmpty = !isEmpty, typename = std::enable_if_t<isNotEmpty>>
-    constexpr tuple_t() noexcept {}
+    constexpr tuple_base_t() noexcept {}
 
-    constexpr tuple_t(Ts... ts) : Value<Is, Ts>{FWD(ts)}... {}
+    constexpr tuple_base_t(Ts... ts) : Value<Is, Ts>{FWD(ts)}... {}
 
     template <typename... _Ts>
-    tuple_t &operator=(const tuple_t<_Ts...> &t) {
+    tuple_base_t &operator=(const tuple_base_t<_Ts...> &t) {
         typed_static_assert_msg(t.length == length, "Tuple must have the same size");
         (((*this)[number_v<Is>] = t[number_v<Is>]), ...);
         return *this;
     }
 
     template <typename... _Ts>
-    tuple_t &operator=(tuple_t<_Ts...> &&t) {
+    tuple_base_t &operator=(tuple_base_t<_Ts...> &&t) {
         typed_static_assert_msg(t.length == length, "Tuple must have the same size");
         (((*this)[number_v<Is>] = std::move(t)[number_v<Is>]), ...);
         return *this;
@@ -122,13 +124,13 @@ class tuple_t<std::integer_sequence<int, Is...>, Ts...> :
     }
 
     template <typename... _Ts>
-    constexpr auto operator==(const tuple_t<_Ts...> &t) const noexcept {
+    constexpr auto operator==(const tuple_base_t<_Ts...> &t) const noexcept {
         typed_static_assert_msg(t.length == length, "Tuple must have the same size");
         return (((*this)[number_v<Is>] == t[number_v<Is>]) && ... && true_v);
     }
 
     template <typename... _Ts>
-    constexpr bool operator<(const tuple_t<_Ts...> &t) const noexcept {
+    constexpr bool operator<(const tuple_base_t<_Ts...> &t) const noexcept {
         typed_static_assert_msg(t.length == length, "Tuple must have the same size");
         bool resultComparison = false;
         auto tester = [&resultComparison](const auto &a, const auto &b) {
@@ -160,10 +162,12 @@ using make_integer_sequence = typename make_integer_sequence_impl<N1, std::make_
 } // namespace detail
 
 template <typename... Ts>
-class [[nodiscard]] tuple_t : public detail::tuple_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...> {
+class [[nodiscard]] tuple_t :
+    public detail::tuple_base_t<std::make_integer_sequence<int, sizeof...(Ts)>, Ts...>,
+    public Comparable<tuple_t<Ts...>> {
   public:
     using indexer_sequence_t = std::make_integer_sequence<int, sizeof...(Ts)>;
-    using super = detail::tuple_t<indexer_sequence_t, Ts...>;
+    using super = detail::tuple_base_t<indexer_sequence_t, Ts...>;
 
     using super::isEmpty;
     using super::length;
@@ -304,10 +308,10 @@ tuple_t<Ts &...> tie(Ts &... ts) noexcept {
     return {ts...};
 }
 
-LTL_MAKE_IS_KIND(tuple_t, is_tuple_t, IsTuple, typename, ...);
-LTL_MAKE_IS_KIND(type_list_t, is_type_list_t, IsTypeList, typename, ...);
-LTL_MAKE_IS_KIND(number_list_t, is_number_list_t, IsNumberList, int, ...);
-LTL_MAKE_IS_KIND(bool_list_t, is_bool_list_t, IsBoolList, bool, ...);
+LTL_MAKE_IS_KIND(tuple_t, is_tuple, is_tuple_t, IsTuple, typename, ...);
+LTL_MAKE_IS_KIND(type_list_t, is_type_list, is_type_list_t, IsTypeList, typename, ...);
+LTL_MAKE_IS_KIND(number_list_t, is_number_list, is_number_list_t, IsNumberList, int, ...);
+LTL_MAKE_IS_KIND(bool_list_t, is_bool_list, is_bool_list_t, IsBoolList, bool, ...);
 
 template <typename N1, typename N2>
 [[nodiscard]] constexpr auto build_index_list(N1 n1, N2 n2) {

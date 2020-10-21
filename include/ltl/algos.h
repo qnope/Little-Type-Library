@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <numeric>
 #include <optional>
+#include <functional>
 
 #include "Tuple.h"
 #include "concept.h"
@@ -11,6 +12,7 @@
 #include "Range/Range.h"
 
 namespace ltl {
+
 #define MAKE_CALLER(f) [&f](auto &&... xs) { return ltl::invoke(static_cast<F &&>(f), FWD(xs)...); }
 
 using std::begin;

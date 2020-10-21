@@ -424,7 +424,7 @@ TEST(LTL_test, test_trait) {
         static_assert(ltl::is_rvalue_reference(std::move(lvalue)));
         static_assert(ltl::is_rvalue_reference(5));
         static_assert(ltl::is_const(clvalue));
-        static_assert(ltl::is_optional(opt));
+        static_assert(ltl::is_optional_f(opt));
         typed_static_assert(!ltl::is_iterable(opt));
         typed_static_assert(ltl::is_iterable(array));
         typed_static_assert(ltl::is_iterable(array2));
@@ -927,7 +927,7 @@ TEST(LTL_test, test_functional) {
     ASSERT_TRUE(ltl::curry(divisor)(1000)(10)(5)(5) == 4);
 
     struct test {
-        int sum(int a, int b, int c) const { return a + b + c; }
+        int sum(int a, int b, int c) const noexcept { return a + b + c; }
     };
 
     test t;
@@ -1676,9 +1676,9 @@ TEST(LTL_test, test_expected_monade) {
     expected<int, const char *> res = 18;
     expected<int, const char *> err{"wrong"};
 
-    typed_static_assert(is_expected(res));
-    typed_static_assert(is_expected(std::move(err)));
-    typed_static_assert(!is_expected(4));
+    typed_static_assert(is_expected_f(res));
+    typed_static_assert(is_expected_f(std::move(err)));
+    typed_static_assert(!is_expected_f(4));
 
     {
         auto plus_3 = [](auto x) { return x + 3; };
@@ -1686,7 +1686,7 @@ TEST(LTL_test, test_expected_monade) {
         auto a = res | map(plus_3);
         auto b = err | map(plus_3);
 
-        typed_static_assert(is_expected(a) && is_expected(b));
+        typed_static_assert(is_expected_f(a) && is_expected_f(b));
 
         ASSERT_TRUE(a.is_result());
         ASSERT_TRUE(b.is_error());
@@ -2152,12 +2152,24 @@ TEST(LTL_test, test_seq) {
 }
 
 #else
+
 int main() {
     using namespace ltl;
-    constexpr auto big = ltl::build_index_list(1000_n);
-    constexpr auto little = build_index_list(5_n);
 
-    constexpr auto b = big.pop_front();
-    constexpr auto l = little.pop_front();
+    struct a {
+        void f(int) {}
+
+        double d;
+    };
+
+    a b;
+    int c;
+    using g = decltype(ltl::details::type_from_member_pointer(&a::f, b));
+
+    ltl::Error<g>{};
+
+    //    auto plus_1 = [](auto x) { return x + 1; };
+    //    auto values = std::array{0, 1, 2, 3, 4, 5};
+    //    auto x = values | map(plus_1) | map(plus_1) | to_vector;
 }
 #endif

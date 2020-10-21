@@ -278,14 +278,18 @@ constexpr auto is_valid(F &&) {
     ltl::is_valid(                                                                                                     \
         [] LPL_IDENTITY(LTL_WRITE_AUTO_IMPL LTL_ENSURE_NOT_EMPTY variables) -> decltype(__VA_ARGS__, void()) {})
 
-#define LTL_MAKE_IS_KIND(type, name, conceptName, templateType, v)                                                     \
+#define LTL_MAKE_IS_KIND(type, nameStruct, nameLambda, conceptName, templateType, v)                                   \
     template <typename T>                                                                                              \
-    [[maybe_unused]] constexpr bool LPL_CAT(conceptName, Impl) = false;                                                \
+    struct nameStruct {                                                                                                \
+        static constexpr auto value = false;                                                                           \
+    };                                                                                                                 \
     template <templateType v Ts>                                                                                       \
-    [[maybe_unused]] constexpr bool LPL_CAT(conceptName, Impl)<type<Ts v>> = true;                                     \
+    struct nameStruct<type<Ts v>> {                                                                                    \
+        static constexpr auto value = true;                                                                            \
+    };                                                                                                                 \
     template <typename T>                                                                                              \
-    [[maybe_unused]] constexpr bool conceptName = LPL_CAT(conceptName, Impl)<std::decay_t<T>>;                         \
-    [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr noexcept {                                           \
+    [[maybe_unused]] constexpr bool conceptName = nameStruct<std::decay_t<T>>::value;                                  \
+    [[maybe_unused]] constexpr auto nameLambda = [](auto &&x) constexpr noexcept {                                     \
         return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
     }
 

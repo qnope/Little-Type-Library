@@ -29,11 +29,7 @@ constexpr auto report_call(F f, Args... xs) {
 template <typename F, typename... Args>
 constexpr decltype(auto) curry(F f, Args &&... args) {
     if constexpr (std::is_invocable_v<F, Args...>) {
-        if constexpr (std::is_member_pointer_v<F>) {
-            return ltl::invoke(f, FWD(args)...);
-        } else {
-            return f(FWD(args)...);
-        }
+        return ltl::invoke(f, FWD(args)...);
     } else {
         return report_call(lift(curry), std::move(f), FWD(args)...);
     }

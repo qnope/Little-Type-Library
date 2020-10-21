@@ -61,12 +61,11 @@ class ZipRange : public AbstractRange<ZipRange<Containers...>> {
 
 template <typename... Containers>
 auto zip(Containers &&... containers) {
-    constexpr auto types = type_list_v<Containers...>;
     using std::size;
-    typed_static_assert(!types.isEmpty);
+    static_assert(sizeof...(Containers) > 0);
     static_assert((IsIterable<Containers> && ...), "Zip operations must be used with containers");
 
-    assert(tuple_t{std::cref(containers)...}([](const auto &c1, const auto &... cs) {
+    assert(tuple_t{std::ref(containers)...}([](const auto &c1, const auto &... cs) {
         return (true && ... && (std::size_t(size(c1)) == std::size_t(size(cs))));
     }));
 
