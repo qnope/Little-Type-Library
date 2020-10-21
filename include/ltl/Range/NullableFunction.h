@@ -8,7 +8,7 @@
 namespace ltl {
 
 #if defined LTL_ALLOW_UNDEFINED_BEHAVIOUR
-template <typename F, typename = void>
+template <typename F, bool = std::is_empty_v<F>>
 #else
 template <typename F>
 #endif
@@ -29,7 +29,6 @@ struct NullableFunction {
 
     template <typename... Args>
     decltype(auto) operator()(Args &&... args) const {
-        assert(m_function);
         if constexpr (std::is_member_pointer_v<F>)
             return ltl::invoke(*m_function, FWD(args)...);
         else
@@ -65,7 +64,7 @@ struct NullableFunction {
 #if defined LTL_ALLOW_UNDEFINED_BEHAVIOUR
 
 template <typename F>
-struct NullableFunction<F, std::enable_if_t<std::is_empty_v<F>>> {
+struct NullableFunction<F, true> {
     NullableFunction() = default;
     NullableFunction(F) {}
 

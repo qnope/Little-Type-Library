@@ -9,6 +9,18 @@
 namespace ltl {
 namespace actions {
 
+using std::begin;
+using std::end;
+
+struct AbstractAction {};
+struct AbstractModifyingAction : AbstractAction {};
+
+template <typename T>
+constexpr bool IsAction = std::is_base_of_v<AbstractAction, std::decay_t<T>>;
+
+template <typename T>
+constexpr bool IsModifyingAction = std::is_base_of_v<AbstractModifyingAction, std::decay_t<T>>;
+
 constexpr struct Sort : AbstractModifyingAction {
 } sort;
 
@@ -118,7 +130,7 @@ constexpr auto accumulate(T &&init, F f = F{}) {
     return Accumulate<T, F>{FWD(init), std::move(f)};
 }
 
-template <typename Action1, typename Action2, requires_f(IsAction<Action1>), requires_f(IsAction<Action2>)>
+template <typename Action1, typename Action2, requires_f(IsAction<Action1> &&IsAction<Action2>)>
 constexpr auto operator|(Action1 a, Action2 b) {
     return ltl::tuple_t{std::move(a), std::move(b)};
 }
@@ -187,11 +199,11 @@ auto operator|(C &c, FindIfPtr<F> e) {
 
 template <typename C, typename D, requires_f(ltl::IsIterable<C>)>
 auto operator|(const C &c, JoinWith<D> d) -> std::decay_t<decltype(*c.begin())> {
-    std::decay_t<decltype(*c.begin())> result{};
+    std::decay_t<decltype(*begin(c))> result{};
     if (c.empty()) {
         return result;
     } else {
-        return ltl::accumulate(c | ltl::drop_n(1), *c.begin(), [&d](auto init, auto other) { //
+        return std::accumulate(std::next(begin(c)), end(c), *c.begin(), [&d](auto init, auto other) { //
             return std::move(init) + d.d + std::move(other);
         });
     }
@@ -202,7 +214,7 @@ auto operator|(const C &c, Accumulate<T, F> a) {
     return ltl::accumulate(c, FWD(a.init), a.f);
 }
 
-template <typename C, typename Action, requires_f(ltl::IsIterable<C>), requires_f(IsModifyingAction<Action>)>
+template <typename C, typename Action, requires_f(ltl::IsIterable<C> &&IsModifyingAction<Action>)>
 auto operator|(C c, Action a) {
     c |= a;
     return c;

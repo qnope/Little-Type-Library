@@ -70,17 +70,25 @@ class Range : public AbstractRange<Range<It>> {
 template <typename R>
 Range(R &r)->Range<decltype(std::begin(r))>;
 
-LTL_MAKE_IS_KIND(Range, is_range, IsRange, typename, );
+LTL_MAKE_IS_KIND(Range, is_range, is_range_f, IsRange, typename, );
+
+namespace details {
+template <typename... Ts>
+auto make_fast_compile_tuple(Ts... ts) {
+    return [ts...](auto &&f) mutable { return FWD(f)(ts...); };
+}
+} // namespace details
 
 template <typename Container, typename... Operations>
 class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> {
     using range_type = decltype((std::declval<Container &>() | ... | std::declval<Operations>()));
+    using tuple_type = decltype(details::make_fast_compile_tuple(std::declval<Operations>()...));
 
   public:
-    OwningRange(Container container, ltl::tuple_t<Operations...> operations) noexcept :
-        m_container(std::move(container)),   //
-        m_operations{std::move(operations)}, //
-        m_range{m_operations([&](auto &&... xs) { return (m_container | ... | xs); })} {}
+    OwningRange(Container container, Operations... operations) noexcept :
+        m_container(std::move(container)),                                        //
+        m_operations{details::make_fast_compile_tuple(std::move(operations)...)}, //
+        m_range{m_operations([this](auto &... xs) { return (m_container | ... | xs); })} {}
 
     auto begin() const noexcept { return m_range.begin(); }
 
@@ -88,13 +96,16 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
 
     template <typename NewOperation>
     auto add_operation(NewOperation newOperation) && {
-        return OwningRange<Container, Operations..., NewOperation>{
-            std::move(m_container), std::move(m_operations).push_back(std::move(newOperation))};
+        using new_range = OwningRange<Container, Operations..., NewOperation>;
+        auto adder = [this, &newOperation](auto &... xs) {
+            return new_range{std::move(m_container), std::move(xs)..., std::move(newOperation)};
+        };
+        return m_operations(adder);
     }
 
   private:
     Container m_container;
-    tuple_t<Operations...> m_operations;
+    tuple_type m_operations;
     range_type m_range;
 };
 
@@ -113,17 +124,6 @@ auto size(const AbstractRange<R> &r) noexcept {
     return static_cast<const R &>(r).size();
 }
 
-namespace actions {
-struct AbstractAction {};
-struct AbstractModifyingAction : AbstractAction {};
-
-template <typename T>
-constexpr bool IsAction = std::is_base_of_v<AbstractAction, std::decay_t<T>>;
-
-template <typename T>
-constexpr bool IsModifyingAction = std::is_base_of_v<AbstractModifyingAction, std::decay_t<T>>;
-} // namespace actions
-
 template <typename T>
 constexpr bool IsForOwningRange = IsIterable<T> &&IsRValueReference<T> && !IsRange<T>;
 
@@ -136,9 +136,9 @@ struct is_chainable_operation : false_t {};
 template <typename T>
 constexpr bool IsChainableOperation = is_chainable_operation<std::decay_t<T>>::value;
 
-template <typename T1, typename T2, requires_f(IsForOwningRange<T1>), requires_f(!actions::IsAction<T2>)>
-constexpr decltype(auto) operator|(T1 &&a, T2 &&b) {
-    return OwningRange<T1, T2>{FWD(a), FWD(b)};
+template <typename T1, typename T2, requires_f(IsForOwningRange<T1> &&IsChainableOperation<T2>)>
+constexpr decltype(auto) operator|(T1 &&a, T2 b) {
+    return OwningRange<T1, T2>{FWD(a), std::move(b)};
 }
 
 template <typename... Ts, typename T2, requires_f(IsChainableOperation<T2>)>
@@ -146,8 +146,7 @@ constexpr decltype(auto) operator|(OwningRange<Ts...> &&a, T2 b) {
     return std::move(a).add_operation(std::move(b));
 }
 
-template <typename T1, typename... Ts, requires_f(IsIterableRef<T1>),
-          requires_f((true && ... && IsChainableOperation<Ts>))>
+template <typename T1, typename... Ts, requires_f(IsIterableRef<T1> && (... && IsChainableOperation<Ts>))>
 constexpr decltype(auto) operator|(T1 &&a, tuple_t<Ts...> b) {
     return std::move(b)([&a](auto &&... xs) { return (static_cast<T1 &&>(a) | ... | (std::move(xs))); });
 }

@@ -29,6 +29,6 @@ optional_type(T)->optional_type<T>;
 
 constexpr optional_type<details::EmptyOptionalType> nullopt_type;
 
-LTL_MAKE_IS_KIND(optional_type, is_optional_type, IsOptionalType, typename, );
+LTL_MAKE_IS_KIND(optional_type, is_optional_type, is_optional_type_f, IsOptionalType, typename, );
 
 } // namespace ltl

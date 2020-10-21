@@ -24,11 +24,10 @@ auto match_result(Variant &&variant, Fs... fs) {
 }
 
 template <typename F, typename Variant>
-constexpr auto is_callable_from(F &&f, Variant &&variant) {
-    auto is_f_invocable = [&f](auto x) { return ltl::is_invocable(static_cast<F &&>(f), declval(x)); };
-
-    constexpr auto qualified_types = types_from(variant);
-    return all_of_type(qualified_types, is_f_invocable);
+constexpr auto is_callable_from(F &&, Variant &&variant) {
+    auto qualified_types = types_from(variant);
+    return qualified_types(
+        [](auto... xs) { return bool_v<std::conjunction_v<std::is_invocable<F, extract_type<decltype(xs)>>...>>; });
 }
 
 template <typename T>
@@ -60,7 +59,7 @@ class recursive_wrapper {
     std::unique_ptr<T> m_ptr;
 };
 
-LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, IsRecursiveWrapper, typename, );
+LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, is_recursive_wrapper_f, IsRecursiveWrapper, typename, );
 
 template <typename... Ts>
 class recursive_variant {

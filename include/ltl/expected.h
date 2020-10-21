@@ -89,7 +89,7 @@ class [[nodiscard]] expected {
     std::variant<value_type, error_type> m_result;
 };
 
-LTL_MAKE_IS_KIND(expected, is_expected, IsExpected, typename, ...);
+LTL_MAKE_IS_KIND(expected, is_expected, is_expected_f, IsExpected, typename, ...);
 
 template <typename T1, typename F, requires_f(IsExpected<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
