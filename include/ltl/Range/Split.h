@@ -131,15 +131,15 @@ constexpr decltype(auto) operator|(T1 &&a, GroupByType<F> b) {
     using it = decltype(begin(FWD(a)));
 
     auto dereference = [f = b.f](auto it, auto end) {
-        decltype(auto) value = ltl::invoke(f, *it);
+        decltype(auto) value = ltl::fast_invoke(f, *it);
         return ltl::tuple_t<decltype(value), Range<decltype(it)>>{value, {std::move(it), std::move(end)}};
     };
 
     auto f = [f = b.f](const auto &beg, const auto &end) {
         if (beg == end)
             return beg;
-        decltype(auto) value = ltl::invoke(f, *beg);
-        return std::find_if_not(beg, end, [&](auto &x) { return ltl::invoke(f, x) == value; });
+        decltype(auto) value = ltl::fast_invoke(f, *beg);
+        return std::find_if_not(beg, end, [&](auto &x) { return ltl::fast_invoke(f, x) == value; });
     };
 
     auto advance = ltl::overloader{[f](increment_tag_t, const auto &beg, const auto &end) { return f(beg, end); },

@@ -29,10 +29,7 @@ struct NullableFunction {
 
     template <typename... Args>
     decltype(auto) operator()(Args &&... args) const {
-        if constexpr (std::is_member_pointer_v<F>)
-            return ltl::invoke(*m_function, FWD(args)...);
-        else
-            return (*m_function)(FWD(args)...);
+        return ltl::fast_invoke(*m_function, FWD(args)...);
     }
 
   private:
