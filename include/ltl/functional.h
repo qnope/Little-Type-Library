@@ -43,13 +43,13 @@ constexpr auto compose(F f) {
 template <typename F, typename... Fs>
 constexpr auto compose(F f, Fs... fs) {
     return [f, fs...](auto &&... xs) -> decltype(auto) { //
-        return ltl::invoke(compose(fs...), ltl::invoke(f, FWD(xs)...));
+        return ltl::fast_invoke(compose(fs...), ltl::fast_invoke(f, FWD(xs)...));
     };
 }
 
 template <typename F>
 constexpr auto not_(F f) {
-    return [f = std::move(f)](auto &&... xs) { return !ltl::invoke(f, FWD(xs)...); };
+    return [f = std::move(f)](auto &&... xs) { return !ltl::fast_invoke(f, FWD(xs)...); };
 }
 
 template <typename... Fs>
@@ -124,13 +124,13 @@ constexpr auto identity = [](auto &&t) -> remove_rvalue_reference_t<decltype(FWD
 
 constexpr auto byAscending = [](auto f) {
     return [f = std::move(f)](const auto &x, const auto &y) noexcept { //
-        return ltl::invoke(f, x) < ltl::invoke(f, y);
+        return ltl::fast_invoke(f, x) < ltl::fast_invoke(f, y);
     };
 };
 
 constexpr auto byDescending = [](auto f) {
     return [f = std::move(f)](const auto &x, const auto &y) noexcept { //
-        return ltl::invoke(f, x) > ltl::invoke(f, y);
+        return ltl::fast_invoke(f, x) > ltl::fast_invoke(f, y);
     };
 };
 
