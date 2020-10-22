@@ -14,7 +14,8 @@ class SplitIterator :
     public IteratorOperationByIterating<SplitIterator<It, AdvanceIt, Dereference, ElementCountToSkip>>,
     public IteratorSimpleComparator<SplitIterator<It, AdvanceIt, Dereference, ElementCountToSkip>> {
   public:
-    using reference = fast_invoke_result_t<const Dereference &, const It &, const It &>;
+    using reference =
+        decltype(fast_invoke(std::declval<Dereference>(), std::declval<const It &>(), std::declval<const It &>()));
     DECLARE_EVERYTHING_BUT_REFERENCE(get_iterator_category<It>);
 
     SplitIterator() = default;

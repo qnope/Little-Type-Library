@@ -2156,10 +2156,10 @@ TEST(LTL_test, test_seq) {
 int main() {
     using namespace ltl;
 
-    //    ltl::Error<g>{};
+    ltl::tuple_t<int, double, short, double, int, double, int, double> a{};
+    std::tuple<int, double, short, double, int, double, int, double> b{};
 
-    auto plus_1 = [](auto x) { return x + 1; };
-    auto values = std::array{0, 1, 2, 3, 4, 5};
-    auto x = values | map(plus_1) | map(plus_1) | to_vector;
+    int x = apply([](auto... xs) { return (... + xs); }, a);
+    int y = apply([](auto... xs) { return (... + xs); }, b);
 }
 #endif

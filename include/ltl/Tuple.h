@@ -77,17 +77,17 @@ class tuple_base_t<std::integer_sequence<int, Is...>, Ts...> : public Value<Is, 
 
     template <typename F>
     constexpr decltype(auto) operator()(F &&f) & {
-        return ltl::invoke(FWD(f), (*this)[number_v<Is>]...);
+        return ltl::fast_invoke(FWD(f), (*this)[number_v<Is>]...);
     }
 
     template <typename F>
     constexpr decltype(auto) operator()(F &&f) const & {
-        return ltl::invoke(FWD(f), (*this)[number_v<Is>]...);
+        return ltl::fast_invoke(FWD(f), (*this)[number_v<Is>]...);
     }
 
     template <typename F>
     constexpr decltype(auto) operator()(F &&f) && {
-        return ltl::invoke(FWD(f), std::move(*this)[number_v<Is>]...);
+        return ltl::fast_invoke(FWD(f), std::move(*this)[number_v<Is>]...);
     }
 
     template <int N>
@@ -345,7 +345,7 @@ constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
 }
 
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
-constexpr decltype(auto) apply(F &&f, Tuple &&tuple) noexcept(noexcept(FWD(tuple)(FWD(f)))) {
+constexpr decltype(auto) apply(F &&f, Tuple &&tuple) {
     return FWD(tuple)(FWD(f));
 }
 
