@@ -52,7 +52,7 @@ class [[nodiscard]] expected {
 
     constexpr operator bool() const noexcept { return m_result.index() == 0; }
 
-    constexpr value_type &&result() && noexcept {
+    constexpr value_type &&result() &&noexcept {
         assert(m_result.index() == 0);
         return std::move(std::get<0>(m_result));
     }
@@ -62,12 +62,12 @@ class [[nodiscard]] expected {
         return std::get<0>(m_result);
     }
 
-    constexpr value_type &result() & noexcept {
+    constexpr value_type &result() &noexcept {
         assert(m_result.index() == 0);
         return std::get<0>(m_result);
     }
 
-    constexpr error_type &&error() && noexcept {
+    constexpr error_type &&error() &&noexcept {
         assert(m_result.index() == 1);
         return std::move(std::get<1>(m_result));
     }
@@ -77,7 +77,7 @@ class [[nodiscard]] expected {
         return std::get<1>(m_result);
     }
 
-    constexpr error_type &error() & noexcept {
+    constexpr error_type &error() &noexcept {
         assert(m_result.index() == 1);
         return std::get<1>(m_result);
     }
@@ -93,27 +93,27 @@ LTL_MAKE_IS_KIND(expected, is_expected, is_expected_f, IsExpected, typename, ...
 
 template <typename T1, typename F, requires_f(IsExpected<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
-    using value_type = decltype(ltl::invoke(std::move(b.f), FWD(a).result()));
+    using value_type = decltype(ltl::fast_invoke(std::move(b.f), FWD(a).result()));
     using error_type = typename std::decay_t<T1>::error_type;
     if (a) {
-        return expected<value_type, error_type>{value_tag{}, ltl::invoke(std::move(b.f), FWD(a).result())};
+        return expected<value_type, error_type>{value_tag{}, ltl::fast_invoke(std::move(b.f), FWD(a).result())};
     }
     return expected<value_type, error_type>{error_tag{}, FWD(a).error()};
 }
 
 template <typename T1, typename F, requires_f(IsExpected<T1>)>
 constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
-    static_assert(IsExpected<decltype(ltl::invoke(std::move(b.f), FWD(a).result()))>,
+    static_assert(IsExpected<decltype(ltl::fast_invoke(std::move(b.f), FWD(a).result()))>,
                   "With >> notation, function must return an expected");
     using old_error_type = typename std::decay_t<T1>::error_type;
-    using return_type = std::decay_t<decltype(ltl::invoke(std::move(b.f), FWD(a).result()))>;
+    using return_type = std::decay_t<decltype(ltl::fast_invoke(std::move(b.f), FWD(a).result()))>;
     using new_error_type = typename return_type::error_type;
 
     static_assert(std::is_convertible_v<old_error_type, new_error_type>,
                   "Old error type must be convertible to new_error_type");
 
     if (a)
-        return ltl::invoke(std::move(b.f), FWD(a).result());
+        return ltl::fast_invoke(std::move(b.f), FWD(a).result());
 
     return return_type{error_tag{}, FWD(a).error()};
 }

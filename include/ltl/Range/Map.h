@@ -58,14 +58,14 @@ constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
 template <typename T1, typename F, requires_f(IsOptional<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
     if (a)
-        return std::make_optional(ltl::invoke(std::move(b.f), *FWD(a)));
-    return decltype(std::make_optional(ltl::invoke(std::move(b.f), *FWD(a)))){};
+        return std::make_optional(ltl::fast_invoke(std::move(b.f), *FWD(a)));
+    return decltype(std::make_optional(ltl::fast_invoke(std::move(b.f), *FWD(a)))){};
 }
 
 template <typename T1, typename F, requires_f(IsOptionalType<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
     if_constexpr(a.has_value) { //
-        return ltl::optional_type{ltl::invoke(std::move(b.f), *a)};
+        return ltl::optional_type{ltl::fast_invoke(std::move(b.f), *a)};
     }
     else return ltl::nullopt_type;
 }
@@ -77,19 +77,19 @@ constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
 
 template <typename T1, typename F, requires_f(IsOptional<T1>)>
 constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
-    static_assert(IsOptional<decltype(ltl::invoke(std::move(b.f), *a))>,
+    static_assert(IsOptional<decltype(ltl::fast_invoke(std::move(b.f), *a))>,
                   "With >> notation, function must return optional");
     if (a)
-        return ltl::invoke(std::move(b.f), *FWD(a));
-    return decltype(ltl::invoke(std::move(b.f), *FWD(a))){};
+        return ltl::fast_invoke(std::move(b.f), *FWD(a));
+    return decltype(ltl::fast_invoke(std::move(b.f), *FWD(a))){};
 }
 
 template <typename T1, typename F, requires_f(IsOptionalType<T1>)>
 constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
     if_constexpr(a.has_value) { //
-        static_assert(IsOptionalType<decltype(ltl::invoke(std::move(b.f), *a))>,
+        static_assert(IsOptionalType<decltype(ltl::fast_invoke(std::move(b.f), *a))>,
                       "With >> notation, function must return optional_type");
-        return ltl::invoke(std::move(b.f), *a);
+        return ltl::fast_invoke(std::move(b.f), *a);
     }
     else {
         return ltl::nullopt_type;

@@ -66,7 +66,7 @@ template <typename T1, typename F, requires_f(IsIterableRef<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, TakeWhileType<F> b) {
     auto sentinelEnd = std::find_if_not(begin(FWD(a)), end(FWD(a)),
                                         [b = std::move(b)](auto &&x) { //
-                                            return ltl::invoke(std::move(b.f), FWD(x));
+                                            return ltl::fast_invoke(std::move(b.f), FWD(x));
                                         });
     return Range{begin(FWD(a)), sentinelEnd};
 }
@@ -74,7 +74,7 @@ constexpr decltype(auto) operator|(T1 &&a, TakeWhileType<F> b) {
 template <typename T1, typename F, requires_f(IsIterableRef<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, DropWhileType<F> b) {
     auto sentinelBegin = std::find_if_not(begin(FWD(a)), end(FWD(a)), [b = std::move(b)](auto &&x) { //
-        return ltl::invoke(std::move(b.f), FWD(x));
+        return ltl::fast_invoke(std::move(b.f), FWD(x));
     });
     return Range{sentinelBegin, end(FWD(a))};
 }
