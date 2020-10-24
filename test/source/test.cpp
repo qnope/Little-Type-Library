@@ -2158,6 +2158,10 @@ int main() {
 
     ltl::tuple_t<int, double, short, double, int, double, int, double> a{};
 
-    auto b = a.make_indexer();
+    auto b = a.getTypes();
+
+    auto c = b[number_v<4>];
+    auto d = b[number_v<0>];
+    auto e = b[number_v<7>];
 }
 #endif
