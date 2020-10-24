@@ -2158,10 +2158,6 @@ int main() {
 
     ltl::tuple_t<int, double, short, double, int, double, int, double> a{};
 
-    auto b = a.getTypes();
-
-    ltl::type_list_t<int, int, double, unsigned char> tuple;
-    ltl::type_list_t<int *, int *, double *, unsigned char *> ptrs;
-    typed_static_assert(type_from(ptrs) == type_from(ltl::transform_type(tuple, ltl::add_pointer)));
+    auto b = a.make_indexer();
 }
 #endif
