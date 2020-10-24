@@ -204,10 +204,19 @@ using make_integer_sequence = typename make_integer_sequence_impl<N1, std::make_
 template <typename... Ts>
 class tuple_t;
 
+namespace detail {
+template <typename Seq>
+struct integer_sequence_to_number_listImpl;
+
 template <int... Is>
-constexpr auto integer_sequence_to_number_list(std::integer_sequence<int, Is...>) {
-    return tuple_t<number_t<Is>...>{};
-}
+struct integer_sequence_to_number_listImpl<std::integer_sequence<int, Is...>> {
+    using type = ltl::tuple_t<number_t<Is>...>;
+};
+
+} // namespace detail
+
+template <typename Seq>
+using integer_sequence_to_number_list = typename detail::integer_sequence_to_number_listImpl<Seq>::type;
 
 template <typename... Ts>
 class [[nodiscard]] tuple_t :
@@ -306,7 +315,7 @@ class [[nodiscard]] tuple_t :
 
     static constexpr auto make_indexer_sequence() noexcept { return indexer_sequence_t{}; }
 
-    static constexpr auto make_indexer() noexcept { return build_index_list(length); }
+    static constexpr auto make_indexer() noexcept { return integer_sequence_to_number_list<indexer_sequence_t>{}; }
 };
 
 template <typename... Ts>
@@ -353,7 +362,7 @@ class tuple_t<ltl::type_t<Ts>...> :
 
     static constexpr auto make_indexer_sequence() noexcept { return indexer_sequence_t{}; }
 
-    static constexpr auto make_indexer() noexcept { return build_index_list(length); }
+    static constexpr auto make_indexer() noexcept { return integer_sequence_to_number_list<indexer_sequence_t>{}; }
 };
 
 template <template <auto> typename V, auto... values>
@@ -424,7 +433,9 @@ class tuple_t<V<values>...> {
 
     static constexpr auto make_indexer_sequence() noexcept { return std::make_integer_sequence<int, length.value>{}; }
 
-    static constexpr auto make_indexer() noexcept { return integer_sequence_to_number_list(make_indexer_sequence()); }
+    static constexpr auto make_indexer() noexcept {
+        return integer_sequence_to_number_list<std::make_integer_sequence<int, length.value>>{};
+    }
 
   private:
     static constexpr std::array m_array = {values...};
@@ -462,7 +473,7 @@ LTL_MAKE_IS_KIND(bool_list_t, is_bool_list, is_bool_list_t, IsBoolList, bool, ..
 
 template <typename N1, typename N2>
 [[nodiscard]] constexpr auto build_index_list(N1, N2) {
-    return integer_sequence_to_number_list(detail::make_integer_sequence<N1::value, N2::value>{});
+    return integer_sequence_to_number_list<detail::make_integer_sequence<N1::value, N2::value>>{};
 }
 
 template <typename N>
