@@ -135,14 +135,12 @@ class tuple_base_t<std::integer_sequence<int, Is...>, Ts...> : public value<Is, 
         typed_static_assert_msg(t.length == length, "Tuple must have the same size");
         bool resultComparison = false;
         auto tester = [&resultComparison](const auto &a, const auto &b) {
-            if (a > b) {
+            if (a == b) {
                 resultComparison = false;
-                return false;
-            } else if (a < b) {
-                resultComparison = true;
-                return false;
+                return true;
             }
-            return true;
+            resultComparison = a < b;
+            return false;
         };
         (... && (tester((*this)[number_v<Is>], t[number_v<Is>])));
         return resultComparison;
