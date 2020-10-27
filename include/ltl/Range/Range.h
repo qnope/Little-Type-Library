@@ -146,7 +146,7 @@ constexpr decltype(auto) operator|(OwningRange<Ts...> &&a, T2 b) {
     return std::move(a).add_operation(std::move(b));
 }
 
-template <typename T1, typename... Ts, requires_f(IsIterableRef<T1> && (... && IsChainableOperation<Ts>))>
+template <typename T1, typename... Ts, requires_f((IsChainableOperation<Ts> && ... && IsIterableRef<T1>))>
 constexpr decltype(auto) operator|(T1 &&a, tuple_t<Ts...> b) {
     return std::move(b)([&a](auto &&... xs) { return (static_cast<T1 &&>(a) | ... | (std::move(xs))); });
 }
