@@ -2110,9 +2110,11 @@ TEST(LTL_test, test_accumulate) {
 
     auto result1 = array | ltl::actions::accumulate(10);
     auto result2 = array | ltl::actions::accumulate(0, std::minus<>{});
+    auto result3 = array | ltl::actions::sum;
 
     ASSERT_EQ(result1, 10 + 0 + 1 + 2 + 3 + 4 + 5 + 6);
     ASSERT_EQ(result2, 0 - 0 - 1 - 2 - 3 - 4 - 5 - 6);
+    ASSERT_EQ(result3, 0 + 1 + 2 + 3 + 4 + 5 + 6);
 }
 
 TEST(LTL_test, test_seq) {

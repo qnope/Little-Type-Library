@@ -130,6 +130,9 @@ constexpr auto accumulate(T &&init, F f = F{}) {
     return Accumulate<T, F>{FWD(init), std::move(f)};
 }
 
+constexpr struct Sum : AbstractAction {
+} sum;
+
 template <typename Action1, typename Action2, requires_f(IsAction<Action1> &&IsAction<Action2>)>
 constexpr auto operator|(Action1 a, Action2 b) {
     return ltl::tuple_t{std::move(a), std::move(b)};
@@ -212,6 +215,11 @@ auto operator|(const C &c, JoinWith<D> d) -> std::decay_t<decltype(*c.begin())> 
 template <typename C, typename T, typename F, requires_f(ltl::IsIterable<C>)>
 auto operator|(const C &c, Accumulate<T, F> a) {
     return ltl::accumulate(c, FWD(a.init), a.f);
+}
+
+template <typename C, requires_f(ltl::IsIterable<C>)>
+auto operator|(const C &c, Sum) {
+    return ltl::accumulate(c, std::decay_t<decltype(*begin(c))>{});
 }
 
 template <typename C, typename Action, requires_f(ltl::IsIterable<C> &&IsModifyingAction<Action>)>
