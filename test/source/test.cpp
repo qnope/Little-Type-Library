@@ -487,7 +487,7 @@ TEST(LTL_test, test_qualifier) {
     typed_static_assert(normalType == ltl::type_v<int>);
     typed_static_assert(constRefType == ltl::type_v<volatile const int &>);
     static_assert(ltl::getQualifierEnum(constRefType) ==
-                  (ltl::qualifier_enum::CONST | ltl::qualifier_enum::LVALUE_REF | ltl::qualifier_enum::VOLATILE));
+                  (ltl::qualifier_enum::CONST_ | ltl::qualifier_enum::LVALUE_REF | ltl::qualifier_enum::VOLATILE));
 }
 
 using Float = ltl::strong_type_t<float, struct FloatTag, ltl::EqualityComparable, ltl::GreaterThan, ltl::LessThan,
@@ -613,6 +613,18 @@ TEST(LTL_test, test_algos) {
         auto emptyArray = std::vector<int>{};
         ASSERT_TRUE((ltl::minmax_element(emptyArray) == std::pair{end(emptyArray), end(emptyArray)}));
         ASSERT_FALSE(ltl::minmax_element_value(std::array<int, 0>{}));
+    }
+
+    {
+        auto array = std::array{0, 2, 1, 3, 5, 6, 4, 5, 2, 1, 3, 5, 9, 11, 12};
+        auto is_odd = _((x), (x % 2) == 1);
+        auto two = ltl::consecutive_values(array, 2, is_odd);
+        auto four = ltl::consecutive_values(array, 5, is_odd);
+        auto not_find = ltl::consecutive_values(array, 6, is_odd);
+
+        ASSERT_EQ(not_find, end(array));
+        ASSERT_EQ(two, begin(array) + 2);
+        ASSERT_EQ(four, begin(array) + 9);
     }
 }
 

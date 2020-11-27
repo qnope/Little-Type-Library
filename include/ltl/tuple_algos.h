@@ -48,9 +48,9 @@ constexpr bool is_type_related_list = ltl::IsTypeList<T> || ltl::IsNumberList<T>
 
 template <std::size_t N>
 constexpr std::optional<int> get_index(std::array<bool, N> array, int first) {
-    for (int i = first; i < N; ++i)
+    for (std::size_t i = first; i < N; ++i)
         if (array[i])
-            return i;
+            return int(i);
     return std::nullopt;
 }
 
@@ -68,9 +68,9 @@ template <std::size_t NewN, std::size_t N>
 constexpr auto convert_ones_to_indices(std::array<bool, N> array) {
     std::array<int, NewN> result{};
     int j = 0;
-    for (int i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < N; ++i) {
         if (array[i]) {
-            result[j++] = i;
+            result[j++] = int(i);
         }
     }
     return result;

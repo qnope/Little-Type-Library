@@ -19,6 +19,32 @@ using std::begin;
 using std::end;
 using std::size;
 
+template <typename C, typename F>
+auto consecutive_values(C &c, std::size_t n, F f) {
+    std::size_t consecutiveValues = 0;
+
+    auto it = begin(c);
+    auto first = it;
+    auto e = end(c);
+    for (; it != e; ++it) {
+        if (ltl::fast_invoke(f, *it)) {
+            if (consecutiveValues == 0)
+                first = it;
+            ++consecutiveValues;
+        } else {
+            consecutiveValues = 0;
+        }
+        if (consecutiveValues == n)
+            return first;
+    }
+    return e;
+}
+
+template <typename C, typename F>
+bool has_consecutive_values(const C &c, std::size_t n, F &&f) {
+    return consecutive_values(c, n, FWD(f)) != end(c);
+}
+
 // Non modifying
 template <typename C, typename F>
 auto all_of(const C &c, F &&f) {

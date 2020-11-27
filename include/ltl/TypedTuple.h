@@ -32,4 +32,9 @@ class TypedTuple : public tuple_t<Ts...> {
     }
 };
 
+template <typename... Ts>
+struct is_tuple<TypedTuple<Ts...>> {
+    static constexpr bool value = true;
+};
+
 } // namespace ltl

@@ -14,7 +14,7 @@ std::add_rvalue_reference_t<T> declval(T &&);
 
 #define TRAIT(name)                                                                                                    \
     [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
-        return bool_v<std::LPL_CAT(name, _v) < std::decay_t<decltype(declval(FWD(xs)))>...>> ;                         \
+        return bool_v<std::LPL_CAT(name, _v) < std::decay_t<decltype(declval(FWD(xs)))>...> > ;                        \
     };
 
 // Primary type categories
@@ -90,12 +90,12 @@ TRAIT(is_convertible)
 
 #define TRAIT_REFERENCE(name)                                                                                          \
     [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
-        return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...>> ;                                       \
+        return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...> > ;                                      \
     };
 
 #define TRAIT_CVNESS(name)                                                                                             \
     [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr {                                                    \
-        return bool_v<std::LPL_CAT(name, _v) < std::remove_reference_t<decltype(declval(FWD(x)))>>> ;                  \
+        return bool_v<std::LPL_CAT(name, _v) < std::remove_reference_t<decltype(declval(FWD(x)))>> > ;                 \
     };
 
 // Reference / cv-ness
@@ -107,7 +107,7 @@ TRAIT_CVNESS(is_array)
 
 #define TRAIT(name)                                                                                                    \
     template <typename T>                                                                                              \
-        [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T>> name(type_t<T>) {                                \
+        [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T> > name(type_t<T>) {                               \
         return {};                                                                                                     \
     }
 
@@ -124,7 +124,7 @@ TRAIT(rank)
 
 #define TRAIT(name)                                                                                                    \
     [[maybe_unused]] constexpr auto name = [](auto x) constexpr noexcept {                                             \
-        return type_v<std::LPL_CAT(name, _t) < decltype_t(x)>> ;                                                       \
+        return type_v<std::LPL_CAT(name, _t) < decltype_t(x)> > ;                                                      \
     };
 
 // const-volatibility specifiers
@@ -158,7 +158,7 @@ TRAIT(decay)
 enum class qualifier_enum {
     NO_CV = 1 << 0,
     VOLATILE = 1 << 1,
-    CONST = 1 << 2,
+    CONST_ = 1 << 2,
     NO_REF = 1 << 3,
     LVALUE_REF = 1 << 4,
     RVALUE_REF = 1 << 5
@@ -210,7 +210,7 @@ template <typename T>
 [[nodiscard]] constexpr qualifier_enum getCVQualifierEnum(type_t<T>) noexcept {
     qualifier_enum result{};
     if constexpr (std::is_const_v<std::remove_reference_t<T>>) {
-        result |= qualifier_enum::CONST;
+        result |= qualifier_enum::CONST_;
     }
 
     if constexpr (std::is_volatile_v<std::remove_reference_t<T>>) {
@@ -231,8 +231,8 @@ template <qualifier_enum a, qualifier_enum b>
 
 template <typename T, qualifier_enum a>
 [[nodiscard]] constexpr auto operator+(type_t<T> t, qualifier_t<a>) noexcept {
-    if constexpr (a & qualifier_enum::CONST)
-        return add_const(remove_reference(t)) + qualifier_v<(a ^ qualifier_enum::CONST) | getRefQualifierEnum(t)>;
+    if constexpr (a & qualifier_enum::CONST_)
+        return add_const(remove_reference(t)) + qualifier_v<(a ^ qualifier_enum::CONST_) | getRefQualifierEnum(t)>;
 
     else if constexpr (a & qualifier_enum::VOLATILE)
         return add_volatile(remove_reference(t)) + qualifier_v<a ^ qualifier_enum::VOLATILE | getRefQualifierEnum(t)>;
