@@ -212,7 +212,7 @@ template <typename T1, typename T2, typename... Ts>
 }
 
 template <typename... Ts>
-struct Error;
+struct CompileError;
 
 false_t is_bool_t(...) noexcept;
 false_t is_type_t(...) noexcept;

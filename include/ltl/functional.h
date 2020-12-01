@@ -121,6 +121,7 @@ constexpr auto construct_with_tuple(Tuple &&... tuple) noexcept {
 }
 
 constexpr auto identity = [](auto &&t) -> remove_rvalue_reference_t<decltype(FWD(t))> { return FWD(t); };
+constexpr auto id_copy = [](auto x) { return x; };
 
 constexpr auto byAscending = [](auto f) {
     return [f = std::move(f)](const auto &x, const auto &y) noexcept { //
