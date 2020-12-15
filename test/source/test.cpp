@@ -13,6 +13,7 @@
 #include <ltl/operator.h>
 #include <ltl/expected.h>
 #include <ltl/condition.h>
+#include <ltl/immutable.h>
 #include <ltl/Range/seq.h>
 #include <ltl/functional.h>
 #include <ltl/StrongType.h>
@@ -2163,6 +2164,34 @@ TEST(LTL_test, test_seq) {
         ASSERT_TRUE(equal(range3, std::array{1, 3, 5, 7, 9}));
         ASSERT_TRUE(range4.empty());
     }
+}
+
+TEST(LTL_test, immutable) {
+    struct Immutable {
+        ltl::immutable_t<std::string> x;
+    };
+
+    Immutable a{{"TEST"}};
+    Immutable b{a};
+
+    ASSERT_EQ(a.x, "TEST");
+    ASSERT_EQ(a.x, b.x);
+
+    Immutable c = std::move(a);
+
+    ASSERT_EQ(a.x, "");
+    ASSERT_NE(a.x, "TEST");
+    ASSERT_EQ(c.x, "TEST");
+    ASSERT_EQ(c.x, b.x);
+
+    ASSERT_EQ(b.x->size(), 4);
+    ASSERT_EQ(b.x, "TEST");
+    ASSERT_EQ(std::move(b).x->size(), 4);
+    ASSERT_EQ(b.x, "");
+
+    ASSERT_EQ(*c.x, "TEST");
+    ASSERT_EQ(*std::move(c).x, "TEST");
+    ASSERT_EQ(c.x, "");
 }
 
 #else
