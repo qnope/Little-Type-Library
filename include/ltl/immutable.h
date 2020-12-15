@@ -22,6 +22,9 @@ struct immutable_t : public Comparable<immutable_t<T>> {
     T operator*() && noexcept { return std::move(m_object); }
     AsPointer<T> operator->() && noexcept { return std::move(m_object); }
 
+    T *operator&() &&noexcept = delete;
+    const T *operator&() const &noexcept { return std::addressof(m_object); }
+
     friend auto operator==(const immutable_t &a, const immutable_t &b) noexcept { return *a == *b; }
 
     friend auto operator<(const immutable_t &a, const immutable_t &b) noexcept { return *a < *b; }

@@ -2192,6 +2192,7 @@ TEST(LTL_test, immutable) {
     ASSERT_EQ(*c.x, "TEST");
     ASSERT_EQ(*std::move(c).x, "TEST");
     ASSERT_EQ(c.x, "");
+    ASSERT_EQ(&c.x, &*c.x);
 }
 
 #else
