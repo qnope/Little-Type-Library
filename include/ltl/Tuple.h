@@ -20,6 +20,13 @@ struct value {
     template <typename _T>
     constexpr explicit value(_T &&t) noexcept : m_value{FWD(t)} {}
 
+    constexpr value(const value &value) :
+        m_value{static_cast<std::conditional_t<std::is_reference_v<T>, T, const T &>>(value.m_value)} {}
+
+    constexpr value(value &&) = default;
+    constexpr value &operator=(const value &) = default;
+    constexpr value &operator=(value &&) = default;
+
     constexpr T operator[](ltl::number_t<I>) && noexcept { return FWD(m_value); }
 
     constexpr safe_add_lvalue_reference<std::add_const_t<T>> operator[](ltl::number_t<I>) const &noexcept {

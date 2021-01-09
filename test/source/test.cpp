@@ -2200,6 +2200,15 @@ TEST(LTL_test, immutable) {
     ASSERT_EQ(&c.x, &*c.x);
 }
 
+TEST(LTL_test, filter_anyOf) {
+    using namespace ltl;
+    std::vector v = {0, 1, 3, 4, 5, 6, 9, 8, 10, 3};
+
+    auto v2 = v | filter(equal_to(AnyOf{3, 9, 10}));
+
+    ASSERT_TRUE(equal(v2, std::array{3, 9, 10, 3}));
+}
+
 #else
 
 int main() {

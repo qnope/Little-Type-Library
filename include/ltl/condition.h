@@ -19,7 +19,7 @@ class AllOf : public Comparable<AllOf<Ts...>> {
     static_assert(sizeof...(Ts) > 0, "Never use AllOf without args");
 
   public:
-    constexpr AllOf(Ts &&... ts) noexcept : m_values{FWD(ts)...} {}
+    constexpr AllOf(Ts... ts) noexcept : m_values{std::move(ts)...} {}
 
     OP(<)
     OP(<=)
@@ -35,7 +35,7 @@ class AllOf : public Comparable<AllOf<Ts...>> {
 };
 
 template <typename... Ts>
-AllOf(Ts &&...) -> AllOf<Ts &&...>;
+AllOf(Ts...)->AllOf<Ts...>;
 
 #undef OP
 
@@ -54,7 +54,7 @@ class AnyOf : public Comparable<AnyOf<Ts...>> {
     static_assert(sizeof...(Ts) > 0, "Never use AnyOf without args");
 
   public:
-    constexpr AnyOf(Ts &&... ts) noexcept : m_values{FWD(ts)...} {}
+    constexpr AnyOf(Ts... ts) noexcept : m_values{std::move(ts)...} {}
 
     OP(<)
     OP(<=)
@@ -70,7 +70,7 @@ class AnyOf : public Comparable<AnyOf<Ts...>> {
 };
 
 template <typename... Ts>
-AnyOf(Ts &&...) -> AnyOf<Ts &&...>;
+AnyOf(Ts...)->AnyOf<Ts...>;
 
 #undef OP
 
@@ -89,7 +89,7 @@ class NoneOf : public Comparable<AllOf<Ts...>> {
     static_assert(sizeof...(Ts) > 0, "Never use NoneOf without args");
 
   public:
-    constexpr NoneOf(Ts &&... ts) noexcept : m_values{FWD(ts)...} {}
+    constexpr NoneOf(Ts... ts) noexcept : m_values{std::move(ts)...} {}
 
     OP(<)
     OP(<=)
@@ -104,7 +104,7 @@ class NoneOf : public Comparable<AllOf<Ts...>> {
 };
 
 template <typename... Ts>
-NoneOf(Ts &&...) -> NoneOf<Ts &&...>;
+NoneOf(Ts...)->NoneOf<Ts...>;
 
 #undef OP
 
