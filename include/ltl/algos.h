@@ -1156,18 +1156,18 @@ auto contains_if(const C &c, F &&f) {
     return find_if(c, FWD(f)) != end(c);
 }
 
-template <typename C, typename K>
-auto map_contains(const C &c, K &&k) {
+template <typename C>
+auto map_contains(const C &c, const typename std::decay_t<C>::key_type &k) {
     return c.find(FWD(k)) != c.end();
 }
 
-template <typename C, typename K>
-auto map_find(C &&c, K &&k) {
+template <typename C>
+auto map_find(C &&c, const typename std::decay_t<C>::key_type &k) {
     return FWD(c).find(FWD(k));
 }
 
-template <typename C, typename K>
-auto map_find_value(C &&c, K &&k) {
+template <typename C>
+auto map_find_value(C &&c, const typename std::decay_t<C>::key_type &k) {
     auto it = FWD(c).find(FWD(k));
     if (it == FWD(c).end()) {
         return std::optional<decltype(it->second)>{};
@@ -1175,8 +1175,8 @@ auto map_find_value(C &&c, K &&k) {
     return std::make_optional(it->second);
 }
 
-template <typename C, typename K>
-auto map_find_ptr(C &c, K &&k) {
+template <typename C>
+auto map_find_ptr(C &c, const typename std::decay_t<C>::key_type &k) {
     auto it = c.find(FWD(k));
     if (it == c.end()) {
         return decltype(std::addressof(it->second)){nullptr};
@@ -1184,8 +1184,8 @@ auto map_find_ptr(C &c, K &&k) {
     return std::addressof(it->second);
 }
 
-template <typename C, typename K>
-auto map_take(C &c, K &&k) {
+template <typename C>
+auto map_take(C &c, const typename std::decay_t<C>::key_type &k) {
     auto it = c.find(FWD(k));
     if (it == c.end()) {
         return std::optional<decltype(it->second)>{};

@@ -1006,6 +1006,11 @@ TEST(LTL_test, test_associative_map) {
     ASSERT_TRUE(ltl::map_take(dict, "f") == "F");
     ASSERT_FALSE(ltl::map_take(dict, "f"));
     ASSERT_TRUE(ltl::map_find_ptr(dict, "f") == nullptr);
+
+    std::map<ltl::tuple_t<int, double>, int> map = {{{8, 4.0}, 1}, {{3, 4.1}, -1}, {{8, 2.0}, 5}};
+
+    ASSERT_TRUE(ltl::map_contains(map, {8, 2.0}));
+    ASSERT_EQ(ltl::map_find_value(map, {3, 4.1}), -1);
 }
 
 TEST(LTL_test, test_composition) {
