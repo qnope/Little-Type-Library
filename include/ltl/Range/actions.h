@@ -93,18 +93,15 @@ constexpr auto find_ptr(T &&e) {
 
 template <typename... Fs>
 constexpr auto find_if(Fs... fs) {
-    auto foo = compose(std::move(fs)...);
-    return FindIf<decltype(foo)>{compose(std::move(fs)...)};
+    return FindIf{compose(std::move(fs)...)};
 }
 template <typename... Fs>
 constexpr auto find_if_value(Fs... fs) {
-    auto foo = compose(std::move(fs)...);
-    return FindIfValue<decltype(foo)>{compose(std::move(fs)...)};
+    return FindIfValue{compose(std::move(fs)...)};
 }
 template <typename... Fs>
 constexpr auto find_if_ptr(Fs... fs) {
-    auto foo = compose(std::move(fs)...);
-    return FindIfPtr<decltype(foo)>{compose(std::move(fs)...)};
+    return FindIfPtr{compose(std::move(fs)...)};
 }
 
 template <typename D>
@@ -230,7 +227,7 @@ auto operator|(C c, Action a) {
 
 template <typename C, typename... Actions, requires_f(ltl::IsIterable<C>)>
 auto &operator|=(C &c, ltl::tuple_t<Actions...> actions) {
-    return actions([&c](const auto &... xs) -> C & {
+    return actions([&c](const auto &...xs) -> C & {
         ((c |= xs), ...);
         return c;
     });
@@ -239,7 +236,7 @@ auto &operator|=(C &c, ltl::tuple_t<Actions...> actions) {
 template <typename C, typename... Actions, requires_f(ltl::IsIterable<C>),
           requires_f((true && ... && IsAction<Actions>))>
 auto operator|(C c, ltl::tuple_t<Actions...> actions) {
-    return actions([c = std::move(c)](const auto &... xs) mutable { return (c | ... | xs); });
+    return actions([c = std::move(c)](const auto &...xs) mutable { return (c | ... | xs); });
 }
 
 } // namespace actions
