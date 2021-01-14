@@ -2209,6 +2209,23 @@ TEST(LTL_test, filter_anyOf) {
     ASSERT_TRUE(equal(v2, std::array{3, 9, 10, 3}));
 }
 
+TEST(LTL_test, temporary_objects) {
+    using namespace ltl;
+    struct X {
+        std::string x = "Test";
+    };
+
+    auto create = [] { return std::vector{X{}, X{}, X{}}; };
+
+    auto xs = create() | map(&X::x) | to_vector;
+
+    ASSERT_EQ(xs.size(), 3);
+    ASSERT_EQ(xs.front(), "Test");
+
+    auto sum = xs | actions::join_with(",");
+    ASSERT_EQ(sum, "Test,Test,Test");
+}
+
 #else
 
 int main() {
