@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.8)
 
 project(LittleTypeLibrary
         VERSION 0.0.1
@@ -38,27 +38,27 @@ target_compile_options(LTL INTERFACE $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>
 
 # ---- Install ----
 
-install(TARGETS LTL
-        EXPORT LittleTypeLibraryTargets
-        INCLUDES DESTINATION "${littletypelibrary_include_directory}")
-
-set(littletypelibrary_install_cmakedir
-        "${CMAKE_INSTALL_LIBDIR}/cmake/${littletypelibrary_directory}")
-
-write_basic_package_version_file(
-        LittleTypeLibraryConfigVersion.cmake
-        VERSION ${PROJECT_VERSION}
-        COMPATIBILITY SameMajorVersion
-        ARCH_INDEPENDENT)
-
-install(EXPORT LittleTypeLibraryTargets
-        NAMESPACE LittleTypeLibrary::
-        DESTINATION "${littletypelibrary_install_cmakedir}")
-
-install(FILES
-        "${PROJECT_SOURCE_DIR}/cmake/LittleTypeLibraryConfig.cmake"
-        "${PROJECT_BINARY_DIR}/LittleTypeLibraryConfigVersion.cmake"
-        DESTINATION "${littletypelibrary_install_cmakedir}")
-
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
-        DESTINATION "${littletypelibrary_include_directory}")
+#install(TARGETS LTL
+#        EXPORT LittleTypeLibraryTargets
+#        INCLUDES DESTINATION "${littletypelibrary_include_directory}")
+#
+#set(littletypelibrary_install_cmakedir
+#        "${CMAKE_INSTALL_LIBDIR}/cmake/${littletypelibrary_directory}")
+#
+#write_basic_package_version_file(
+#        LittleTypeLibraryConfigVersion.cmake
+#        VERSION ${PROJECT_VERSION}
+#        COMPATIBILITY SameMajorVersion
+#        ARCH_INDEPENDENT)
+#
+#install(EXPORT LittleTypeLibraryTargets
+#        NAMESPACE LittleTypeLibrary::
+#        DESTINATION "${littletypelibrary_install_cmakedir}")
+#
+#install(FILES
+#        "${PROJECT_SOURCE_DIR}/cmake/LittleTypeLibraryConfig.cmake"
+#        "${PROJECT_BINARY_DIR}/LittleTypeLibraryConfigVersion.cmake"
+#        DESTINATION "${littletypelibrary_install_cmakedir}")
+#
+#install(DIRECTORY "${PROJECT_SOURCE_DIR}/include/"
+#        DESTINATION "${littletypelibrary_include_directory}")
