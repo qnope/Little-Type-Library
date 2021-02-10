@@ -13,6 +13,8 @@ inline auto remove_null() noexcept {
     return filter([](auto &&x) noexcept { return static_cast<bool>(FWD(x)); });
 }
 
+inline auto to_ptr = [](auto &x) noexcept { return std::addressof(x); };
+
 inline auto to_pair = [](auto &&tuple) {
     using Tuple = std::decay_t<decltype(tuple)>;
     static_assert(std::tuple_size_v<Tuple> == 2, "Tuple must have two elements");
