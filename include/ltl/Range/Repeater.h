@@ -9,11 +9,11 @@ namespace ltl {
 
 template <typename T>
 class repeater_iterator :
-    public PostIncrementable<repeater_iterator<T>>,
-    public PostDecrementable<repeater_iterator<T>>,
-    public Comparable<repeater_iterator<T>>,
-    public Additionnable<repeater_iterator<T>>,
-    public Substractable<repeater_iterator<T>> {
+    public crtp::PostIncrementable<repeater_iterator<T>>,
+    public crtp::PostDecrementable<repeater_iterator<T>>,
+    public crtp::Comparable<repeater_iterator<T>>,
+    public crtp::Additionnable<repeater_iterator<T>>,
+    public crtp::Substractable<repeater_iterator<T>> {
   public:
     using reference = const T &;
 

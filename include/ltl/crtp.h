@@ -8,6 +8,7 @@
     constexpr const DerivedType &underlying() const noexcept { return static_cast<const DerivedType &>(*this); }
 
 namespace ltl {
+namespace crtp {
 template <typename Derived>
 class Comparable {
   public:
@@ -62,6 +63,9 @@ OP(PostDecrementable, --)
 
 OP(Additionnable, +)
 OP(Substractable, -)
+OP(Multipliable, *)
+OP(Divisible, /)
 #undef OP
 
+} // namespace crtp
 } // namespace ltl

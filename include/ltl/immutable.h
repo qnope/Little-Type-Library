@@ -7,7 +7,7 @@
 namespace ltl {
 
 template <typename T>
-struct immutable_t : public Comparable<immutable_t<T>> {
+struct immutable_t : crtp::Comparable<immutable_t<T>> {
     template <typename _T>
     immutable_t(_T &&t) noexcept : m_object{FWD(t)} {}
 
@@ -18,9 +18,9 @@ struct immutable_t : public Comparable<immutable_t<T>> {
     const T &operator*() const &noexcept { return m_object; }
     AsPointer<const T &> operator->() const &noexcept { return m_object; }
 
-    operator T() && noexcept { return std::move(m_object); }
-    T operator*() && noexcept { return std::move(m_object); }
-    AsPointer<T> operator->() && noexcept { return std::move(m_object); }
+    operator T() &&noexcept { return std::move(m_object); }
+    T operator*() &&noexcept { return std::move(m_object); }
+    AsPointer<T> operator->() &&noexcept { return std::move(m_object); }
 
     T *operator&() &&noexcept = delete;
     const T *operator&() const &noexcept { return std::addressof(m_object); }

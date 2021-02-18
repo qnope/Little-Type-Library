@@ -27,11 +27,11 @@ constexpr struct decrement_tag_t {
 
 template <typename DerivedIt, typename It>
 class BaseIterator :
-    public Comparable<DerivedIt>,
-    public Additionnable<DerivedIt>,
-    public Substractable<DerivedIt>,
-    public PostIncrementable<DerivedIt>,
-    public PostDecrementable<DerivedIt> {
+    public crtp::Comparable<DerivedIt>,
+    public crtp::Additionnable<DerivedIt>,
+    public crtp::Substractable<DerivedIt>,
+    public crtp::PostIncrementable<DerivedIt>,
+    public crtp::PostDecrementable<DerivedIt> {
     ENABLE_CRTP(DerivedIt)
   public:
     BaseIterator() = default;
@@ -52,7 +52,7 @@ class BaseIterator :
         return *it.m_it;
     }
 
-    auto operator-> () const noexcept {
+    auto operator->() const noexcept {
         const DerivedIt &it = underlying();
         return AsPointer<decltype(*it)>{*it};
     }

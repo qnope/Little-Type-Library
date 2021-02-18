@@ -7,15 +7,15 @@ namespace ltl {
 #define OP(op)                                                                                                         \
     template <typename T>                                                                                              \
     friend constexpr auto operator op(const AllOf &v, T &&t) noexcept {                                                \
-        return v.m_values([&t](auto &&... xs) { return (true_v && ... && (FWD(xs) op t)); });                          \
+        return v.m_values([&t](auto &&...xs) { return (true_v && ... && (FWD(xs) op t)); });                           \
     }                                                                                                                  \
     template <typename T>                                                                                              \
     friend constexpr auto operator op(T &&t, const AllOf &v) noexcept {                                                \
-        return v.m_values([&t](auto &&... xs) { return (true_v && ... && (t op FWD(xs))); });                          \
+        return v.m_values([&t](auto &&...xs) { return (true_v && ... && (t op FWD(xs))); });                           \
     }
 
 template <typename... Ts>
-class AllOf : public Comparable<AllOf<Ts...>> {
+class AllOf : public crtp::Comparable<AllOf<Ts...>> {
     static_assert(sizeof...(Ts) > 0, "Never use AllOf without args");
 
   public:
@@ -35,22 +35,22 @@ class AllOf : public Comparable<AllOf<Ts...>> {
 };
 
 template <typename... Ts>
-AllOf(Ts...)->AllOf<Ts...>;
+AllOf(Ts...) -> AllOf<Ts...>;
 
 #undef OP
 
 #define OP(op)                                                                                                         \
     template <typename T>                                                                                              \
     friend constexpr auto operator op(const AnyOf &v, T &&t) noexcept {                                                \
-        return v.m_values([&t](auto &&... xs) { return (false_v || ... || (FWD(xs) op t)); });                         \
+        return v.m_values([&t](auto &&...xs) { return (false_v || ... || (FWD(xs) op t)); });                          \
     }                                                                                                                  \
     template <typename T>                                                                                              \
     friend constexpr auto operator op(T &&t, const AnyOf &v) noexcept {                                                \
-        return v.m_values([&t](auto &&... xs) { return (false_v || ... || (t op FWD(xs))); });                         \
+        return v.m_values([&t](auto &&...xs) { return (false_v || ... || (t op FWD(xs))); });                          \
     }
 
 template <typename... Ts>
-class AnyOf : public Comparable<AnyOf<Ts...>> {
+class AnyOf : public crtp::Comparable<AnyOf<Ts...>> {
     static_assert(sizeof...(Ts) > 0, "Never use AnyOf without args");
 
   public:
@@ -70,22 +70,22 @@ class AnyOf : public Comparable<AnyOf<Ts...>> {
 };
 
 template <typename... Ts>
-AnyOf(Ts...)->AnyOf<Ts...>;
+AnyOf(Ts...) -> AnyOf<Ts...>;
 
 #undef OP
 
 #define OP(op)                                                                                                         \
     template <typename T>                                                                                              \
     friend constexpr auto operator op(const NoneOf &v, T &&t) noexcept {                                               \
-        return v.m_values([&t](auto &&... xs) { return !(false_v || ... || (FWD(xs) op t)); });                        \
+        return v.m_values([&t](auto &&...xs) { return !(false_v || ... || (FWD(xs) op t)); });                         \
     }                                                                                                                  \
     template <typename T>                                                                                              \
     friend constexpr auto operator op(T &&t, const NoneOf &v) noexcept {                                               \
-        return v.m_values([&t](auto &&... xs) { return !(false_v || ... || (t op FWD(xs))); });                        \
+        return v.m_values([&t](auto &&...xs) { return !(false_v || ... || (t op FWD(xs))); });                         \
     }
 
 template <typename... Ts>
-class NoneOf : public Comparable<AllOf<Ts...>> {
+class NoneOf : public crtp::Comparable<AllOf<Ts...>> {
     static_assert(sizeof...(Ts) > 0, "Never use NoneOf without args");
 
   public:
@@ -104,7 +104,7 @@ class NoneOf : public Comparable<AllOf<Ts...>> {
 };
 
 template <typename... Ts>
-NoneOf(Ts...)->NoneOf<Ts...>;
+NoneOf(Ts...) -> NoneOf<Ts...>;
 
 #undef OP
 
