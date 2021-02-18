@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include "lpl/lpl.h"
 
 #define ENABLE_CRTP(DerivedType)                                                                                       \
@@ -52,7 +53,7 @@ OP(PostDecrementable, --)
             v LPL_CAT(op, =) t;                                                                                        \
             return v;                                                                                                  \
         }                                                                                                              \
-        template <typename _T>                                                                                         \
+        template <typename _T, std::enable_if_t<!std::is_same_v<T, _T>> * = nullptr>                                   \
         friend T operator op(const _T &t, T v) {                                                                       \
             v LPL_CAT(op, =) t;                                                                                        \
             return v;                                                                                                  \
