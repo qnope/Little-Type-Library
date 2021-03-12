@@ -52,7 +52,7 @@ class [[nodiscard]] expected {
 
     constexpr operator bool() const noexcept { return m_result.index() == 0; }
 
-    constexpr value_type &&result() &&noexcept {
+    constexpr value_type &&result() && noexcept {
         assert(m_result.index() == 0);
         return std::move(std::get<0>(m_result));
     }
@@ -62,12 +62,12 @@ class [[nodiscard]] expected {
         return std::get<0>(m_result);
     }
 
-    constexpr value_type &result() &noexcept {
+    constexpr value_type &result() & noexcept {
         assert(m_result.index() == 0);
         return std::get<0>(m_result);
     }
 
-    constexpr error_type &&error() &&noexcept {
+    constexpr error_type &&error() && noexcept {
         assert(m_result.index() == 1);
         return std::move(std::get<1>(m_result));
     }
@@ -77,7 +77,7 @@ class [[nodiscard]] expected {
         return std::get<1>(m_result);
     }
 
-    constexpr error_type &error() &noexcept {
+    constexpr error_type &error() & noexcept {
         assert(m_result.index() == 1);
         return std::get<1>(m_result);
     }
@@ -117,5 +117,7 @@ constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
 
     return return_type{error_tag{}, FWD(a).error()};
 }
+
+struct Ok {};
 
 } // namespace ltl
