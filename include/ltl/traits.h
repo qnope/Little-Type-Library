@@ -14,7 +14,7 @@ std::add_rvalue_reference_t<T> declval(T &&);
 
 #define TRAIT(name)                                                                                                    \
     [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
-        return bool_v<std::LPL_CAT(name, _v) < std::decay_t<decltype(declval(FWD(xs)))>...> > ;                        \
+        return bool_v<std::LPL_CAT(name, _v) < std::decay_t<decltype(declval(FWD(xs)))>...>> ;                         \
     };
 
 // Primary type categories
@@ -90,12 +90,12 @@ TRAIT(is_convertible)
 
 #define TRAIT_REFERENCE(name)                                                                                          \
     [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
-        return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...> > ;                                      \
+        return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...>> ;                                       \
     };
 
 #define TRAIT_CVNESS(name)                                                                                             \
     [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr {                                                    \
-        return bool_v<std::LPL_CAT(name, _v) < std::remove_reference_t<decltype(declval(FWD(x)))>> > ;                 \
+        return bool_v<std::LPL_CAT(name, _v) < std::remove_reference_t<decltype(declval(FWD(x)))>>> ;                  \
     };
 
 // Reference / cv-ness
@@ -107,7 +107,7 @@ TRAIT_CVNESS(is_array)
 
 #define TRAIT(name)                                                                                                    \
     template <typename T>                                                                                              \
-        [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T> > name(type_t<T>) {                               \
+        [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T>> name(type_t<T>) {                                \
         return {};                                                                                                     \
     }
 
@@ -124,7 +124,7 @@ TRAIT(rank)
 
 #define TRAIT(name)                                                                                                    \
     [[maybe_unused]] constexpr auto name = [](auto x) constexpr noexcept {                                             \
-        return type_v<std::LPL_CAT(name, _t) < decltype_t(x)> > ;                                                      \
+        return type_v<std::LPL_CAT(name, _t) < decltype_t(x)>> ;                                                       \
     };
 
 // const-volatibility specifiers
@@ -269,6 +269,11 @@ constexpr auto is_valid(F &&) {
     return [](auto &&... xs) { return bool_t<detail::is_validImpl<F, void, decltype(xs)...>>{}; };
 }
 
+#if __cplusplus < 202002L
+#define LTL_CONCEPT constexpr
+#else
+#define LTL_CONCEPT concept
+#endif
 #define LTL_WRITE_AUTO_WITH_COMMA_IMPL(x) , auto &&x
 
 #define LTL_WRITE_AUTO_IMPL(x, ...) (auto &&x LPL_MAP(LTL_WRITE_AUTO_WITH_COMMA_IMPL, __VA_ARGS__))
@@ -288,7 +293,7 @@ constexpr auto is_valid(F &&) {
         static constexpr auto value = true;                                                                            \
     };                                                                                                                 \
     template <typename T>                                                                                              \
-    [[maybe_unused]] constexpr bool conceptName = nameStruct<std::decay_t<T>>::value;                                  \
+    [[maybe_unused]] LTL_CONCEPT bool conceptName = nameStruct<std::decay_t<T>>::value;                                \
     [[maybe_unused]] constexpr auto nameLambda = [](auto &&x) constexpr noexcept {                                     \
         return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
     }
