@@ -270,7 +270,7 @@ constexpr auto is_valid(F &&) {
 }
 
 #if __cplusplus < 202002L
-#define LTL_CONCEPT constexpr
+#define LTL_CONCEPT constexpr bool
 #else
 #define LTL_CONCEPT concept
 #endif
@@ -293,7 +293,7 @@ constexpr auto is_valid(F &&) {
         static constexpr auto value = true;                                                                            \
     };                                                                                                                 \
     template <typename T>                                                                                              \
-    [[maybe_unused]] LTL_CONCEPT bool conceptName = nameStruct<std::decay_t<T>>::value;                                \
+    [[maybe_unused]] LTL_CONCEPT conceptName = nameStruct<std::decay_t<T>>::value;                                     \
     [[maybe_unused]] constexpr auto nameLambda = [](auto &&x) constexpr noexcept {                                     \
         return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
     }
