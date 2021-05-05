@@ -9,6 +9,7 @@
 namespace ltl {
 using std::begin;
 using std::end;
+
 LTL_MAKE_IS_KIND(::std::optional, is_optional, is_optional_f, IsOptional, typename, );
 
 template <typename T, typename = void>

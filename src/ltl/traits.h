@@ -269,11 +269,12 @@ constexpr auto is_valid(F &&) {
     return [](auto &&... xs) { return bool_t<detail::is_validImpl<F, void, decltype(xs)...>>{}; };
 }
 
-#if __cplusplus < 202002L
-#define LTL_CONCEPT constexpr bool
-#else
+#if LTL_CPP20
 #define LTL_CONCEPT concept
+#else
+#define LTL_CONCEPT [[maybe_unused]] constexpr bool
 #endif
+
 #define LTL_WRITE_AUTO_WITH_COMMA_IMPL(x) , auto &&x
 
 #define LTL_WRITE_AUTO_IMPL(x, ...) (auto &&x LPL_MAP(LTL_WRITE_AUTO_WITH_COMMA_IMPL, __VA_ARGS__))
@@ -293,7 +294,7 @@ constexpr auto is_valid(F &&) {
         static constexpr auto value = true;                                                                            \
     };                                                                                                                 \
     template <typename T>                                                                                              \
-    [[maybe_unused]] LTL_CONCEPT conceptName = nameStruct<std::decay_t<T>>::value;                                     \
+    LTL_CONCEPT conceptName = nameStruct<std::decay_t<T>>::value;                                                      \
     [[maybe_unused]] constexpr auto nameLambda = [](auto &&x) constexpr noexcept {                                     \
         return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
     }

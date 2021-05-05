@@ -2,8 +2,8 @@ name: Continuous Integration
 
 on:
   push:
-    branches:
-      - master
+    paths:
+      - '*'
 
   pull_request:
     branches:
@@ -25,12 +25,11 @@ jobs:
         id: cores
 
       - name: Configure
-        run: cmake -S test -B build -DCMAKE_BUILD_TYPE:STRING=Debug
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --config Debug
-          -j ${{ steps.cores.outputs.plus_one }}
+        run: cmake --build build --config Release -j ${{ steps.cores.outputs.plus_one }} -v
 
       - name: Test
-        working-directory: build
-        run: ctest -C Debug -VV -j ${{ steps.cores.outputs.plus_one }}
+        working-directory: build/Tests
+        run: ctest -C Release -VV -j ${{ steps.cores.outputs.plus_one }}

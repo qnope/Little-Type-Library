@@ -11,10 +11,10 @@
 #include "traits.h"
 #include "Range/Range.h"
 
-#if __cplusplus < 202002L
-#define LTL_CONSTEXPR_ALGO
-#else
+#if LTL_CPP20
 #define LTL_CONSTEXPR_ALGO constexpr
+#else
+#define LTL_CONSTEXPR_ALGO
 #endif
 
 namespace ltl {
@@ -1076,7 +1076,7 @@ LTL_CONSTEXPR_ALGO auto iota(C &c, V &&v) {
 }
 
 template <typename C, typename T>
-LTL_CONSTEXPR_ALGO constexpr T accumulate(const C &c, T init) {
+constexpr T accumulate(const C &c, T init) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto b = begin(c);
     auto e = end(c);
@@ -1088,7 +1088,7 @@ LTL_CONSTEXPR_ALGO constexpr T accumulate(const C &c, T init) {
 }
 
 template <typename C, typename T, typename BinaryOperation>
-LTL_CONSTEXPR_ALGO constexpr T accumulate(const C &c, T init, BinaryOperation &&op) {
+constexpr T accumulate(const C &c, T init, BinaryOperation &&op) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto b = begin(c);
     auto e = end(c);

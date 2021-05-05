@@ -23,6 +23,12 @@
 
 #define lift(f) [](auto &&... xs) -> decltype(f(FWD(xs)...)) { return f(FWD(xs)...); }
 
+#if __cplusplus > 201703L
+#define LTL_CPP20 1
+#else
+#define LTL_CPP20 0
+#endif
+
 namespace ltl {
 template <typename>
 constexpr bool always_false = false;

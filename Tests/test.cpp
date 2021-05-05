@@ -10,6 +10,7 @@
 #include <ltl/algos.h>
 #include <ltl/stream.h>
 #include <ltl/traits.h>
+#include <ltl/optional.h>
 #include <ltl/operator.h>
 #include <ltl/expected.h>
 #include <ltl/condition.h>
@@ -27,13 +28,9 @@
 #include <ltl/Range/Repeater.h>
 #include <ltl/Range/enumerate.h>
 #include <ltl/Range/DefaultView.h>
+#include <gtest/gtest.h>
 
 using namespace std::literals;
-
-#define LTL_TEST 1
-
-#if LTL_TEST
-#include <gtest/gtest.h>
 
 TEST(LTL_test, bool_test) {
     static_assert(false_v == false_v);
@@ -1667,8 +1664,8 @@ TEST(LTL_test, test_expected) {
     {
         expected<int, std::string> exp{0};
 
-        typed_static_assert(type_from(std::move(exp).result()) == ltl::type_v<int &&>);
-        typed_static_assert(type_from(std::move(exp).error()) == ltl::type_v<std::string &&>);
+        typed_static_assert(type_from(std::move(exp).result()) == ltl::type_v<int>);
+        typed_static_assert(type_from(std::move(exp).error()) == ltl::type_v<std::string>);
         typed_static_assert(type_from(std::as_const(exp).result()) == ltl::type_v<const int &>);
         typed_static_assert(type_from(std::as_const(exp).error()) == ltl::type_v<const std::string &>);
         typed_static_assert(type_from(exp.result()) == ltl::type_v<int &>);
@@ -2172,32 +2169,46 @@ TEST(LTL_test, test_seq) {
 }
 
 TEST(LTL_test, immutable) {
-    struct Immutable {
-        ltl::immutable_t<std::string> x;
-    };
+    {
+        struct Immutable {
+            ltl::immutable_t<std::string> x;
+        };
 
-    Immutable a{{"TEST"}};
-    Immutable b{a};
+        Immutable a{{"TEST"}};
+        Immutable b{a};
 
-    ASSERT_EQ(a.x, "TEST");
-    ASSERT_EQ(a.x, b.x);
+        ASSERT_EQ(a.x, "TEST");
+        ASSERT_EQ(a.x, b.x);
 
-    Immutable c = std::move(a);
+        Immutable c = std::move(a);
 
-    ASSERT_EQ(a.x, "");
-    ASSERT_NE(a.x, "TEST");
-    ASSERT_EQ(c.x, "TEST");
-    ASSERT_EQ(c.x, b.x);
+        ASSERT_EQ(a.x, "");
+        ASSERT_NE(a.x, "TEST");
+        ASSERT_EQ(c.x, "TEST");
+        ASSERT_EQ(c.x, b.x);
 
-    ASSERT_EQ(b.x->size(), 4);
-    ASSERT_EQ(b.x, "TEST");
-    ASSERT_EQ(std::move(b).x->size(), 4);
-    ASSERT_EQ(b.x, "");
+        ASSERT_EQ(b.x->size(), 4);
+        ASSERT_EQ(b.x, "TEST");
+        ASSERT_EQ(std::move(b).x->size(), 4);
+        ASSERT_EQ(b.x, "");
 
-    ASSERT_EQ(*c.x, "TEST");
-    ASSERT_EQ(*std::move(c).x, "TEST");
-    ASSERT_EQ(c.x, "");
-    ASSERT_EQ(&c.x, &*c.x);
+        ASSERT_EQ(*c.x, "TEST");
+        ASSERT_EQ(*std::move(c).x, "TEST");
+        ASSERT_EQ(c.x, "");
+        ASSERT_EQ(&c.x, &*c.x);
+    }
+
+    {
+        struct Immutable {
+            ltl::immutable_t<std::string, Immutable> x;
+            void change() { x = "TEST2"; }
+        };
+
+        Immutable a{{"TEST"}};
+        ASSERT_EQ(a.x, "TEST");
+        a.change();
+        ASSERT_EQ(a.x, "TEST2");
+    }
 }
 
 TEST(LTL_test, filter_anyOf) {
@@ -2226,17 +2237,61 @@ TEST(LTL_test, temporary_objects) {
     ASSERT_EQ(sum, "Test,Test,Test");
 }
 
-#else
+TEST(LTL_test, optional_cpp17) {
+    ltl::optional<int> x{18};
+    ltl::optional<int> y;
+    ASSERT_EQ(x, 18);
+    ASSERT_EQ(x, ltl::make_optional(18));
+    ASSERT_LE(ltl::nullopt, x);
+    ASSERT_GE(x, ltl::nullopt);
+    ASSERT_LE(17, x);
+    ASSERT_GE(x, 17);
+    ASSERT_LE(ltl::make_optional(12), x);
+    ASSERT_GE(x, ltl::make_optional(4));
 
-int main() {
-    using namespace ltl;
+    ASSERT_EQ(ltl::make_optional(12).map([](int &&x) { return x + 1; }), 13);
+    ASSERT_EQ(std::move(std::as_const(x)).map([](const int &&x) { return x + 1; }), 19);
+    ASSERT_EQ(x.map([](int &x) { return x + 1; }), 19);
+    ASSERT_EQ(std::as_const(x).map([](const int &x) { return x + 1; }), 19);
 
-    ltl::tuple_t<int, double, short, double, int, double, int, double> a{};
+    ASSERT_EQ(y.map([](int x) { return x; }), ltl::nullopt);
 
-    auto b = a.getTypes();
+    ASSERT_EQ(ltl::make_optional(12).and_then([](int &&x) { return ltl::make_optional(x + 1); }), 13);
+    ASSERT_EQ(std::move(std::as_const(x)).and_then([](const int &&x) { return ltl::make_optional(x + 1); }),
+              ltl::make_optional(19));
+    ASSERT_EQ(x.and_then([](int &x) { return ltl::make_optional(x + 1); }), ltl::make_optional(19));
+    ASSERT_EQ(std::as_const(x).and_then([](const int &x) { return ltl::make_optional(x + 1); }), 19);
 
-    auto c = b[number_v<4>];
-    auto d = b[number_v<0>];
-    auto e = b[number_v<7>];
+    ASSERT_EQ(y.and_then([](int x) { return ltl::make_optional(x); }), ltl::nullopt);
+    ASSERT_EQ(x.and_then([](int) -> ltl::optional<int> { return {}; }), ltl::nullopt);
 }
-#endif
+
+TEST(LTL_test, expected_map_and_then) {
+    using namespace std::string_literals;
+    ltl::expected<int, const char *> x{18};
+    using X = decltype(x);
+    X y{"Error 1"};
+
+    ASSERT_EQ(x.map([](int &a) { return a + 2; }).result(), 20);
+    ASSERT_EQ(std::as_const(x).map([](const int &a) { return a + 2; }).result(), 20);
+    ASSERT_EQ(std::move(x).map([](int &&a) { return a + 2; }).result(), 20);
+    ASSERT_EQ(std::move(std::as_const(x)).map([](const int &&a) { return a + 2; }).result(), 20);
+
+    ASSERT_STREQ(y.map([](int x) { return x + 3; }).error(), "Error 1");
+
+    ASSERT_EQ(x.and_then([](int &a) { return X{a + 2}; }).result(), 20);
+    ASSERT_EQ(std::as_const(x).and_then([](const int &a) { return X{a + 2}; }).result(), 20);
+    ASSERT_EQ(std::move(x).and_then([](int &&a) { return X{a + 2}; }).result(), 20);
+    ASSERT_EQ(std::move(std::as_const(x)).and_then([](const int &&a) { return X{a + 2}; }).result(), 20);
+
+    ASSERT_STREQ(x.and_then([](int &) { return X{"Error 2"}; }).error(), "Error 2");
+    ASSERT_STREQ(y.and_then([](int x) { return X{x + 3}; }).error(), "Error 1");
+
+    auto to_string = lift(std::to_string);
+    auto to_exp = [&](auto) { return ltl::expected<double, std::string>("Error 3"); };
+    static_assert(decay_from(x.map(to_string)) == ltl::type_v<ltl::expected<std::string, const char *>>);
+    static_assert(decay_from(x.and_then(to_exp)) == ltl::type_v<ltl::expected<double, std::string>>);
+
+    ASSERT_EQ(x.map(to_string).result(), "18");
+    ASSERT_EQ(x.and_then(to_exp).error(), "Error 3");
+}

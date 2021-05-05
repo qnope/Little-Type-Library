@@ -12,19 +12,62 @@ namespace crtp {
 template <typename Derived>
 class Comparable {
   public:
-    friend constexpr auto operator!=(const Derived &a, const Derived &b) noexcept { return !(a == b); }
+    template <typename T>
+    friend constexpr auto operator!=(const Derived &a, const T &b) noexcept {
+        return !(a == b);
+    }
+
+    template <typename T>
+    friend constexpr auto operator!=(const T &a, const Derived &b) noexcept {
+        return !(a == b);
+    }
+
+    template <typename = Derived>
+    friend constexpr auto operator!=(const Derived &a, const Derived &b) noexcept {
+        return !(a == b);
+    }
+
+    template <typename T>
+    friend constexpr auto operator<=(const T &a, const Derived &b) noexcept {
+        return !(b < a);
+    }
+
+    template <typename T>
+    friend constexpr auto operator<=(const Derived &a, const T &b) noexcept {
+        return !(b < a);
+    }
 
     template <typename = Derived>
     friend constexpr auto operator<=(const Derived &a, const Derived &b) noexcept {
         return !(b < a);
     }
 
-    template <typename = Derived>
+    template <typename T>
+    friend constexpr auto operator>(const T &a, const Derived &b) noexcept {
+        return b < a;
+    }
+
+    template <typename T>
+    friend constexpr auto operator>(const Derived &a, const T &b) noexcept {
+        return b < a;
+    }
+
+    template <typename T = Derived>
     friend constexpr auto operator>(const Derived &a, const Derived &b) noexcept {
         return b < a;
     }
 
-    template <typename = Derived>
+    template <typename T>
+    friend constexpr auto operator>=(const T &a, const Derived &b) noexcept {
+        return !(a < b);
+    }
+
+    template <typename T>
+    friend constexpr auto operator>=(const Derived &a, const T &b) noexcept {
+        return !(a < b);
+    }
+
+    template <typename T = Derived>
     friend constexpr auto operator>=(const Derived &a, const Derived &b) noexcept {
         return !(a < b);
     }
