@@ -133,7 +133,7 @@ constexpr decltype(auto) operator|(T1 &&a, GroupByType<F> b) {
 
     auto dereference = [f = b.f](auto it, auto end) {
         decltype(auto) value = ltl::fast_invoke(f, *it);
-        return ltl::tuple_t<decltype(value), Range<decltype(it)>>{value, {std::move(it), std::move(end)}};
+        return ltl::tuple_t<decltype(value), Range<decltype(it)>>{value, {{std::move(it), std::move(end)}}};
     };
 
     auto f = [f = b.f](const auto &beg, const auto &end) {

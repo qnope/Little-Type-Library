@@ -45,7 +45,7 @@ class AbstractRange {
         return *std::next(underlying().begin(), std::size_t{size() - 1});
     }
 
-    template <typename T>
+    template <typename T, requires_f(IsIterable<T>)>
     operator T() const noexcept {
         return T(underlying().begin(), underlying().end());
     }

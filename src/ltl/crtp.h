@@ -7,70 +7,72 @@
     constexpr DerivedType &underlying() noexcept { return static_cast<DerivedType &>(*this); }                         \
     constexpr const DerivedType &underlying() const noexcept { return static_cast<const DerivedType &>(*this); }
 
+#define LTL_CRTP_COMPARABLE(Derived)                                                                                   \
+    template <typename T>                                                                                              \
+    friend constexpr auto operator!=(const Derived &a, const T &b) noexcept {                                          \
+        return !(a == b);                                                                                              \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    friend constexpr auto operator!=(const T &a, const Derived &b) noexcept {                                          \
+        return !(a == b);                                                                                              \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename = Derived>                                                                                      \
+    friend constexpr auto operator!=(const Derived &a, const Derived &b) noexcept {                                    \
+        return !(a == b);                                                                                              \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    friend constexpr auto operator<=(const T &a, const Derived &b) noexcept {                                          \
+        return !(b < a);                                                                                               \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    friend constexpr auto operator<=(const Derived &a, const T &b) noexcept {                                          \
+        return !(b < a);                                                                                               \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename = Derived>                                                                                      \
+    friend constexpr auto operator<=(const Derived &a, const Derived &b) noexcept {                                    \
+        return !(b < a);                                                                                               \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    friend constexpr auto operator>(const T &a, const Derived &b) noexcept {                                           \
+        return b < a;                                                                                                  \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    friend constexpr auto operator>(const Derived &a, const T &b) noexcept {                                           \
+        return b < a;                                                                                                  \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T = Derived>                                                                                    \
+    friend constexpr auto operator>(const Derived &a, const Derived &b) noexcept {                                     \
+        return b < a;                                                                                                  \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    friend constexpr auto operator>=(const T &a, const Derived &b) noexcept {                                          \
+        return !(a < b);                                                                                               \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    friend constexpr auto operator>=(const Derived &a, const T &b) noexcept {                                          \
+        return !(a < b);                                                                                               \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T = Derived>                                                                                    \
+    friend constexpr auto operator>=(const Derived &a, const Derived &b) noexcept {                                    \
+        return !(a < b);                                                                                               \
+    }
+
 namespace ltl {
 namespace crtp {
 template <typename Derived>
-class Comparable {
-  public:
-    template <typename T>
-    friend constexpr auto operator!=(const Derived &a, const T &b) noexcept {
-        return !(a == b);
-    }
-
-    template <typename T>
-    friend constexpr auto operator!=(const T &a, const Derived &b) noexcept {
-        return !(a == b);
-    }
-
-    template <typename = Derived>
-    friend constexpr auto operator!=(const Derived &a, const Derived &b) noexcept {
-        return !(a == b);
-    }
-
-    template <typename T>
-    friend constexpr auto operator<=(const T &a, const Derived &b) noexcept {
-        return !(b < a);
-    }
-
-    template <typename T>
-    friend constexpr auto operator<=(const Derived &a, const T &b) noexcept {
-        return !(b < a);
-    }
-
-    template <typename = Derived>
-    friend constexpr auto operator<=(const Derived &a, const Derived &b) noexcept {
-        return !(b < a);
-    }
-
-    template <typename T>
-    friend constexpr auto operator>(const T &a, const Derived &b) noexcept {
-        return b < a;
-    }
-
-    template <typename T>
-    friend constexpr auto operator>(const Derived &a, const T &b) noexcept {
-        return b < a;
-    }
-
-    template <typename T = Derived>
-    friend constexpr auto operator>(const Derived &a, const Derived &b) noexcept {
-        return b < a;
-    }
-
-    template <typename T>
-    friend constexpr auto operator>=(const T &a, const Derived &b) noexcept {
-        return !(a < b);
-    }
-
-    template <typename T>
-    friend constexpr auto operator>=(const Derived &a, const T &b) noexcept {
-        return !(a < b);
-    }
-
-    template <typename T = Derived>
-    friend constexpr auto operator>=(const Derived &a, const Derived &b) noexcept {
-        return !(a < b);
-    }
+struct Comparable {
+    LTL_CRTP_COMPARABLE(Derived)
 };
 
 #define OP(name, op)                                                                                                   \

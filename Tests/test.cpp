@@ -90,6 +90,8 @@ TEST(LTL_test, number_test) {
 TEST(LTL_test, constexpr_tuple_test) {
     constexpr ltl::tuple_t tuple{5, 3.0, 4};
 
+    static_assert(ltl::is_aggregate(tuple));
+
     static_assert(decay_from(tuple) == ltl::type_v<ltl::tuple_t<int, double, int>>);
     static_assert(apply([](auto a, auto b, auto c) { return a + b + c; }, tuple) == 12.0);
 
@@ -224,7 +226,7 @@ TEST(LTL_test, tuple_test) {
 TEST(LTL_test, tuple_test_algo) {
     {
         int a;
-        ltl::tuple_t<int &, double, ltl::type_t<int>, int> tuple(a, 5.0, ltl::type_v<int>, 5);
+        ltl::tuple_t<int &, double, ltl::type_t<int>, int> tuple{a, 5.0, ltl::type_v<int>, 5};
         typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int>));
         typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int &>));
         typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<double &>));
@@ -1521,8 +1523,9 @@ TEST(LTL_test, test_zip_tuple) {
     auto tuple3 = ltl::zip_type(tuple1, tuple2);
     auto type = ltl::type_v<
         ltl::tuple_t<ltl::tuple_t<int, double>, ltl::tuple_t<double, std::string>, ltl::tuple_t<std::string, int>>>;
+    typed_static_assert(ltl::is_aggregate(type));
     typed_static_assert(type_from(tuple3) == type);
-    ASSERT_TRUE((tuple3 == decltype_t(type){{0, 0.0}, {5.0, "lul"}, {"lol", 18}}));
+    ASSERT_TRUE((tuple3 == decltype_t(type){{{0, 0.0}, {5.0, "lul"}, {"lol", 18}}}));
 }
 
 TEST(LTL_test, test_scanl_tuple) {
