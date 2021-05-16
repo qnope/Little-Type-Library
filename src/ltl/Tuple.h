@@ -9,6 +9,22 @@
 
 namespace ltl {
 
+template <typename... Ts>
+struct tuple_t;
+
+namespace detail {
+template <int... Is, typename F, typename T>
+constexpr decltype(auto) apply_impl(std::integer_sequence<int, Is...>, F &&f, T &&t) {
+    return FWD(f)(FWD(t)[number_v<Is>]...);
+}
+
+} // namespace detail
+
+template <int... Is, typename F>
+constexpr decltype(auto) execute_with_indices(std::integer_sequence<int, Is...>, F &&f) {
+    return FWD(f)(number_v<Is>...);
+}
+
 namespace detail {
 template <typename T>
 using safe_add_lvalue_reference = std::conditional_t<std::is_reference_v<T>, T, std::add_lvalue_reference_t<T>>;
@@ -42,61 +58,7 @@ template <typename...>
 struct tuple_base_t;
 
 template <int... Is, typename... Ts>
-struct tuple_base_t<std::integer_sequence<int, Is...>, Ts...> : tuple_leaf<Is, Ts>... {
-    constexpr static auto length = number_v<sizeof...(Ts)>;
-    constexpr static auto isEmpty = length == 0_n;
-
-    template <typename... _Ts>
-    constexpr tuple_base_t &operator=(const tuple_base_t<_Ts...> &t) {
-        typed_static_assert_msg(t.length == length, "Tuple must have the same size");
-        ((get_leaf<Is>(*this) = get_leaf<Is>(t)), ...);
-        return *this;
-    }
-
-    template <typename... _Ts>
-    constexpr tuple_base_t &operator=(tuple_base_t<_Ts...> &&t) {
-        typed_static_assert_msg(t.length == length, "Tuple must have the same size");
-        ((get_leaf<Is>(*this) = get_leaf<Is>(std::move(t))), ...);
-        return *this;
-    }
-
-    template <typename F>
-    constexpr decltype(auto) operator()(F &&f) & {
-        return ltl::fast_invoke(FWD(f), get_leaf<Is>(*this)...);
-    }
-
-    template <typename F>
-    constexpr decltype(auto) operator()(F &&f) const & {
-        return ltl::fast_invoke(FWD(f), get_leaf<Is>(*this)...);
-    }
-
-    template <typename F>
-    constexpr decltype(auto) operator()(F &&f) && {
-        return ltl::fast_invoke(FWD(f), get_leaf<Is>(std::move(*this))...);
-    }
-
-    template <typename... _Ts>
-    constexpr auto operator==(const tuple_base_t<_Ts...> &t) const noexcept {
-        typed_static_assert_msg(t.length == length, "Tuple must have the same size");
-        return ((get_leaf<Is>(*this) == get_leaf<Is>(t)) && ... && true_v);
-    }
-
-    template <typename... _Ts>
-    constexpr bool operator<(const tuple_base_t<_Ts...> &t) const noexcept {
-        typed_static_assert_msg(t.length == length, "Tuple must have the same size");
-        bool resultComparison = false;
-        auto tester = [&resultComparison](const auto &a, const auto &b) {
-            if (a == b) {
-                resultComparison = false;
-                return true;
-            }
-            resultComparison = a < b;
-            return false;
-        };
-        (... && (tester(get_leaf<Is>(*this), get_leaf<Is>(t))));
-        return resultComparison;
-    }
-};
+struct tuple_base_t<std::integer_sequence<int, Is...>, Ts...> : tuple_leaf<Is, Ts>... {};
 
 template <std::size_t N1, typename SequenceGenerator>
 struct make_integer_sequence_impl;
@@ -134,20 +96,24 @@ struct [[nodiscard]] tuple_t {
     using super = detail::tuple_base_t<indexer_sequence_t, Ts...>;
     super impl;
 
-    static constexpr auto length = super::length;
-    static constexpr auto isEmpty = super::isEmpty;
+    constexpr static auto length = number_v<sizeof...(Ts)>;
+    constexpr static auto isEmpty = length == 0_n;
 
     static constexpr auto getTypes() noexcept { return tuple_t<type_t<Ts>...>{}; }
 
     template <typename... _Ts>
     tuple_t &operator=(const tuple_t<_Ts...> &t) {
-        impl = t.impl;
+        execute_with_indices(indexer_sequence_t{}, [&](auto... indices) { //
+            (((*this)[indices] = t[indices]), ...);
+        });
         return *this;
     }
 
     template <typename... _Ts>
     tuple_t &operator=(tuple_t<_Ts...> &&t) {
-        impl = std::move(t).impl;
+        execute_with_indices(indexer_sequence_t{}, [&](auto... indices) { //
+            (((*this)[indices] = std::move(t)[indices]), ...);
+        });
         return *this;
     }
 
@@ -168,17 +134,17 @@ struct [[nodiscard]] tuple_t {
 
     template <typename F>
     constexpr decltype(auto) operator()(F &&f) & {
-        return impl(FWD(f));
+        return ::ltl::detail::apply_impl(indexer_sequence_t{}, FWD(f), *this);
     }
 
     template <typename F>
     constexpr decltype(auto) operator()(F &&f) const & {
-        return impl(FWD(f));
+        return ::ltl::detail::apply_impl(indexer_sequence_t{}, FWD(f), *this);
     }
 
     template <typename F>
     constexpr decltype(auto) operator()(F &&f) && {
-        return std::move(impl)(FWD(f));
+        return ::ltl::detail::apply_impl(indexer_sequence_t{}, FWD(f), std::move(*this));
     }
 
     template <int I>
@@ -201,70 +167,73 @@ struct [[nodiscard]] tuple_t {
 
     template <int I>
         [[nodiscard]] constexpr decltype(auto) get() & noexcept {
-        return get(number_v<I>);
+        static_assert(I < length.value);
+        return detail::get_leaf<I>(impl);
     }
 
-    template <int N>
+    template <int I>
     [[nodiscard]] constexpr decltype(auto) get() const &noexcept {
-        return get(number_v<N>);
+        static_assert(I < length.value);
+        return detail::get_leaf<I>(impl);
     }
 
-    template <int N>
+    template <int I>
         [[nodiscard]] constexpr decltype(auto) get() && noexcept {
-        return std::move(*this).get(number_v<N>);
+        static_assert(I < length.value);
+        return detail::get_leaf<I>(std::move(impl));
     }
 
     template <int... Is>
-    [[nodiscard]] constexpr auto extract(number_t<Is>... ns) const &noexcept {
-        return tuple_t<decltype(std::move(*const_cast<tuple_t *>(this))[ns])...>{(*this)[ns]...};
+    [[nodiscard]] constexpr auto extract(number_t<Is>...) const &noexcept {
+        return this->extract(std::integer_sequence<int, Is...>{});
     }
 
     template <int... Is>
-        [[nodiscard]] constexpr auto extract(number_t<Is>... ns) && noexcept {
-        return tuple_t<decltype(std::move(*const_cast<tuple_t *>(this))[ns])...>{std::move(*this)[ns]...};
+        [[nodiscard]] constexpr auto extract(number_t<Is>...) && noexcept {
+        return std::move(*this).extract(std::integer_sequence<int, Is...>{});
     }
 
     template <int... Is>
     [[nodiscard]] constexpr auto extract(std::integer_sequence<int, Is...>) const &noexcept {
-        return this->extract(number_v<Is>...);
+        return tuple_t<decltype(detail::get_leaf<Is>(std::declval<super>()))...>{{detail::get_leaf<Is>(impl)...}};
     }
 
     template <int... Is>
         [[nodiscard]] constexpr auto extract(std::integer_sequence<int, Is...>) && noexcept {
-        return std::move(*this).extract(number_v<Is>...);
+        return tuple_t<decltype(detail::get_leaf<Is>(std::declval<super>()))...>{
+            {detail::get_leaf<Is>(std::move(impl))...}};
     }
 
     template <typename T>
     [[nodiscard]] constexpr auto push_back(T && newValue) const & {
-        auto fwdAll = [&newValue](auto &... xs) {
-            return tuple_t<Ts..., decay_reference_wrapper_t<T>>{xs..., static_cast<T &&>(newValue)};
+        auto fwdAll = [&newValue](auto &&... xs) {
+            return tuple_t<Ts..., decay_reference_wrapper_t<T>>{{FWD(xs)..., FWD(newValue)}};
         };
-
-        return (*this)(fwdAll);
+        return detail::apply_impl(indexer_sequence_t{}, fwdAll, *this);
     }
 
     template <typename T>
     [[nodiscard]] constexpr auto push_back(T && newValue) && {
         auto fwdAll = [&newValue](Ts &&... xs) {
-            return tuple_t<Ts..., decay_reference_wrapper_t<T>>{FWD(xs)..., static_cast<T &&>(newValue)};
+            return tuple_t<Ts..., decay_reference_wrapper_t<T>>{{FWD(xs)..., FWD(newValue)}};
         };
-        return std::move(*this)(fwdAll);
+        return detail::apply_impl(indexer_sequence_t{}, fwdAll, std::move(*this));
     }
 
     template <typename T>
     [[nodiscard]] constexpr auto push_front(T && newValue) const & {
-        auto fwdAll = [&newValue](auto &... xs) {
-            return tuple_t<decay_reference_wrapper_t<T>, Ts...>{static_cast<T &&>(newValue), xs...};
+        auto fwdAll = [&newValue](auto &&... xs) {
+            return tuple_t<decay_reference_wrapper_t<T>, Ts...>{{FWD(newValue), FWD(xs)...}};
         };
-        return (*this)(fwdAll);
+        return detail::apply_impl(indexer_sequence_t{}, fwdAll, *this);
     }
 
     template <typename T>
     [[nodiscard]] constexpr auto push_front(T && newValue) && {
         auto fwdAll = [&newValue](Ts &&... xs) {
-            return tuple_t<decay_reference_wrapper_t<T>, Ts...>{static_cast<T &&>(newValue), FWD(xs)...};
+            return tuple_t<decay_reference_wrapper_t<T>, Ts...>{{FWD(newValue), FWD(xs)...}};
         };
-        return std::move(*this)(fwdAll);
+        return detail::apply_impl(indexer_sequence_t{}, fwdAll, std::move(*this));
     }
 
     [[nodiscard]] constexpr auto pop_back() const & {
@@ -288,13 +257,29 @@ struct [[nodiscard]] tuple_t {
     static constexpr auto make_indexer() noexcept { return integer_sequence_to_number_list<indexer_sequence_t>{}; }
 
     template <typename... _Ts>
-    constexpr auto operator==(const tuple_t<_Ts...> &x) const {
-        return impl == x.impl;
+    constexpr auto operator==(const tuple_t<_Ts...> &t) const {
+        typed_static_assert_msg(t.length == length, "Tuple must have the same size");
+        return execute_with_indices(indexer_sequence_t{}, [&](auto... indices) { //
+            return (((*this)[indices] == t[indices]) && ... && true_v);
+        });
     }
 
     template <typename... _Ts>
-    constexpr auto operator<(const tuple_t<_Ts...> &x) const {
-        return impl < x.impl;
+    constexpr auto operator<(const tuple_t<_Ts...> &t) const {
+        typed_static_assert_msg(t.length == length, "Tuple must have the same size");
+        return execute_with_indices(indexer_sequence_t{}, [&](auto... indices) {
+            bool resultComparison = false;
+            auto tester = [&resultComparison](const auto &a, const auto &b) {
+                if (a == b) {
+                    resultComparison = false;
+                    return true;
+                }
+                resultComparison = a < b;
+                return false;
+            };
+            (... && (tester((*this)[indices], t[indices])));
+            return resultComparison;
+        });
     }
 
     LTL_CRTP_COMPARABLE(tuple_t)
@@ -353,17 +338,17 @@ using array_to_index_sequence_t = typename array_to_index_sequence<array>::type;
 
 template <typename... T1, typename... T2>
 constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
-    constexpr auto indices1 = build_index_list(number_v<sizeof...(T1)>);
-    constexpr auto indices2 = build_index_list(number_v<sizeof...(T2)>);
-
-    return indices1([indices2, &t1, &t2](auto... n1s) {
-        return indices2([&t1, &t2, n1s...](auto... n2s) { return tuple_t<T1..., T2...>{t1[n1s]..., t2[n2s]...}; });
+    return ::ltl::execute_with_indices(t1.make_indexer_sequence(), [&](auto... n1s) {
+        return ::ltl::execute_with_indices(t2.make_indexer_sequence(), [&](auto... n2s) {
+            return tuple_t<T1..., T2...>{t1[n1s]..., t2[n2s]...};
+        });
     });
 }
 
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
 constexpr decltype(auto) apply(F &&f, Tuple &&tuple) {
-    return FWD(tuple)(FWD(f));
+    constexpr auto indexer = std::decay_t<Tuple>::make_indexer_sequence();
+    return detail::apply_impl(indexer, FWD(f), FWD(tuple));
 }
 
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>

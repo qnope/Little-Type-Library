@@ -36,7 +36,7 @@ constexpr bool always_false = false;
 /////////////////////// decay_reference_wrapper
 template <typename T>
 struct decay_reference_wrapper {
-    using type = std::decay_t<T>;
+    using type = T;
 };
 
 template <typename T>
@@ -45,7 +45,7 @@ struct decay_reference_wrapper<std::reference_wrapper<T>> {
 };
 
 template <typename T>
-using decay_reference_wrapper_t = typename decay_reference_wrapper<T>::type;
+using decay_reference_wrapper_t = typename decay_reference_wrapper<std::decay_t<T>>::type;
 
 template <typename T>
 using remove_rvalue_reference_t = std::conditional_t<std::is_lvalue_reference_v<T>, T, std::decay_t<T>>;
