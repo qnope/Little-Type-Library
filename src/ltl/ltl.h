@@ -33,6 +33,12 @@ namespace ltl {
 template <typename>
 constexpr bool always_false = false;
 
+template <typename T>
+struct remove_cvref : std::remove_cv<typename std::remove_reference<T>::type> {};
+
+template <typename T>
+using remove_cvref_t = typename remove_cvref<T>::type;
+
 /////////////////////// decay_reference_wrapper
 template <typename T>
 struct decay_reference_wrapper {
@@ -45,10 +51,10 @@ struct decay_reference_wrapper<std::reference_wrapper<T>> {
 };
 
 template <typename T>
-using decay_reference_wrapper_t = typename decay_reference_wrapper<std::decay_t<T>>::type;
+using decay_reference_wrapper_t = typename decay_reference_wrapper<ltl::remove_cvref_t<T>>::type;
 
 template <typename T>
-using remove_rvalue_reference_t = std::conditional_t<std::is_lvalue_reference_v<T>, T, std::decay_t<T>>;
+using remove_rvalue_reference_t = std::conditional_t<std::is_lvalue_reference_v<T>, T, ltl::remove_cvref_t<T>>;
 
 ///////////////////// overloader
 template <typename... Fs>
@@ -123,7 +129,7 @@ template <typename T>
 }
 
 template <typename T>
-using extract_type = typename std::decay_t<T>::type;
+using extract_type = typename ltl::remove_cvref_t<T>::type;
 
 ////////////////////// number
 template <int N>
@@ -132,14 +138,10 @@ struct number_t {
 };
 
 namespace detail {
-template <char... _digits>
+template <char... digits>
 [[nodiscard]] constexpr int digits_to_int() {
-    constexpr char digits[] = {_digits...};
     int result = 0;
-    for (int digit : digits) {
-        result *= 10;
-        result += digit - '0';
-    }
+    ((result = result * 10 + digits - '0'), ...);
     return result;
 }
 } // namespace detail
@@ -230,5 +232,7 @@ template <typename T>
 true_t is_type_t(type_t<T>);
 template <int N>
 true_t is_number_t(number_t<N>);
+
+struct empty_t {};
 
 } // namespace ltl

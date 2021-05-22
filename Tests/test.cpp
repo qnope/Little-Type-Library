@@ -241,13 +241,13 @@ TEST(LTL_test, tuple_test_algo) {
     }
 
     {
-        ltl::type_list_t<int, double, int, int> tuple;
-        typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int>));
-        typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<char>));
-        typed_static_assert(ltl::count_type(tuple, ltl::type_v<int>) == 3_n);
-        typed_static_assert(*ltl::find_type(tuple, ltl::type_v<int>) == 0_n);
-        typed_static_assert(*ltl::find_type(tuple, ltl::type_v<int>, 0_n + 1_n) == 2_n);
-        typed_static_assert(*ltl::find_type(tuple, ltl::type_v<double>) == 1_n);
+        using list = ltl::fast::type_list<int, double, int, int>;
+        static_assert(ltl::fast::contains_v<int, list>);
+        static_assert(!ltl::fast::contains_v<char, list>);
+        static_assert(ltl::fast::count_v<int, list> == 3);
+        static_assert(*ltl::fast::find_v<int, list> == 0);
+        static_assert(*ltl::fast::find_v<int, list, 1> == 2);
+        static_assert(*ltl::fast::find_v<double, list> == 1);
     }
 
     {
@@ -259,10 +259,10 @@ TEST(LTL_test, tuple_test_algo) {
     }
 
     {
-        ltl::type_list_t<int, int, unsigned int, char> tuple1;
-        typed_static_assert(ltl::all_of_type(tuple1, ltl::is_integral));
-        typed_static_assert(ltl::none_of_type(tuple1, ltl::is_floating_point));
-        typed_static_assert(ltl::any_of_type(tuple1, ltl::is_unsigned));
+        using list = ltl::fast::type_list<int, int, unsigned int, char>;
+        static_assert(ltl::fast::all_of_v<list, std::is_integral>);
+        static_assert(ltl::fast::none_of_v<list, std::is_floating_point>);
+        static_assert(ltl::fast::any_of_v<list, std::is_unsigned>);
     }
 
     {
@@ -274,7 +274,7 @@ TEST(LTL_test, tuple_test_algo) {
     {
         ltl::tuple_t<int, int *, double, int, double *, char, char, char *> tuple;
         typed_static_assert((type_from(ltl::unique_type(tuple)) ==
-                             ltl::type_v<ltl::type_list_t<int, int *, double, double *, char, char *>>));
+                             ltl::type_v<ltl::tuple_t<int, int *, double, double *, char, char *>>));
     }
 
     {
@@ -290,7 +290,7 @@ TEST(LTL_test, tuple_test_algo) {
     {
         constexpr auto list = ltl::tuple_t<int, double, char *, const char *, double *, double, void *>{};
         auto listp = ltl::filter_type(list, ltl::is_pointer);
-        static_assert(ltl::type_list_v<char *, const char *, double *, void *> == decltype(listp){});
+        static_assert(ltl::tuple_t<char *, const char *, double *, void *>{} == decltype(listp){});
         constexpr auto empty = ltl::tuple_t<>{};
         static_assert(empty == ltl::filter_type(empty, ltl::is_pointer));
     }
@@ -1251,13 +1251,12 @@ TEST(LTL_test, test_condition) {
 }
 
 TEST(LTL_test, test_curry_metaprogramming) {
-    constexpr ltl::type_list_t<int, double, char, int *, double *> list;
+    using list = ltl::fast::type_list<int, double, char, int *, double *>;
+    using list2 = ltl::fast::type_list<int *, double *, char *>;
+    using list3 = ltl::fast::type_list<double *, int *, char, double>;
 
-    constexpr ltl::type_list_t<int *, double *, char *> list2;
-    constexpr ltl::type_list_t<double *, int *, char, double> list3;
-
-    static_assert(ltl::all_of_type(list3, ltl::curry(lift(ltl::contains_type))(list)));
-    static_assert(!ltl::all_of_type(list2, ltl::curry(lift(ltl::contains_type), list)));
+    static_assert(ltl::fast::all_of_v<list3, ltl::fast::bind2nd<ltl::fast::contains, list>::type>);
+    static_assert(!ltl::fast::all_of_v<list2, ltl::fast::bind2nd<ltl::fast::contains, list>::type>);
 }
 
 struct Message {
@@ -1448,6 +1447,11 @@ TEST(LTL_test, test_typed_tuple) {
     static_assert(type_from(tuple.get<int>()) == ltl::type_v<int &>);
     static_assert(type_from(tuple.get<double>()) == ltl::type_v<double &>);
     static_assert(type_from(std::as_const(tuple).get<int *>()) == ltl::type_v<int *const &>);
+
+    ltl::TypedTuple<std::string, ltl::TypedTuple<int, double>> tuple2{"lol", {0, 3.0}};
+    typed_static_assert(ltl::is_aggregate(tuple) && ltl::is_aggregate(tuple2));
+    ASSERT_EQ("lol", tuple2.get<std::string>());
+    ASSERT_EQ((tuple2.get<ltl::TypedTuple<int, double>>()), (ltl::TypedTuple{0, 3.0}));
 }
 
 TEST(LTL_test, test_rvalue) {

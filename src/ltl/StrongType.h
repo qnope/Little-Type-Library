@@ -29,11 +29,11 @@ class strong_type_t : public Skills<strong_type_t<T, Tag, Converter, Skills...>>
     struct isSameKindTrait<strong_type_t<T, Tag, C, Skills...>> : true_t {};
 
     template <typename U>
-    static constexpr isSameKindTrait<std::decay_t<U>> isSameKind_v{};
+    static constexpr isSameKindTrait<ltl::remove_cvref_t<U>> isSameKind_v{};
 
   public:
     template <typename U>
-    [[nodiscard]] static isSameKindTrait<std::decay_t<U>> isSameKind(U);
+    [[nodiscard]] static isSameKindTrait<ltl::remove_cvref_t<U>> isSameKind(U);
 
     template <typename... Args, typename = std::enable_if_t<((!isSameKind_v<Args>)&&...)>>
     explicit constexpr strong_type_t(Args &&...args) : m_value{FWD(args)...} {}

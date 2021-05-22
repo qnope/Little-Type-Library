@@ -60,14 +60,14 @@ struct WithSentinelImpl;
 
 template <typename It>
 struct WithSentinelImpl<It, false> {
-    using reverse_iterator = Nothing;
+    using reverse_iterator = empty_t;
 
     WithSentinelImpl() = default;
 
     template <typename T>
     WithSentinelImpl(T &&, It e) noexcept : m_sentinelEnd{std::move(e)} {}
 
-    Nothing reverse(const It &) const noexcept { return {}; }
+    empty_t reverse(const It &) const noexcept { return {}; }
 
     It m_sentinelEnd{};
 };

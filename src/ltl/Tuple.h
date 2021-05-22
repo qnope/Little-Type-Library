@@ -2,9 +2,8 @@
 
 #include "concept.h"
 #include "crtp.h"
-#include "ltl.h"
+#include "fast.h"
 
-#include <tuple>
 #include <array>
 
 namespace ltl {
@@ -99,7 +98,7 @@ struct [[nodiscard]] tuple_t {
     constexpr static auto length = number_v<sizeof...(Ts)>;
     constexpr static auto isEmpty = length == 0_n;
 
-    static constexpr auto getTypes() noexcept { return tuple_t<type_t<Ts>...>{}; }
+    static constexpr auto getTypes() noexcept { return fast::type_list<Ts...>{}; }
 
     template <typename... _Ts>
     tuple_t &operator=(const tuple_t<_Ts...> &t) {
@@ -325,17 +324,6 @@ template <typename N>
     return build_index_list(number_v<0>, n);
 }
 
-template <const auto &array, typename = std::make_index_sequence<std::tuple_size_v<std::decay_t<decltype(array)>>>>
-struct array_to_index_sequence;
-
-template <const auto &array, std::size_t... Is>
-struct array_to_index_sequence<array, std::index_sequence<Is...>> {
-    using type = std::integer_sequence<std::decay_t<decltype(array[0])>, array[Is]...>;
-};
-
-template <const auto &array>
-using array_to_index_sequence_t = typename array_to_index_sequence<array>::type;
-
 template <typename... T1, typename... T2>
 constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
     return ::ltl::execute_with_indices(t1.make_indexer_sequence(), [&](auto... n1s) {
@@ -347,7 +335,7 @@ constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
 
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
 constexpr decltype(auto) apply(F &&f, Tuple &&tuple) {
-    constexpr auto indexer = std::decay_t<Tuple>::make_indexer_sequence();
+    constexpr auto indexer = ltl::remove_cvref_t<Tuple>::make_indexer_sequence();
     return detail::apply_impl(indexer, FWD(f), FWD(tuple));
 }
 
@@ -357,6 +345,23 @@ F for_each(Tuple &&tuple, F &&f) {
     FWD(tuple)(retrieveAllArgs);
     return FWD(f);
 }
+
+template <typename Tuple>
+class tuple_size {
+    template <typename T>
+    struct impl;
+
+    template <typename... Ts>
+    struct impl<tuple_t<Ts...>> {
+        static constexpr auto value = sizeof...(Ts);
+    };
+
+  public:
+    static constexpr auto value = impl<ltl::remove_cvref_t<Tuple>>::value;
+};
+
+template <typename Tuple>
+inline constexpr auto tuple_size_v = tuple_size<Tuple>::value;
 
 } // namespace ltl
 

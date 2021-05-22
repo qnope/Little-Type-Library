@@ -4,33 +4,39 @@
 #include "tuple_algos.h"
 
 namespace ltl {
-template <typename... Ts>
-class TypedTuple : public tuple_t<Ts...> {
-    static constexpr auto types = type_list_v<Ts...>;
-    typed_static_assert_msg(is_unique_type(types), "Types must appear only once");
 
-  public:
-    using tuple_t<Ts...>::tuple_t;
+template <typename... Ts>
+struct TypedTuple : public tuple_t<Ts...> {
+    using type_list = fast::type_list<Ts...>;
+    static_assert(fast::is_unique<type_list>::value, "Types must appear only once");
 
     using tuple_t<Ts...>::length;
     using tuple_t<Ts...>::isEmpty;
 
-    using tuple_t<Ts...>::get;
-
     template <typename T>
-    [[nodiscard]] constexpr auto &get() noexcept {
-        constexpr auto index = find_type(types, type_v<T>);
-        static_assert(index.has_value, "Type must be in the type list");
-        return (*this)[*index];
+        [[nodiscard]] constexpr auto &get() & noexcept {
+        constexpr auto index = fast::find<T, type_list>::value;
+        static_assert(index, "Typed Tuple must have the type given to get");
+        return static_cast<tuple_t<Ts...> &>(*this).template get<*index>();
     }
 
     template <typename T>
-    [[nodiscard]] constexpr const auto &get() const noexcept {
-        constexpr auto index = find_type(types, type_v<T>);
-        static_assert(index.has_value, "Type must be in the type list");
-        return (*this)[*index];
+    [[nodiscard]] constexpr const auto &get() const &noexcept {
+        constexpr auto index = fast::find<T, type_list>::value;
+        static_assert(index, "Typed Tuple must have the type given to get");
+        return static_cast<const tuple_t<Ts...> &>(*this).template get<*index>();
+    }
+
+    template <typename T>
+        [[nodiscard]] constexpr auto get() && noexcept {
+        constexpr auto index = fast::find<T, type_list>::value;
+        static_assert(index, "Typed Tuple must have the type given to get");
+        return static_cast<tuple_t<Ts...> &&>(std::move(*this)).template get<*index>();
     }
 };
+
+template <typename... Ts>
+TypedTuple(Ts &&...)->TypedTuple<decay_reference_wrapper_t<Ts>...>;
 
 template <typename... Ts>
 struct is_tuple<TypedTuple<Ts...>> {

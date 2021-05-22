@@ -51,7 +51,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 
     template <typename F>
     constexpr auto map(F &&f) //
-        & -> ltl::optional<std::decay_t<decltype(ltl::invoke(FWD(f), std::declval<T &>()))>> {
+        & -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<T &>()))>> {
         if (*this) {
             return ltl::invoke(FWD(f), **this);
         }
@@ -60,7 +60,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 
     template <typename F>
     constexpr auto map(F &&f) //
-        const & -> ltl::optional<std::decay_t<decltype(ltl::invoke(FWD(f), std::declval<const T &>()))>> {
+        const & -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const T &>()))>> {
         if (*this) {
             return ltl::invoke(FWD(f), **this);
         }
@@ -69,7 +69,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 
     template <typename F>
     constexpr auto map(F &&f) //
-        && -> ltl::optional<std::decay_t<decltype(ltl::invoke(FWD(f), std::declval<T &&>()))>> {
+        && -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<T &&>()))>> {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(**this));
         }
@@ -78,7 +78,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 
     template <typename F>
     constexpr auto map(F &&f) //
-        const && -> ltl::optional<std::decay_t<decltype(ltl::invoke(FWD(f), std::declval<const T &&>()))>> {
+        const && -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const T &&>()))>> {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(**this));
         }

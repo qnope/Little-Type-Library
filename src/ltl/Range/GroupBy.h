@@ -96,7 +96,7 @@ struct GroupByType {
 };
 template <typename F>
 auto group_by(F &&f) {
-    return GroupByType<std::decay_t<F>>{FWD(f)};
+    return GroupByType<ltl::remove_cvref_t<F>>{FWD(f)};
 }
 
 template <typename F>
@@ -107,8 +107,8 @@ constexpr decltype(auto) operator|(T1 &&a, GroupByType<F> b) {
     using std::begin;
     using std::end;
     using it = decltype(begin(FWD(a)));
-    return Range{GroupByIterator<it, std::decay_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)),
+    return Range{GroupByIterator<it, ltl::remove_cvref_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)),
                                                                              std::move(b.f)},
-                 GroupByIterator<it, std::decay_t<decltype(std::move(b.f))>>{end(FWD(a))}};
+                 GroupByIterator<it, ltl::remove_cvref_t<decltype(std::move(b.f))>>{end(FWD(a))}};
 }
 } // namespace ltl

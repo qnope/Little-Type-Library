@@ -534,12 +534,12 @@ namespace detail {
 template <typename C>
 LTL_CONSTEXPR_ALGO decltype(auto) copy_if_needed(C &&c) {
     if_constexpr(is_const(FWD(c)) && is_fixed_size_array(FWD(c))) {
-        std::decay_t<C> newC;
+        ltl::remove_cvref_t<C> newC;
         copy(FWD(c), begin(newC));
         return newC;
     }
     else_if_constexpr(is_const(FWD(c)) || is_rvalue_reference(FWD(c))) { //
-        return static_cast<std::decay_t<C>>(FWD(c));
+        return static_cast<ltl::remove_cvref_t<C>>(FWD(c));
     }
     else {
         return FWD(c);
@@ -1163,17 +1163,17 @@ LTL_CONSTEXPR_ALGO auto contains_if(const C &c, F &&f) {
 }
 
 template <typename C>
-LTL_CONSTEXPR_ALGO auto map_contains(const C &c, const typename std::decay_t<C>::key_type &k) {
+LTL_CONSTEXPR_ALGO auto map_contains(const C &c, const typename ltl::remove_cvref_t<C>::key_type &k) {
     return c.find(FWD(k)) != c.end();
 }
 
 template <typename C>
-LTL_CONSTEXPR_ALGO auto map_find(C &&c, const typename std::decay_t<C>::key_type &k) {
+LTL_CONSTEXPR_ALGO auto map_find(C &&c, const typename ltl::remove_cvref_t<C>::key_type &k) {
     return FWD(c).find(FWD(k));
 }
 
 template <typename C>
-LTL_CONSTEXPR_ALGO auto map_find_value(C &&c, const typename std::decay_t<C>::key_type &k) {
+LTL_CONSTEXPR_ALGO auto map_find_value(C &&c, const typename ltl::remove_cvref_t<C>::key_type &k) {
     auto it = FWD(c).find(FWD(k));
     if (it == FWD(c).end()) {
         return std::optional<decltype(it->second)>{};
@@ -1182,7 +1182,7 @@ LTL_CONSTEXPR_ALGO auto map_find_value(C &&c, const typename std::decay_t<C>::ke
 }
 
 template <typename C>
-LTL_CONSTEXPR_ALGO auto map_find_ptr(C &c, const typename std::decay_t<C>::key_type &k) {
+LTL_CONSTEXPR_ALGO auto map_find_ptr(C &c, const typename ltl::remove_cvref_t<C>::key_type &k) {
     auto it = c.find(FWD(k));
     if (it == c.end()) {
         return decltype(std::addressof(it->second)){nullptr};
@@ -1191,7 +1191,7 @@ LTL_CONSTEXPR_ALGO auto map_find_ptr(C &c, const typename std::decay_t<C>::key_t
 }
 
 template <typename C>
-LTL_CONSTEXPR_ALGO auto map_take(C &c, const typename std::decay_t<C>::key_type &k) {
+LTL_CONSTEXPR_ALGO auto map_take(C &c, const typename ltl::remove_cvref_t<C>::key_type &k) {
     auto it = c.find(FWD(k));
     if (it == c.end()) {
         return std::optional<decltype(it->second)>{};

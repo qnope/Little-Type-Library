@@ -16,10 +16,10 @@ struct AbstractAction {};
 struct AbstractModifyingAction : AbstractAction {};
 
 template <typename T>
-constexpr bool IsAction = std::is_base_of_v<AbstractAction, std::decay_t<T>>;
+constexpr bool IsAction = std::is_base_of_v<AbstractAction, ltl::remove_cvref_t<T>>;
 
 template <typename T>
-constexpr bool IsModifyingAction = std::is_base_of_v<AbstractModifyingAction, std::decay_t<T>>;
+constexpr bool IsModifyingAction = std::is_base_of_v<AbstractModifyingAction, ltl::remove_cvref_t<T>>;
 
 constexpr struct Sort : AbstractModifyingAction {
 } sort;
@@ -198,8 +198,8 @@ auto operator|(C &c, FindIfPtr<F> e) {
 }
 
 template <typename C, typename D, requires_f(ltl::IsIterable<C>)>
-auto operator|(const C &c, JoinWith<D> d) -> std::decay_t<decltype(*c.begin())> {
-    std::decay_t<decltype(*begin(c))> result{};
+auto operator|(const C &c, JoinWith<D> d) -> ltl::remove_cvref_t<decltype(*c.begin())> {
+    ltl::remove_cvref_t<decltype(*begin(c))> result{};
     if (c.empty()) {
         return result;
     } else {
@@ -216,7 +216,7 @@ auto operator|(const C &c, Accumulate<T, F> a) {
 
 template <typename C, requires_f(ltl::IsIterable<C>)>
 auto operator|(const C &c, Sum) {
-    return ltl::accumulate(c, std::decay_t<decltype(*begin(c))>{});
+    return ltl::accumulate(c, ltl::remove_cvref_t<decltype(*begin(c))>{});
 }
 
 template <typename C, typename Action, requires_f(ltl::IsIterable<C> &&IsModifyingAction<Action>)>

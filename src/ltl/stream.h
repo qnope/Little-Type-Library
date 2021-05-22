@@ -13,7 +13,7 @@ using std::end;
 
 template <typename Container, typename Char, typename Trait = std::char_traits<Char>>
 class basic_readonly_streambuf final : public std::basic_streambuf<Char, Trait> {
-    using T = std::decay_t<decltype(*begin(std::declval<Container &>()))>;
+    using T = ltl::remove_cvref_t<decltype(*begin(std::declval<Container &>()))>;
     using char_type = typename Trait::char_type;
     using int_type = typename Trait::int_type;
     using pos_type = typename Trait::pos_type;
@@ -121,7 +121,7 @@ class basic_readonly_streambuf final : public std::basic_streambuf<Char, Trait> 
 
 template <typename Container, typename Char, typename Trait = std::char_traits<Char>>
 class basic_writeonly_streambuf final : public std::basic_streambuf<Char, Trait> {
-    using T = std::decay_t<decltype(*begin(std::declval<Container &>()))>;
+    using T = ltl::remove_cvref_t<decltype(*begin(std::declval<Container &>()))>;
     using char_type = typename Trait::char_type;
     using int_type = typename Trait::int_type;
 
@@ -159,8 +159,8 @@ struct as_byte {
 
     template <typename T>
     explicit as_byte(T &&t) {
-        begin = reinterpret_cast<char *>(const_cast<std::decay_t<T> *>(std::addressof(t)));
-        count = sizeof(std::decay_t<T>);
+        begin = reinterpret_cast<char *>(const_cast<ltl::remove_cvref_t<T> *>(std::addressof(t)));
+        count = sizeof(ltl::remove_cvref_t<T>);
     }
 };
 

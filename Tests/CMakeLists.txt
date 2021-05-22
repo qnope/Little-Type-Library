@@ -24,3 +24,7 @@ if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
     target_link_libraries(LTLtest20 PRIVATE LTL::LTL gtest_main)
     add_test(NAME LTLtest20 COMMAND LTLtest20)
 endif()
+
+add_executable(LTLCompileTime test_compile_time.cpp)
+target_compile_features(LTLCompileTime PRIVATE cxx_std_17)
+target_link_libraries(LTLCompileTime PRIVATE LTL::LTL)

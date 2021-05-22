@@ -26,7 +26,7 @@ class SplitIterator :
         m_advance{advanceIt},                           //
         m_dereference{dereference},                     //
         m_nextIterator{m_advance(increment_tag, this->m_it, this->m_sentinelEnd)} {
-        if_constexpr(type_from(m_previousIterator) != type_v<Nothing>) {
+        if_constexpr(type_from(m_previousIterator) != type_v<empty_t>) {
             if (it != sentinelBegin) {
                 SplitIterator i{sentinelBegin, sentinelBegin, sentinelEnd, advanceIt, dereference};
                 for (; i != *this; ++i)
@@ -88,7 +88,7 @@ struct GroupByType {
 };
 template <typename F>
 auto group_by(F &&f) {
-    return GroupByType<std::decay_t<F>>{FWD(f)};
+    return GroupByType<ltl::remove_cvref_t<F>>{FWD(f)};
 }
 
 template <typename F>

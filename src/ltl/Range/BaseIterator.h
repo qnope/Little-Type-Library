@@ -11,7 +11,7 @@
 
 #define DECLARE_EVERYTHING_BUT_REFERENCE(tag)                                                                          \
     using pointer = ::ltl::AsPointer<reference>;                                                                       \
-    using value_type = std::decay_t<reference>;                                                                        \
+    using value_type = ltl::remove_cvref_t<reference>;                                                                        \
     using difference_type = long long int;                                                                             \
     using iterator_category = tag
 

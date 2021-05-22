@@ -2,6 +2,7 @@
 
 #include "ltl.h"
 #include <array>
+#include <tuple>
 
 #define qualifier_from(x) ltl::qualifier_v<ltl::getQualifierEnum(type_from(x))>
 
@@ -14,7 +15,7 @@ std::add_rvalue_reference_t<T> declval(T &&);
 
 #define TRAIT(name)                                                                                                    \
     [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
-        return bool_v<std::LPL_CAT(name, _v) < std::decay_t<decltype(declval(FWD(xs)))>...>> ;                         \
+        return bool_v<std::LPL_CAT(name, _v) < ltl::remove_cvref_t<decltype(declval(FWD(xs)))>...>> ;                  \
     };
 
 // Primary type categories
@@ -259,9 +260,8 @@ template <typename F, typename = void, typename... Args>
 constexpr bool is_validImpl = false;
 
 template <typename F, typename... Args>
-constexpr bool
-    is_validImpl<F, std::void_t<decltype(ltl::invoke(std::declval<F>(), declval(std::declval<Args>())...))>, Args...> =
-        true;
+constexpr bool is_validImpl<F, std::void_t<decltype(std::declval<F>()(declval(std::declval<Args>())...))>, Args...> =
+    true;
 } // namespace detail
 
 template <typename F>
@@ -294,7 +294,7 @@ constexpr auto is_valid(F &&) {
         static constexpr auto value = true;                                                                            \
     };                                                                                                                 \
     template <typename T>                                                                                              \
-    LTL_CONCEPT conceptName = nameStruct<std::decay_t<T>>::value;                                                      \
+    LTL_CONCEPT conceptName = nameStruct<ltl::remove_cvref_t<T>>::value;                                               \
     [[maybe_unused]] constexpr auto nameLambda = [](auto &&x) constexpr noexcept {                                     \
         return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
     }
@@ -309,7 +309,7 @@ constexpr auto is_derived_from(type_t<T> type) {
     return [type](auto &&x) { return is_base_of(type, decay_from(declval(FWD(x)))); };
 }
 
-constexpr auto is_invocable = [](auto &&f, auto &&... args) {
+inline constexpr auto is_invocable = [](auto &&f, auto &&... args) {
     return bool_v<std::is_invocable_v<decltype(f), decltype(args)...>>;
 };
 
@@ -328,6 +328,18 @@ constexpr auto add_qualifier(qualifier_t<q>) {
     return [](auto x) constexpr { return x + qualifier_v<q>; };
 }
 
+template <const auto &array,
+          typename = std::make_index_sequence<std::tuple_size_v<ltl::remove_cvref_t<decltype(array)>>>>
+struct array_to_index_sequence;
+
+template <const auto &array, std::size_t... Is>
+struct array_to_index_sequence<array, std::index_sequence<Is...>> {
+    using type = std::integer_sequence<ltl::remove_cvref_t<decltype(array[0])>, array[Is]...>;
+};
+
+template <const auto &array>
+using array_to_index_sequence_t = typename array_to_index_sequence<array>::type;
+
 using std::begin;
 using std::end;
 
@@ -339,8 +351,8 @@ struct any_trait_t {
 
 constexpr any_trait_t any_trait_v;
 
-constexpr auto is_iterable = IS_VALID((x), begin(x), end(x));
-constexpr auto is_generic_callable = IS_VALID((x), x(any_trait_v));
+inline constexpr auto is_iterable = IS_VALID((x), begin(x), end(x));
+inline constexpr auto is_generic_callable = IS_VALID((x), x(any_trait_v));
 
 constexpr ltl::false_t is_fixed_size_array(...);
 

@@ -107,7 +107,7 @@ struct MapCachedIterator :
     using result_type = remove_rvalue_reference_t<decltype(
         fast_invoke(std::declval<Function>(), std::declval<typename std::iterator_traits<It>::reference>()))>;
 
-    using reference = typename std::decay_t<decltype(*std::declval<result_type>())>::underlying_type;
+    using reference = typename ltl::remove_cvref_t<decltype(*std::declval<result_type>())>::underlying_type;
     DECLARE_EVERYTHING_BUT_REFERENCE(std::input_iterator_tag);
 
     MapCachedIterator() = default;
@@ -173,7 +173,7 @@ constexpr decltype(auto) operator>>(T1 &&a, MapCachedType<F> b) {
 
 template <typename T>
 auto make_move_range(T &&t) {
-    auto move = [](auto &x) -> std::decay_t<decltype(x)> { //
+    auto move = [](auto &x) -> ltl::remove_cvref_t<decltype(x)> { //
         return std::move(x);
     };
     return FWD(t) | ltl::map(move);

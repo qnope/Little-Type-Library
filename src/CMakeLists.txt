@@ -24,6 +24,7 @@ target_sources(LTL INTERFACE
     ltl/tuple_algos.h
     ltl/TypedTuple.h
     ltl/VariantUtils.h
+    ltl/fast.h
 
     ltl/Range/actions.h
     ltl/Range/AsPointer.h

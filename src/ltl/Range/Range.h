@@ -134,7 +134,7 @@ template <typename T>
 struct is_chainable_operation : false_t {};
 
 template <typename T>
-constexpr bool IsChainableOperation = is_chainable_operation<std::decay_t<T>>::value;
+constexpr bool IsChainableOperation = is_chainable_operation<ltl::remove_cvref_t<T>>::value;
 
 template <typename T1, typename T2, requires_f(IsForOwningRange<T1> &&IsChainableOperation<T2>)>
 constexpr decltype(auto) operator|(T1 &&a, T2 b) {

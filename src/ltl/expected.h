@@ -95,7 +95,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
 
     template <typename F>
     constexpr auto map(F && f) //
-        &->expected<std::decay_t<decltype(ltl::invoke(FWD(f), std::declval<value_type &>()))>, error_type> {
+        &->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<value_type &>()))>, error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), this->result());
         }
@@ -104,7 +104,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
 
     template <typename F>
     constexpr auto map(F && f) //
-        const &->expected<std::decay_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &>()))>, error_type> {
+        const &->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &>()))>, error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), this->result());
         }
@@ -113,7 +113,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
 
     template <typename F>
     constexpr auto map(F && f) //
-        &&->expected<std::decay_t<decltype(ltl::invoke(FWD(f), std::declval<value_type &&>()))>, error_type> {
+        &&->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<value_type &&>()))>, error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(*this).result());
         }
@@ -123,7 +123,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     template <typename F>
     constexpr auto map(F && f) //
         const
-            &&->expected<std::decay_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &&>()))>, error_type> {
+            &&->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &&>()))>, error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(*this).result());
         }
@@ -178,7 +178,7 @@ LTL_MAKE_IS_KIND(expected, is_expected, is_expected_f, IsExpected, typename, ...
 template <typename T1, typename F, requires_f(IsExpected<T1>)>
 constexpr decltype(auto) operator|(T1 &&a, MapType<F> b) {
     using value_type = decltype(ltl::fast_invoke(std::move(b.f), FWD(a).result()));
-    using error_type = typename std::decay_t<T1>::error_type;
+    using error_type = typename ltl::remove_cvref_t<T1>::error_type;
     if (a) {
         return expected<value_type, error_type>{value_tag{}, ltl::fast_invoke(std::move(b.f), FWD(a).result())};
     }
@@ -189,8 +189,8 @@ template <typename T1, typename F, requires_f(IsExpected<T1>)>
 constexpr decltype(auto) operator>>(T1 &&a, MapType<F> b) {
     static_assert(IsExpected<decltype(ltl::fast_invoke(std::move(b.f), FWD(a).result()))>,
                   "With >> notation, function must return an expected");
-    using old_error_type = typename std::decay_t<T1>::error_type;
-    using return_type = std::decay_t<decltype(ltl::fast_invoke(std::move(b.f), FWD(a).result()))>;
+    using old_error_type = typename ltl::remove_cvref_t<T1>::error_type;
+    using return_type = ltl::remove_cvref_t<decltype(ltl::fast_invoke(std::move(b.f), FWD(a).result()))>;
     using new_error_type = typename return_type::error_type;
 
     static_assert(std::is_convertible_v<old_error_type, new_error_type>,

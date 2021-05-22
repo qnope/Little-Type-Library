@@ -22,13 +22,11 @@ struct NullableFunction {
     }
 
     template <typename... Args>
-    constexpr decltype(auto) operator()(Args &&...args) const {
+    constexpr decltype(auto) operator()(Args &&... args) const {
         return ltl::fast_invoke(*m_function, FWD(args)...);
     }
 
     mutable std::optional<F> m_function;
 };
-
-struct Nothing {};
 
 } // namespace ltl
