@@ -11,7 +11,7 @@
 
 #define DECLARE_EVERYTHING_BUT_REFERENCE(tag)                                                                          \
     using pointer = ::ltl::AsPointer<reference>;                                                                       \
-    using value_type = ltl::remove_cvref_t<reference>;                                                                        \
+    using value_type = ltl::remove_cvref_t<reference>;                                                                 \
     using difference_type = long long int;                                                                             \
     using iterator_category = tag
 
@@ -52,7 +52,7 @@ class BaseIterator :
         return *it.m_it;
     }
 
-    auto operator->() const noexcept {
+    auto operator-> () const noexcept {
         const DerivedIt &it = underlying();
         return AsPointer<decltype(*it)>{*it};
     }
@@ -64,8 +64,6 @@ class BaseIterator :
 
 template <typename Function>
 struct WithFunction {
-    WithFunction() = default;
-    WithFunction(Function f) noexcept : m_function{std::move(f)} {}
     NullableFunction<Function> m_function{};
 };
 

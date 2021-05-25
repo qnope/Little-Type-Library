@@ -17,11 +17,11 @@ struct immutable_t : crtp::Comparable<immutable_t<T>> {
 
     operator const T &() const &noexcept { return m_object; }
     const T &operator*() const &noexcept { return m_object; }
-    AsPointer<const T &> operator->() const &noexcept { return m_object; }
+    AsPointer<const T &> operator->() const &noexcept { return {m_object}; }
 
     operator T() && noexcept { return std::move(m_object); }
     T operator*() && noexcept { return std::move(m_object); }
-    AsPointer<T> operator->() && noexcept { return std::move(m_object); }
+    AsPointer<T> operator->() && noexcept { return {std::move(m_object)}; }
 
     T *operator&() &&noexcept = delete;
     const T *operator&() const &noexcept { return std::addressof(m_object); }

@@ -11,9 +11,6 @@ namespace ltl {
 
 template <typename F>
 struct NullableFunction {
-    constexpr NullableFunction() = default;
-    constexpr NullableFunction(F f) : m_function{std::move(f)} {}
-
     constexpr NullableFunction &operator=(NullableFunction f) {
         m_function.reset();
         if (f.m_function)
