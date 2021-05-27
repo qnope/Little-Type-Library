@@ -55,7 +55,7 @@ class ReverseIterator :
     bool m_isSentinel;
 };
 
-template <typename It, bool>
+template <typename It, bool reversable>
 struct WithSentinelImpl;
 
 template <typename It>
@@ -87,9 +87,8 @@ struct WithSentinelImpl<It, true> {
     It m_sentinelEnd{};
 };
 
-template <typename It>
-using WithSentinel =
-    WithSentinelImpl<It, std::is_base_of_v<std::bidirectional_iterator_tag, get_iterator_category<It>>>;
+template <typename It, bool reversable = std::is_base_of_v<std::bidirectional_iterator_tag, get_iterator_category<It>>>
+using WithSentinel = WithSentinelImpl<It, reversable>;
 
 struct reverse_t {};
 constexpr reverse_t reversed;

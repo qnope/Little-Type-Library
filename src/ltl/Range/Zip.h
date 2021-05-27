@@ -36,13 +36,16 @@ using std::begin;
 using std::end;
 
 template <typename... Containers>
-auto build_begin_zip_iterator(Containers &&... containers) {
-    return ZipIterator<decltype(begin(FWD(containers)))...>{tuple_t{begin(FWD(containers))...}};
+auto build_begin_zip_iterator(Containers &... containers) {
+    return ZipIterator<decltype(begin(containers))...>{tuple_t{begin(containers)...}};
 }
 
 template <typename... Containers>
-auto build_end_zip_iterator(Containers &&... containers) {
-    return ZipIterator<decltype(end(FWD(containers)))...>{tuple_t{end(FWD(containers))...}};
+auto build_end_zip_iterator(Containers &... containers) {
+    auto it = build_begin_zip_iterator(containers...);
+    while (it.m_it([&](const auto &... xs) { return (... && (xs != end(containers))); }))
+        ++it;
+    return it;
 }
 } // namespace details
 
@@ -51,9 +54,9 @@ class ZipRange : public AbstractRange<ZipRange<Containers...>> {
   public:
     ZipRange(Containers... containers) noexcept : m_containers{FWD(containers)...} {}
 
-    auto begin() const noexcept { return std::move(m_containers)(lift(details::build_begin_zip_iterator)); }
+    auto begin() const noexcept { return m_containers(lift(details::build_begin_zip_iterator)); }
 
-    auto end() const noexcept { return std::move(m_containers)(lift(details::build_end_zip_iterator)); }
+    auto end() const noexcept { return m_containers(lift(details::build_end_zip_iterator)); }
 
   private:
     ltl::tuple_t<Containers...> m_containers;
@@ -64,10 +67,6 @@ auto zip(Containers &&... containers) {
     using std::size;
     static_assert(sizeof...(Containers) > 0);
     static_assert((IsIterable<Containers> && ...), "Zip operations must be used with containers");
-
-    assert(tuple_t{std::ref(containers)...}([](const auto &c1, const auto &... cs) {
-        return (true && ... && (std::size_t(size(c1)) == std::size_t(size(cs))));
-    }));
 
     return ZipRange<Containers...>{FWD(containers)...};
 }

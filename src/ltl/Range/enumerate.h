@@ -7,6 +7,6 @@ namespace ltl {
 template <typename Container>
 auto enumerate(Container &&container) {
     using std::size;
-    return zip(valueRange<std::size_t>(0, size(FWD(container))), FWD(container));
+    return zip(valueRange<std::size_t>(0), FWD(container));
 }
 } // namespace ltl

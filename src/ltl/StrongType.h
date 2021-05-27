@@ -36,11 +36,11 @@ class strong_type_t : public Skills<strong_type_t<T, Tag, Converter, Skills...>>
     [[nodiscard]] static isSameKindTrait<ltl::remove_cvref_t<U>> isSameKind(U);
 
     template <typename... Args, typename = std::enable_if_t<((!isSameKind_v<Args>)&&...)>>
-    explicit constexpr strong_type_t(Args &&...args) : m_value{FWD(args)...} {}
+    explicit constexpr strong_type_t(Args &&... args) : m_value{FWD(args)...} {}
 
     [[nodiscard]] constexpr T &get() & { return m_value; }
     [[nodiscard]] constexpr const T &get() const & { return m_value; }
-    [[nodiscard]] constexpr T &&get() && { return std::move(m_value); }
+    [[nodiscard]] constexpr T get() && { return std::move(m_value); }
 
     template <typename OtherConverter>
     [[nodiscard]] constexpr operator strong_type_t<T, Tag, OtherConverter, Skills...>() const {

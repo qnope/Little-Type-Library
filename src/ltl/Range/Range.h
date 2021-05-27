@@ -91,7 +91,6 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
         m_range{m_operations([this](auto &... xs) { return (m_container | ... | xs); })} {}
 
     auto begin() const noexcept { return m_range.begin(); }
-
     auto end() const noexcept { return m_range.end(); }
 
     template <typename NewOperation>
@@ -148,7 +147,7 @@ constexpr decltype(auto) operator|(OwningRange<Ts...> &&a, T2 b) {
 
 template <typename T1, typename... Ts, requires_f((IsChainableOperation<Ts> && ... && IsIterableRef<T1>))>
 constexpr decltype(auto) operator|(T1 &&a, tuple_t<Ts...> b) {
-    return std::move(b)([&a](auto &&... xs) { return (static_cast<T1 &&>(a) | ... | (std::move(xs))); });
+    return std::move(b)([&a](auto &&... xs) { return (static_cast<T1 &&>(a) | ... | (FWD(xs))); });
 }
 
 template <typename T1, typename T2, requires_f(IsChainableOperation<T1> &&IsChainableOperation<T2>)>
