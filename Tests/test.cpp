@@ -2302,3 +2302,47 @@ TEST(LTL_test, expected_map_and_then) {
     ASSERT_EQ(x.map(to_string).result(), "18");
     ASSERT_EQ(x.and_then(to_exp).error(), "Error 3");
 }
+
+#if LTL_CPP20
+namespace opt {
+ltl::optional<int> h(bool success) {
+    if (success)
+        co_return 5;
+    co_return std::nullopt;
+}
+
+ltl::optional<double> g(bool success) { co_return co_await h(success) * 2.5; }
+
+ltl::optional<double> f(bool success) { co_return co_await g(success) * 10; }
+} // namespace opt
+
+namespace ex {
+ltl::expected<int, const char *> h(bool success) {
+    if (success)
+        co_return 5;
+    co_return "Error";
+}
+
+ltl::expected<double, const char *> g(bool success) { co_return co_await h(success) * 2.5; }
+
+ltl::expected<double, std::string_view> f(bool success) { co_return co_await g(success) * 10; }
+} // namespace ex
+
+TEST(LTL_test, awaiter_optional) {
+    ASSERT_FALSE(opt::h(false));
+    ASSERT_EQ(opt::h(true), 5);
+
+    ASSERT_FALSE(opt::f(false));
+    ASSERT_EQ(opt::f(true), 5 * 2.5 * 10);
+}
+
+TEST(LTL_test, awaiter_expected) {
+    using namespace std::string_view_literals;
+    ASSERT_FALSE(ex::h(false));
+    ASSERT_EQ(ex::h(true).result(), 5);
+
+    ASSERT_FALSE(ex::f(false));
+    ASSERT_EQ(ex::f(false).error(), "Error"sv);
+    ASSERT_EQ(ex::f(true).result(), 5 * 2.5 * 10);
+}
+#endif

@@ -125,6 +125,32 @@ static void expected_error(benchmark::State &state) {
     }
 }
 
+#if LTL_CPP20
+
+static ltl::expected<int, const char *> fMonade(bool success) {
+    if (!success)
+        return "Error";
+    return 10;
+}
+
+static ltl::expected<double, const char *> gMonade(bool success) { co_return co_await fMonade(success) * 1.5; }
+
+static void monade_result(benchmark::State &state) {
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(gMonade(true));
+    }
+}
+
+static void monade_error(benchmark::State &state) {
+    for (auto _ : state) {
+        try {
+            benchmark::DoNotOptimize(gMonade(false));
+        } catch (const char *) {
+        }
+    }
+}
+#endif
+
 static int fException(bool success) {
     if (!success)
         throw "Error";
@@ -160,8 +186,18 @@ BENCHMARK(sum_filter_single_and) RANGE;
 BENCHMARK(sum_filter_double) RANGE;
 
 BENCHMARK(expected_result);
+
+#if LTL_CPP20
+BENCHMARK(monade_result);
+#endif
+
 BENCHMARK(exception_result);
 BENCHMARK(expected_error);
+
+#if LTL_CPP20
+BENCHMARK(monade_error);
+#endif
+
 BENCHMARK(exception_error);
 
 // Run the benchmark

@@ -1,8 +1,10 @@
 #pragma once
 
 #include <optional>
-#include "invoke.h"
+#include "traits.h"
 #include "crtp.h"
+
+#include "coroutine_helpers.h"
 
 namespace ltl {
 
@@ -20,6 +22,25 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     using std::optional<T>::swap;
     using std::optional<T>::reset;
     using std::optional<T>::emplace;
+
+#if LTL_CPP20
+    using promise_type = ltl::promise_type<optional<T>>;
+
+    struct Awaiter {
+        optional result;
+        bool await_ready() noexcept { return result.has_value(); }
+        void await_suspend(std::coroutine_handle<> handle) { handle.destroy(); }
+        T await_resume() noexcept { return *std::move(result); }
+    };
+
+    Awaiter operator co_await() const & { return Awaiter{*this}; }
+    Awaiter operator co_await() && { return Awaiter{std::move(*this)}; }
+
+    optional(promise_type &promise) { promise.resultObject = this; }
+
+    // Because we must not have a trivially copyable object, else it is allowed to passed by registers
+    constexpr ~optional() {}
+#endif
 
     constexpr friend bool operator==(const optional &a, const optional &b) noexcept {
         return static_cast<const std::optional<T> &>(a) == static_cast<const std::optional<T> &>(b);

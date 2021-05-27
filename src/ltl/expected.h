@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "Range/Map.h"
+#include "coroutine_helpers.h"
 
 namespace ltl {
 
@@ -24,6 +25,11 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
 
     template <typename T>
     constexpr expected(T && t) : m_result{FWD(t)} {}
+
+    constexpr expected(expected &&) = default;
+    constexpr expected(const expected &) = default;
+    constexpr expected &operator=(expected &&) = default;
+    constexpr expected &operator=(const expected &) = default;
 
     template <typename T>
     constexpr expected(value_tag, T && t) : m_result{std::in_place_index<1>, FWD(t)} {}
@@ -104,7 +110,8 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
 
     template <typename F>
     constexpr auto map(F && f) //
-        const &->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &>()))>, error_type> {
+        const &->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &>()))>,
+                          error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), this->result());
         }
@@ -122,8 +129,8 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
 
     template <typename F>
     constexpr auto map(F && f) //
-        const
-            &&->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &&>()))>, error_type> {
+        const &&->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &&>()))>,
+                           error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(*this).result());
         }
@@ -168,6 +175,30 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
 
     constexpr bool is_error() const noexcept { return m_result.index() == 2; }
     constexpr bool is_result() const noexcept { return m_result.index() == 1; }
+
+#if LTL_CPP20
+    using promise_type = ltl::promise_type<expected<Result, Err>>;
+
+    struct Awaiter {
+        expected result{};
+        bool await_ready() noexcept { return result.is_result(); }
+        template <typename P>
+        void await_suspend(std::coroutine_handle<P> handle) {
+            *handle.promise().resultObject =
+                std::remove_pointer_t<decltype(P::resultObject)>{error_tag{}, std::move(result).error()};
+            handle.destroy();
+        }
+        Result await_resume() noexcept { return std::move(result).result(); }
+    };
+
+    Awaiter operator co_await() const & { return {*this}; }
+    Awaiter operator co_await() && { return {std::move(*this)}; }
+
+    expected(promise_type & promise) { promise.resultObject = this; }
+
+    // Because we must not have a trivially copyable object, else it is allowed to passed by registers
+    constexpr ~expected() {}
+#endif
 
   private:
     std::variant<std::monostate, value_type, error_type> m_result;

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 add_library(LTL INTERFACE)
-target_sources(LTL PRIVATE
+target_sources(LTL INTERFACE
     lpl/lpl.h
 
     ltl/ltl.h
@@ -25,6 +25,7 @@ target_sources(LTL PRIVATE
     ltl/TypedTuple.h
     ltl/VariantUtils.h
     ltl/fast.h
+    ltl/coroutine_helpers.h
 
     ltl/Range/actions.h
     ltl/Range/AsPointer.h
@@ -50,7 +51,9 @@ target_include_directories(LTL INTERFACE
 if(MSVC)
     target_compile_options(LTL INTERFACE /Zc:preprocessor /Zc:__cplusplus /permissive- /bigobj)
 elseif(CMAKE_COMPILER_IS_GNUCXX)
-    target_compile_options(LTL INTERFACE  $<$<COMPILE_FEATURES:cxx_std_20>:-fconcepts>)
+    target_compile_options(LTL INTERFACE  $<$<COMPILE_FEATURES:cxx_std_20>:-fconcepts -fcoroutines>)
+else()
+    target_compile_options(LTL INTERFACE  $<$<COMPILE_FEATURES:cxx_std_20>:-fcoroutines>)
 endif()
 
 add_library(LTL::LTL ALIAS LTL)
