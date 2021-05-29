@@ -231,20 +231,57 @@ inline constexpr auto none_of_v = none_of<List, Predicate>::value;
 template <template <typename...> typename F, typename... Xs>
 struct bind1st {
     template <typename Y>
-    using type = F<Xs..., Y>;
+    using apply = F<Xs..., Y>;
 };
 
 template <template <typename...> typename F, typename... Ys>
 struct bind2nd {
     template <typename X>
-    using type = F<X, Ys...>;
+    using apply = F<X, Ys...>;
 };
 
 template <typename F>
 struct function_to_metafunction {
     template <typename X>
-    using type = decltype(std::declval<F>()(std::declval<X>()));
+    using apply = decltype(std::declval<F>()(std::declval<X>()));
 };
+
+template <typename List>
+struct qualified_type_list;
+
+template <template <typename...> typename List, typename... Types>
+struct qualified_type_list<List<Types...>> {
+    using type = type_list<Types...>;
+};
+
+template <template <typename...> typename List, typename... Types>
+struct qualified_type_list<const List<Types...>> {
+    using type = type_list<std::add_const_t<Types>...>;
+};
+
+template <template <typename...> typename List, typename... Types>
+struct qualified_type_list<List<Types...> &> {
+    using type = type_list<std::add_lvalue_reference_t<Types>...>;
+};
+
+template <template <typename...> typename List, typename... Types>
+struct qualified_type_list<const List<Types...> &> {
+    using type = type_list<std::add_lvalue_reference_t<std::add_const_t<Types>>...>;
+};
+
+template <typename List>
+using qualified_type_list_t = qualified_type_list<List>;
+
+template <typename List, template <typename> typename F>
+struct apply;
+
+template <template <typename...> typename List, template <typename> typename F, typename... Types>
+struct apply<List<Types...>, F> {
+    using type = type_list<F<Types>...>;
+};
+
+template <typename List, template <typename> typename F>
+using apply_t = typename apply<List, F>::type;
 
 } // namespace fast
 

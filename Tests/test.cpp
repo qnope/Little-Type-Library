@@ -876,17 +876,16 @@ TEST(LTL_test, test_variant_utils) {
     ltl::match(
         variant, [](double) { ASSERT_TRUE(true); }, [](int) { ASSERT_TRUE(false); });
 
-    //  auto result = ltl::match_result(
-    //      variant, [](int x) { return static_cast<double>(x); },
-    //      [](double x) { return static_cast<int>(x); });
+    auto result = ltl::match_result(
+        variant, [](int x) { return static_cast<double>(x); }, [](double x) { return static_cast<int>(x); });
 
-    //  static_assert(type_from(result) == ltl::type_v<std::variant<double,
-    //  int>>); static_assert(type_from(result) != ltl::type_v<std::variant<int,
-    //  double>>); ltl::match(
-    //      result, [](int) { assert(true); }, [](double) { assert(false); });
-    //  result = 5.0;
-    //  ltl::match(
-    //      result, [](double) { assert(true); }, [](int) { assert(false); });
+    static_assert(type_from(result) == ltl::type_v<std::variant<double, int>>);
+    static_assert(type_from(result) != ltl::type_v<std::variant<int, double>>);
+    ltl::match(
+        result, [](int) { assert(true); }, [](double) { assert(false); });
+    result = 5.0;
+    ltl::match(
+        result, [](double) { assert(true); }, [](int) { assert(false); });
 
     {
         std::variant<int, double, std::string> variant;
@@ -1255,8 +1254,8 @@ TEST(LTL_test, test_curry_metaprogramming) {
     using list2 = ltl::fast::type_list<int *, double *, char *>;
     using list3 = ltl::fast::type_list<double *, int *, char, double>;
 
-    static_assert(ltl::fast::all_of_v<list3, ltl::fast::bind2nd<ltl::fast::contains, list>::type>);
-    static_assert(!ltl::fast::all_of_v<list2, ltl::fast::bind2nd<ltl::fast::contains, list>::type>);
+    static_assert(ltl::fast::all_of_v<list3, ltl::fast::bind2nd<ltl::fast::contains, list>::apply>);
+    static_assert(!ltl::fast::all_of_v<list2, ltl::fast::bind2nd<ltl::fast::contains, list>::apply>);
 }
 
 struct Message {

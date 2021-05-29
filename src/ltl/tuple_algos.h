@@ -4,23 +4,7 @@
 #include "functional.h"
 #include "optional_type.h"
 
-#define types_from(x) ::ltl::getQualifiedTypeList(type_from(x))
-
 namespace ltl {
-template <template <typename... Types> typename List, typename... Types>
-constexpr auto getQualifiedTypeList(type_t<const List<Types...> &>) {
-    return type_list_v<std::add_lvalue_reference_t<std::add_const_t<Types>>...>;
-}
-
-template <template <typename... Types> typename List, typename... Types>
-constexpr auto getQualifiedTypeList(type_t<List<Types...> &>) {
-    return type_list_v<std::add_lvalue_reference_t<Types>...>;
-}
-
-template <template <typename... Types> typename List, typename... Types>
-constexpr auto getQualifiedTypeList(type_t<List<Types...> &&>) {
-    return type_list_v<std::add_rvalue_reference_t<Types>...>;
-}
 
 template <typename F, typename Tuple>
 constexpr auto transform_type(Tuple &&tuple, F &&f) {
@@ -64,7 +48,7 @@ constexpr auto find_type(const List &, type_t<T>, number_t<N> = {}) {
 
 template <typename List, typename P, int N = 0>
 constexpr auto find_if_type(const List &, P p, number_t<N> = {}) {
-    constexpr auto result = fast::find_if<fast::function_to_metafunction<P>::template type, List, N>::value;
+    constexpr auto result = fast::find_if<fast::function_to_metafunction<P>::template apply, List, N>::value;
     if constexpr (result)
         return optional_type<number_t<*result>>{};
     else
@@ -73,27 +57,27 @@ constexpr auto find_if_type(const List &, P p, number_t<N> = {}) {
 
 template <typename List, typename P>
 constexpr auto contains_if_type(const List &, P) {
-    return bool_v<fast::contains_if<fast::function_to_metafunction<P>::template type, List>::value>;
+    return bool_v<fast::contains_if<fast::function_to_metafunction<P>::template apply, List>::value>;
 }
 
 template <typename List, typename P>
 constexpr auto count_if_type(const List &tuple, P) {
-    return number_v<fast::count_if<fast::function_to_metafunction<P>::template type, List>::value>;
+    return number_v<fast::count_if<fast::function_to_metafunction<P>::template apply, List>::value>;
 }
 
 template <typename List, typename P>
 constexpr auto all_of_type(const List &, P) {
-    return bool_v<fast::all_of_v<List, fast::function_to_metafunction<P>::template type>>;
+    return bool_v<fast::all_of_v<List, fast::function_to_metafunction<P>::template apply>>;
 }
 
 template <typename List, typename P>
 constexpr auto any_of_type(const List &, P) {
-    return bool_v<fast::any_of_v<List, fast::function_to_metafunction<P>::template type>>;
+    return bool_v<fast::any_of_v<List, fast::function_to_metafunction<P>::template apply>>;
 }
 
 template <typename List, typename P>
 constexpr auto none_of_type(const List &, P) {
-    return bool_v<fast::none_of_v<List, fast::function_to_metafunction<P>::template type>>;
+    return bool_v<fast::none_of_v<List, fast::function_to_metafunction<P>::template apply>>;
 }
 
 template <typename List>
@@ -108,7 +92,7 @@ constexpr auto is_unique_type(const List &) {
 
 template <typename List, typename P>
 constexpr auto filter_type(const List &tuple, [[maybe_unused]] P) {
-    return tuple.extract(fast::filter_indexer<List, fast::function_to_metafunction<P>::template type>{});
+    return tuple.extract(fast::filter_indexer<List, fast::function_to_metafunction<P>::template apply>{});
 }
 
 namespace details {
