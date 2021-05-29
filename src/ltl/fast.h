@@ -241,7 +241,7 @@ struct bind2nd {
 };
 
 template <typename F>
-struct function_to_type {
+struct function_to_metafunction {
     template <typename X>
     using type = decltype(std::declval<F>()(std::declval<X>()));
 };
