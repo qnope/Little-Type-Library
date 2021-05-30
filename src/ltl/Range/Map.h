@@ -1,8 +1,11 @@
+/**
+ * @file Map.h
+ */
 #pragma once
 
-#include "../concept.h"
-#include "../functional.h"
-#include "../optional_type.h"
+#include "ltl/concept.h"
+#include "ltl/functional.h"
+#include "ltl/optional_type.h"
 
 #include "Join.h"
 #include "Range.h"

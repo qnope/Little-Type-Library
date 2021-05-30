@@ -1,3 +1,6 @@
+/**
+ * @file StrongType.h
+ */
 #pragma once
 
 #include <iostream>
@@ -7,7 +10,6 @@
 #include "ltl.h"
 
 namespace ltl {
-
 struct ConverterIdentity {
     template <typename T>
     [[nodiscard]] static constexpr T convertToReference(const T &v) {
@@ -36,7 +38,7 @@ class strong_type_t : public Skills<strong_type_t<T, Tag, Converter, Skills...>>
     [[nodiscard]] static isSameKindTrait<ltl::remove_cvref_t<U>> isSameKind(U);
 
     template <typename... Args, typename = std::enable_if_t<((!isSameKind_v<Args>)&&...)>>
-    explicit constexpr strong_type_t(Args &&... args) : m_value{FWD(args)...} {}
+    explicit constexpr strong_type_t(Args &&...args) : m_value{FWD(args)...} {}
 
     [[nodiscard]] constexpr T &get() & { return m_value; }
     [[nodiscard]] constexpr const T &get() const & { return m_value; }

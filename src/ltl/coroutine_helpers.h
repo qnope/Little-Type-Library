@@ -1,9 +1,11 @@
+/**
+ * @file coroutine_helpers.h
+ */
 #pragma once
 
 #include "ltl.h"
 
 #if LTL_CPP20
-
 #include <coroutine>
 
 namespace ltl {
@@ -18,5 +20,4 @@ struct promise_type {
     void unhandled_exception() noexcept {}
 };
 } // namespace ltl
-
 #endif

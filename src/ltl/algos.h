@@ -1,3 +1,6 @@
+/**
+ * @file algos.h
+ */
 #pragma once
 
 #include <algorithm>
@@ -18,6 +21,11 @@
 #endif
 
 namespace ltl {
+
+/**
+ * \defgroup Algorithm The Algorithm group
+ * @{
+ */
 
 #define MAKE_CALLER(f) [&f](auto &&... xs) { return ltl::fast_invoke(static_cast<F &&>(f), FWD(xs)...); }
 
@@ -1202,5 +1210,9 @@ LTL_CONSTEXPR_ALGO auto map_take(C &c, const typename ltl::remove_cvref_t<C>::ke
 }
 
 #undef MAKE_CALLER
+
+/**
+ * @}
+ */
 
 } // namespace ltl

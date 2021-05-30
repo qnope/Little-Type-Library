@@ -1,3 +1,6 @@
+/**
+ * @file VariantUtils.h
+ */
 #pragma once
 
 #include "functional.h"
@@ -8,7 +11,7 @@
 
 namespace ltl {
 template <typename V, typename... Fs>
-constexpr decltype(auto) match(V &&v, Fs &&... fs) {
+constexpr decltype(auto) match(V &&v, Fs &&...fs) {
     return ::std::visit(overloader{FWD(fs)...}, FWD(v));
 }
 
@@ -83,9 +86,9 @@ class recursive_variant {
     }
 
     template <typename F, typename... Variants>
-    friend decltype(auto) recursive_visit(F &&f, Variants &&... variants) {
+    friend decltype(auto) recursive_visit(F &&f, Variants &&...variants) {
         std::visit(
-            [&f](auto &&... xs) {
+            [&f](auto &&...xs) {
                 auto unwrap = [](auto &x) -> decltype(auto) {
                     if constexpr (IsRecursiveWrapper<decltype(x)>) { //
                         return *x;

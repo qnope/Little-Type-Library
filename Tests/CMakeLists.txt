@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 # ---- Tests ----
 
 include(FetchContent)
@@ -18,13 +16,13 @@ target_compile_features(LTLtest17 PRIVATE cxx_std_17)
 target_link_libraries(LTLtest17 PRIVATE LTL::LTL gtest_main)
 add_test(NAME LTLtest17 COMMAND LTLtest17)
 
-if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+if(LTL_TEST_CPP20)
     add_executable(LTLtest20 test.cpp)
     target_compile_features(LTLtest20 PRIVATE cxx_std_20)
     target_link_libraries(LTLtest20 PRIVATE LTL::LTL gtest_main)
     add_test(NAME LTLtest20 COMMAND LTLtest20)
+    if(CMAKE_COMPILER_IS_GNUCXX)
+        target_compile_options(LTL INTERFACE  $<$<COMPILE_FEATURES:cxx_std_20>:-fconcepts -fcoroutines>)
+    endif()
 endif()
 
-add_executable(LTLCompileTime test_compile_time.cpp)
-target_compile_features(LTLCompileTime PRIVATE cxx_std_17)
-target_link_libraries(LTLCompileTime PRIVATE LTL::LTL)

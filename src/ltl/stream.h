@@ -1,3 +1,6 @@
+/**
+ * @file stream.h
+ */
 #pragma once
 
 #include <iostream>

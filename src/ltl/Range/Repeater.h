@@ -1,3 +1,6 @@
+/**
+ * @file Repeater.h
+ */
 #pragma once
 
 #include "Range.h"

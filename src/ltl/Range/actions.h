@@ -1,8 +1,11 @@
+/**
+ * @file actions.h
+ */
 #pragma once
 
-#include "../algos.h"
-#include "../concept.h"
-#include "../functional.h"
+#include "ltl/algos.h"
+#include "ltl/concept.h"
+#include "ltl/functional.h"
 
 #include "Taker.h"
 

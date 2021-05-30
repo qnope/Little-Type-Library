@@ -1,3 +1,6 @@
+/**
+ * @file ltl.h
+ */
 #pragma once
 
 #include <type_traits>
@@ -23,12 +26,11 @@
 
 #define lift(f) [](auto &&... xs) -> decltype(f(FWD(xs)...)) { return f(FWD(xs)...); }
 
-#if __cplusplus > 201703L
-#define LTL_CPP20 1
-#else
+#ifndef LTL_CPP20
 #define LTL_CPP20 0
 #endif
 
+/// The LTL namespace
 namespace ltl {
 template <typename>
 constexpr bool always_false = false;

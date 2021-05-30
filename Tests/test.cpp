@@ -1448,7 +1448,6 @@ TEST(LTL_test, test_typed_tuple) {
     static_assert(type_from(std::as_const(tuple).get<int *>()) == ltl::type_v<int *const &>);
 
     ltl::TypedTuple<std::string, ltl::TypedTuple<int, double>> tuple2{"lol", {0, 3.0}};
-    typed_static_assert(ltl::is_aggregate(tuple) && ltl::is_aggregate(tuple2));
     ASSERT_EQ("lol", tuple2.get<std::string>());
     ASSERT_EQ((tuple2.get<ltl::TypedTuple<int, double>>()), (ltl::TypedTuple{0, 3.0}));
 }
@@ -2300,6 +2299,25 @@ TEST(LTL_test, expected_map_and_then) {
 
     ASSERT_EQ(x.map(to_string).result(), "18");
     ASSERT_EQ(x.and_then(to_exp).error(), "Error 3");
+}
+
+TEST(LTL_test, predicate) {
+    using namespace ltl;
+    constexpr auto less_18_or_equals_to_65 = ltl::equal_to(65) || ltl::less_than(18);
+    static_assert(less_18_or_equals_to_65(17));
+    static_assert(less_18_or_equals_to_65(65));
+    static_assert(!less_18_or_equals_to_65(64));
+
+    struct Person {
+        std::string name;
+    };
+
+    std::vector<Person> persons = {{"John"}, {"Bill"}, {"Natasha"}, {"Woodie"}};
+
+    auto bill = find_if(persons, does(&Person::name) == "Bill");
+    auto woodie = find_if(persons, does(&Person::name, &std::string::size) == 6);
+    ASSERT_EQ(bill, persons.begin() + 1);
+    ASSERT_EQ(woodie, persons.begin() + 3);
 }
 
 #if LTL_CPP20

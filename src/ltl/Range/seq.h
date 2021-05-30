@@ -1,3 +1,6 @@
+/**
+ * @file seq.h
+ */
 #pragma once
 
 #include "Map.h"
@@ -5,11 +8,11 @@
 
 namespace ltl {
 
-namespace details {
+namespace detail {
 struct end_seq_exception {};
-} // namespace details
+} // namespace detail
 
-inline void end_seq() { throw details::end_seq_exception{}; }
+inline void end_seq() { throw detail::end_seq_exception{}; }
 
 template <typename F>
 auto seq(F f) {
@@ -17,7 +20,7 @@ auto seq(F f) {
     return valueRange(0) | map_cached([f = std::move(f)](auto &&) mutable -> std::optional<result> {
                try {
                    return result{f()};
-               } catch (details::end_seq_exception) {
+               } catch (detail::end_seq_exception) {
                    return std::nullopt;
                }
            });

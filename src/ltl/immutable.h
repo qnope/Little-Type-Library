@@ -1,3 +1,6 @@
+/**
+ * @file immutable.h
+ */
 #pragma once
 
 #include "ltl.h"
@@ -11,6 +14,8 @@ struct immutable_t : crtp::Comparable<immutable_t<T>> {
     friend Friend;
     immutable_t(immutable_t &&) = default;
     immutable_t(const immutable_t &) = default;
+    immutable_t &operator=(immutable_t &&) = default;
+    immutable_t &operator=(const immutable_t &) = default;
 
     template <typename _T>
     immutable_t(_T &&t) noexcept : m_object{FWD(t)} {}
@@ -19,9 +24,9 @@ struct immutable_t : crtp::Comparable<immutable_t<T>> {
     const T &operator*() const &noexcept { return m_object; }
     AsPointer<const T &> operator->() const &noexcept { return {m_object}; }
 
-    operator T() && noexcept { return std::move(m_object); }
-    T operator*() && noexcept { return std::move(m_object); }
-    AsPointer<T> operator->() && noexcept { return {std::move(m_object)}; }
+    operator T() &&noexcept { return std::move(m_object); }
+    T operator*() &&noexcept { return std::move(m_object); }
+    AsPointer<T> operator->() &&noexcept { return {std::move(m_object)}; }
 
     T *operator&() &&noexcept = delete;
     const T *operator&() const &noexcept { return std::addressof(m_object); }
@@ -31,9 +36,6 @@ struct immutable_t : crtp::Comparable<immutable_t<T>> {
     friend auto operator<(const immutable_t &a, const immutable_t &b) noexcept { return *a < *b; }
 
   private:
-    immutable_t &operator=(immutable_t &&) = default;
-    immutable_t &operator=(const immutable_t &) = default;
-
     template <typename _T>
     immutable_t &operator=(_T &&x) {
         m_object = FWD(x);

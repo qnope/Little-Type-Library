@@ -1,3 +1,6 @@
+/**
+ * @file GroupBy.h
+ */
 #pragma once
 
 #include "BaseIterator.h"
@@ -107,8 +110,8 @@ constexpr decltype(auto) operator|(T1 &&a, GroupByType<F> b) {
     using std::begin;
     using std::end;
     using it = decltype(begin(FWD(a)));
-    return Range{GroupByIterator<it, ltl::remove_cvref_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)),
-                                                                             std::move(b.f)},
+    return Range{GroupByIterator<it, ltl::remove_cvref_t<decltype(std::move(b.f))>>{begin(FWD(a)), begin(FWD(a)),
+                                                                                    end(FWD(a)), std::move(b.f)},
                  GroupByIterator<it, ltl::remove_cvref_t<decltype(std::move(b.f))>>{end(FWD(a))}};
 }
 } // namespace ltl

@@ -1,3 +1,6 @@
+/**
+ * @file operator.h
+ */
 #pragma once
 
 #include "concept.h"

@@ -1,11 +1,14 @@
+/**
+ * @file Range.h
+ */
 #pragma once
 
 #include <cassert>
 #include <iterator>
 
-#include "../crtp.h"
-#include "../Tuple.h"
-#include "../concept.h"
+#include "ltl/crtp.h"
+#include "ltl/Tuple.h"
+#include "ltl/concept.h"
 
 namespace ltl {
 using std::begin;
@@ -68,7 +71,7 @@ class Range : public AbstractRange<Range<It>> {
 };
 
 template <typename R>
-Range(R &r)->Range<decltype(std::begin(r))>;
+Range(R &r) -> Range<decltype(std::begin(r))>;
 
 LTL_MAKE_IS_KIND(Range, is_range, is_range_f, IsRange, typename, );
 
@@ -88,7 +91,7 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
     OwningRange(Container container, Operations... operations) noexcept :
         m_container(std::move(container)),                                        //
         m_operations{details::make_fast_compile_tuple(std::move(operations)...)}, //
-        m_range{m_operations([this](auto &... xs) { return (m_container | ... | xs); })} {}
+        m_range{m_operations([this](auto &...xs) { return (m_container | ... | xs); })} {}
 
     auto begin() const noexcept { return m_range.begin(); }
     auto end() const noexcept { return m_range.end(); }
@@ -96,7 +99,7 @@ class OwningRange : public AbstractRange<OwningRange<Container, Operations...>> 
     template <typename NewOperation>
     auto add_operation(NewOperation newOperation) && {
         using new_range = OwningRange<Container, Operations..., NewOperation>;
-        auto adder = [this, &newOperation](auto &... xs) {
+        auto adder = [this, &newOperation](auto &...xs) {
             return new_range{std::move(m_container), std::move(xs)..., std::move(newOperation)};
         };
         return m_operations(adder);
@@ -147,7 +150,7 @@ constexpr decltype(auto) operator|(OwningRange<Ts...> &&a, T2 b) {
 
 template <typename T1, typename... Ts, requires_f((IsChainableOperation<Ts> && ... && IsIterableRef<T1>))>
 constexpr decltype(auto) operator|(T1 &&a, tuple_t<Ts...> b) {
-    return std::move(b)([&a](auto &&... xs) { return (static_cast<T1 &&>(a) | ... | (FWD(xs))); });
+    return std::move(b)([&a](auto &&...xs) { return (static_cast<T1 &&>(a) | ... | (FWD(xs))); });
 }
 
 template <typename T1, typename T2, requires_f(IsChainableOperation<T1> &&IsChainableOperation<T2>)>

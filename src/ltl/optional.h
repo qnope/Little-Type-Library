@@ -1,3 +1,6 @@
+/**
+ * @file optional.h
+ */
 #pragma once
 
 #include <optional>
@@ -7,7 +10,6 @@
 #include "coroutine_helpers.h"
 
 namespace ltl {
-
 template <typename T>
 class optional : private std::optional<T>, public ltl::crtp::Comparable<optional<T>> {
   public:
@@ -144,7 +146,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 };
 
 template <class T>
-optional(T)->optional<T>;
+optional(T) -> optional<T>;
 
 inline constexpr auto nullopt = ::std::nullopt;
 

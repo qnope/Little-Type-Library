@@ -1,6 +1,9 @@
+/**
+ * @file Zip.h
+ */
 #pragma once
 
-#include "../tuple_algos.h"
+#include "ltl/tuple_algos.h"
 #include "BaseIterator.h"
 #include "Range.h"
 
@@ -17,17 +20,17 @@ struct ZipIterator :
     DECLARE_EVERYTHING_BUT_REFERENCE(std::common_type_t<get_iterator_category<Iterators>...>);
 
     ZipIterator &operator++() {
-        this->m_it([](auto &... xs) { (++xs, ...); });
+        this->m_it([](auto &...xs) { (++xs, ...); });
         return *this;
     }
 
     ZipIterator &operator--() {
-        this->m_it([](auto &... xs) { (--xs, ...); });
+        this->m_it([](auto &...xs) { (--xs, ...); });
         return *this;
     }
 
     reference operator*() const {
-        return this->m_it([](auto &&... xs) { return reference{*FWD(xs)...}; });
+        return this->m_it([](auto &&...xs) { return reference{*FWD(xs)...}; });
     }
 };
 
@@ -36,14 +39,14 @@ using std::begin;
 using std::end;
 
 template <typename... Containers>
-auto build_begin_zip_iterator(Containers &... containers) {
+auto build_begin_zip_iterator(Containers &...containers) {
     return ZipIterator<decltype(begin(containers))...>{tuple_t{begin(containers)...}};
 }
 
 template <typename... Containers>
-auto build_end_zip_iterator(Containers &... containers) {
+auto build_end_zip_iterator(Containers &...containers) {
     auto it = build_begin_zip_iterator(containers...);
-    while (it.m_it([&](const auto &... xs) { return (... && (xs != end(containers))); }))
+    while (it.m_it([&](const auto &...xs) { return (... && (xs != end(containers))); }))
         ++it;
     return it;
 }
@@ -63,7 +66,7 @@ class ZipRange : public AbstractRange<ZipRange<Containers...>> {
 };
 
 template <typename... Containers>
-auto zip(Containers &&... containers) {
+auto zip(Containers &&...containers) {
     using std::size;
     static_assert(sizeof...(Containers) > 0);
     static_assert((IsIterable<Containers> && ...), "Zip operations must be used with containers");

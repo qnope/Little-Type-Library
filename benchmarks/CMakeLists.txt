@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.14)
-
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
@@ -20,8 +18,11 @@ add_executable(Benchmarks17 benchmarks.cpp)
 target_compile_features(Benchmarks17 PRIVATE cxx_std_17)
 target_link_libraries(Benchmarks17 PRIVATE LTL::LTL benchmark)
 
-if("cxx_std_20" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+if(LTL_TEST_CPP20)
     add_executable(Benchmarks20 benchmarks.cpp)
     target_compile_features(Benchmarks20 PRIVATE cxx_std_20)
     target_link_libraries(Benchmarks20 PRIVATE LTL::LTL benchmark)
+    if(CMAKE_COMPILER_IS_GNUCXX)
+        target_compile_options(LTL INTERFACE  $<$<COMPILE_FEATURES:cxx_std_20>:-fconcepts -fcoroutines>)
+    endif()
 endif()

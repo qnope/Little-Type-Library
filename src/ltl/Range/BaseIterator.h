@@ -1,11 +1,14 @@
+/**
+ * @file BaseIterator.h
+ */
 #pragma once
 
 #include <algorithm>
 #include <cassert>
 #include <utility>
 
-#include "../crtp.h"
-#include "../traits.h"
+#include "ltl/crtp.h"
+#include "ltl/traits.h"
 #include "AsPointer.h"
 #include "NullableFunction.h"
 
@@ -52,7 +55,7 @@ class BaseIterator :
         return *it.m_it;
     }
 
-    auto operator-> () const noexcept {
+    auto operator->() const noexcept {
         const DerivedIt &it = underlying();
         return AsPointer<decltype(*it)>{*it};
     }

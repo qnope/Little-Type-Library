@@ -1,5 +1,9 @@
+/**
+ * @file Value.h
+ */
 #pragma once
 
+#include <limits>
 #include "BaseIterator.h"
 #include "Range.h"
 

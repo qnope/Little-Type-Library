@@ -1,3 +1,6 @@
+/**
+ * @file AsPointer.h
+ */
 #pragma once
 
 #include <memory>

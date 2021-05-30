@@ -1,11 +1,14 @@
+/**
+ * @file NullableFunction.h
+ */
 #pragma once
 
 #include <cassert>
 #include <cstddef>
 #include <optional>
 #include <type_traits>
-#include "../ltl.h"
-#include "../invoke.h"
+#include "ltl/ltl.h"
+#include "ltl/invoke.h"
 
 namespace ltl {
 
@@ -19,7 +22,7 @@ struct NullableFunction {
     }
 
     template <typename... Args>
-    constexpr decltype(auto) operator()(Args &&... args) const {
+    constexpr decltype(auto) operator()(Args &&...args) const {
         return ltl::fast_invoke(*m_function, FWD(args)...);
     }
 

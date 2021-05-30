@@ -1,35 +1,38 @@
 name: Continuous Integration
 
 on:
-  push:
-    paths:
-      - '*'
-
   pull_request:
     branches:
       - master
 
 jobs:
-  test:
+  builds:
     strategy:
       fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
+      matrix: 
+        config: [
+        {"CC":gcc-7,    "CXX":g++-7,      "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": gcc-7 g++-7},
+        {"CC":gcc-8,    "CXX":g++-8,      "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": gcc-8 g++-8},
+        {"CC":gcc-9,    "CXX":g++-9,      "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": gcc-9 g++-9},
+        {"CC":gcc-10,   "CXX":g++-10,     "os":ubuntu-latest,  "CPP_TEST_20": ON,  "package": gcc-10 g++-10},
+        {"CC":clang-10, "CXX":clang++-10, "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": clang-10},
+        {"CC":clang-11, "CXX":clang++-11, "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": clang-11},
+        {"CC":clang-12, "CXX":clang++-12, "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": clang-12},
+        {"CC":cl,       "CXX":cl,         "os":windows-latest, "CPP_TEST_20": ON}]
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.config.os }}
 
     steps:
-      - uses: actions/checkout@v1
-
-      - uses: friendlyanon/fetch-core-count@v1
-        id: cores
-
-      - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build
-        run: cmake --build build --config Release -j ${{ steps.cores.outputs.plus_one }} -v
-
-      - name: Test
-        working-directory: build/Tests
-        run: ctest -C Release -VV -j ${{ steps.cores.outputs.plus_one }}
+      - uses: actions/checkout@v2
+     
+      - if: ${{ matrix.config.os == 'ubuntu-latest' }}
+        name: Preparation
+        run: sudo apt install ${{ matrix.config.package }}
+        
+      - name: Launch
+        env:
+          GENERATE_CPP20_TESTS: ${{ matrix.config.CPP_TEST_20 }}
+          CC: ${{ matrix.config.CC }}
+          CXX:  ${{ matrix.config.CXX }}
+        run: ./.github/scripts/build.sh
+        shell: bash

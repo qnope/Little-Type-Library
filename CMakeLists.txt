@@ -1,9 +1,21 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.14)
 
-project(LittleTypeLibrary
-        VERSION 0.0.1
+project("Little Type Library"
+        VERSION 2.0.0
         LANGUAGES CXX)
 
+option(LTL_BUILD_TESTS "Enable LTL tests" OFF)
+option(LTL_GENERATE_DOCUMENTATION "Generate the ltl documentation" OFF)
+option(LTL_TEST_CPP20 "Generate CPP20 samples" ON)
+option(LTL_CODE_COVERAGE "Generate Code Coverage" ON)
+
 add_subdirectory(src/)
-add_subdirectory(Tests/)
-add_subdirectory(benchmarks/)
+
+if(LTL_BUILD_TESTS)
+    add_subdirectory(Tests/)
+    add_subdirectory(benchmarks/)
+endif()
+
+if(LTL_GENERATE_DOCUMENTATION)
+    add_subdirectory(doc/)
+endif()

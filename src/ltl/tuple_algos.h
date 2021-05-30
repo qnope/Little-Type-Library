@@ -1,3 +1,6 @@
+/**
+ * @file tuple_algos.h
+ */
 #pragma once
 
 #include "Tuple.h"
@@ -5,11 +8,10 @@
 #include "optional_type.h"
 
 namespace ltl {
-
 template <typename F, typename Tuple>
 constexpr auto transform_type(Tuple &&tuple, F &&f) {
     static_assert(IsTuple<Tuple>);
-    auto build_tuple = [&f](auto &&... xs) {
+    auto build_tuple = [&f](auto &&...xs) {
         return ltl::tuple_t<decltype(static_cast<F &&>(f)(FWD(xs)))...>{static_cast<F &&>(f)(FWD(xs))...};
     };
     return FWD(tuple)(build_tuple);
@@ -22,7 +24,7 @@ constexpr auto accumulate_type(Tuple &&tuple, F &&f) {
 
 template <typename Tuple>
 constexpr auto accumulate_type(Tuple &&tuple) {
-    auto accumulate = [](auto &&... xs) { return (... + FWD(xs)); };
+    auto accumulate = [](auto &&...xs) { return (... + FWD(xs)); };
     return accumulate_type(FWD(tuple), accumulate);
 }
 
@@ -47,7 +49,7 @@ constexpr auto find_type(const List &, type_t<T>, number_t<N> = {}) {
 }
 
 template <typename List, typename P, int N = 0>
-constexpr auto find_if_type(const List &, P p, number_t<N> = {}) {
+constexpr auto find_if_type(const List &, P, number_t<N> = {}) {
     constexpr auto result = fast::find_if<fast::function_to_metafunction<P>::template apply, List, N>::value;
     if constexpr (result)
         return optional_type<number_t<*result>>{};
@@ -61,7 +63,7 @@ constexpr auto contains_if_type(const List &, P) {
 }
 
 template <typename List, typename P>
-constexpr auto count_if_type(const List &tuple, P) {
+constexpr auto count_if_type(const List &, P) {
     return number_v<fast::count_if<fast::function_to_metafunction<P>::template apply, List>::value>;
 }
 
@@ -97,7 +99,7 @@ constexpr auto filter_type(const List &tuple, [[maybe_unused]] P) {
 
 namespace details {
 template <int I, typename F, typename... Tuples>
-constexpr decltype(auto) zip_with_impl_index(F &&f, Tuples &&... tuples) {
+constexpr decltype(auto) zip_with_impl_index(F &&f, Tuples &&...tuples) {
     using ret = decltype(FWD(f)(FWD(tuples).template get<I>()...));
     if constexpr (std::is_void_v<ret>) {
         FWD(f)(FWD(tuples).template get<I>()...);
@@ -108,26 +110,26 @@ constexpr decltype(auto) zip_with_impl_index(F &&f, Tuples &&... tuples) {
 }
 
 template <int... Is, typename F, typename... Tuples>
-constexpr auto zip_with_impl_all_indices(std::integer_sequence<int, Is...>, F &&f, Tuples &&... tuples) {
+constexpr auto zip_with_impl_all_indices(std::integer_sequence<int, Is...>, F &&f, Tuples &&...tuples) {
     return ltl::tuple_t<decltype(zip_with_impl_index<Is>(FWD(f), FWD(tuples)...))...>{
         zip_with_impl_index<Is>(FWD(f), FWD(tuples)...)...};
 }
 
 template <int I, typename... Tuples>
-constexpr auto zip_impl_index(Tuples &&... tuples) {
+constexpr auto zip_impl_index(Tuples &&...tuples) {
     return ltl::tuple_t<decltype(std::declval<ltl::remove_cvref_t<Tuples>>().template get<I>())...>{
         FWD(tuples).template get<I>()...};
 }
 
 template <int... Is, typename... Tuples>
-constexpr auto zip_impl_all_indices(std::integer_sequence<int, Is...>, Tuples &&... xs) {
+constexpr auto zip_impl_all_indices(std::integer_sequence<int, Is...>, Tuples &&...xs) {
     return ltl::tuple_t{zip_impl_index<Is>(FWD(xs)...)...};
 }
 
 } // namespace details
 
 template <typename F, typename T, typename... Tuples>
-constexpr auto zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
+constexpr auto zip_with(F &&f, T &&tuple, Tuples &&...tuples) {
     static_assert((IsTuple<Tuples> && ... && IsTuple<T>), "All tuples must be tuples");
     constexpr auto length = tuple_size<T>::value;
     static_assert((... && (tuple_size<Tuples>::value == length)), "All tuples must be of the same length");
@@ -135,7 +137,7 @@ constexpr auto zip_with(F &&f, T &&tuple, Tuples &&... tuples) {
 }
 
 template <typename T, typename... Tuples>
-constexpr auto zip_type(T &&tuple, Tuples &&... tuples) {
+constexpr auto zip_type(T &&tuple, Tuples &&...tuples) {
     static_assert((IsTuple<Tuples> && ... && IsTuple<T>), "All tuples must be tuples");
     constexpr auto length = tuple_size<T>::value;
     static_assert((... && (tuple_size<Tuples>::value == length)), "All tuples must be of the same length");
@@ -176,7 +178,7 @@ constexpr auto scanl([[maybe_unused]] F f, T init, Tuple &&tuple) {
         return ltl::tuple_t<T>{std::move(init)};
     }
     else {
-        return FWD(tuple)([f, init = std::move(init)](auto &&... xs) {
+        return FWD(tuple)([f, init = std::move(init)](auto &&...xs) {
             return (detail::scanl_wrapper{f, ltl::tuple_t<T>{std::move(init)}} + ... + (FWD(xs))).t;
         });
     }

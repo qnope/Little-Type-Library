@@ -1,3 +1,6 @@
+/**
+ * @file fast.h
+ */
 #pragma once
 
 #include "ltl/traits.h"
@@ -7,6 +10,11 @@
 
 namespace ltl {
 namespace fast {
+
+/**
+ *\defgroup Fast Fast metaprogramming types
+ *@{
+ */
 
 namespace details {
 
@@ -282,6 +290,10 @@ struct apply<List<Types...>, F> {
 
 template <typename List, template <typename> typename F>
 using apply_t = typename apply<List, F>::type;
+
+/**
+ * @}
+ */
 
 } // namespace fast
 

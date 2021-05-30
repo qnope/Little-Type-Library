@@ -1,3 +1,6 @@
+/**
+ * @file expected.h
+ */
 #pragma once
 
 #include <cassert>
@@ -24,7 +27,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     static_assert(!std::is_reference_v<error_type>, "error_type must not be a reference");
 
     template <typename T>
-    constexpr expected(T && t) : m_result{FWD(t)} {}
+    constexpr expected(T &&t) : m_result{FWD(t)} {}
 
     constexpr expected(expected &&) = default;
     constexpr expected(const expected &) = default;
@@ -32,10 +35,10 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     constexpr expected &operator=(const expected &) = default;
 
     template <typename T>
-    constexpr expected(value_tag, T && t) : m_result{std::in_place_index<1>, FWD(t)} {}
+    constexpr expected(value_tag, T &&t) : m_result{std::in_place_index<1>, FWD(t)} {}
 
     template <typename T>
-    constexpr expected(error_tag, T && t) : m_result{std::in_place_index<2>, FWD(t)} {}
+    constexpr expected(error_tag, T &&t) : m_result{std::in_place_index<2>, FWD(t)} {}
 
     template <typename T, typename E>
     constexpr expected(expected<T, E> t) {
@@ -59,7 +62,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
 
     constexpr operator bool() const noexcept { return m_result.index() == 1; }
 
-    constexpr value_type &result() & noexcept {
+    constexpr value_type &result() &noexcept {
         assert(m_result.index() == 1);
         return std::get<1>(m_result);
     }
@@ -69,7 +72,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
         return std::get<1>(m_result);
     }
 
-    constexpr value_type result() && noexcept {
+    constexpr value_type result() &&noexcept {
         assert(m_result.index() == 1);
         return std::get<1>(std::move(m_result));
     }
@@ -79,7 +82,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
         return std::get<1>(std::move(m_result));
     }
 
-    constexpr error_type error() && noexcept {
+    constexpr error_type error() &&noexcept {
         assert(m_result.index() == 2);
         return std::get<2>(std::move(m_result));
     }
@@ -94,14 +97,14 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
         return std::get<2>(m_result);
     }
 
-    constexpr error_type &error() & noexcept {
+    constexpr error_type &error() &noexcept {
         assert(m_result.index() == 2);
         return std::get<2>(m_result);
     }
 
     template <typename F>
-    constexpr auto map(F && f) //
-        &->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<value_type &>()))>, error_type> {
+    constexpr auto map(F &&f) //
+        & -> expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<value_type &>()))>, error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), this->result());
         }
@@ -109,9 +112,9 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     }
 
     template <typename F>
-    constexpr auto map(F && f) //
-        const &->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &>()))>,
-                          error_type> {
+    constexpr auto map(F &&f) //
+        const & -> expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &>()))>,
+                            error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), this->result());
         }
@@ -119,8 +122,8 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     }
 
     template <typename F>
-    constexpr auto map(F && f) //
-        &&->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<value_type &&>()))>, error_type> {
+    constexpr auto map(F &&f) //
+        && -> expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<value_type &&>()))>, error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(*this).result());
         }
@@ -128,9 +131,9 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     }
 
     template <typename F>
-    constexpr auto map(F && f) //
-        const &&->expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &&>()))>,
-                           error_type> {
+    constexpr auto map(F &&f) //
+        const && -> expected<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const value_type &&>()))>,
+                             error_type> {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(*this).result());
         }
@@ -138,8 +141,8 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     }
 
     template <typename F>
-    constexpr auto and_then(F && f) //
-        &->decltype(ltl::invoke(FWD(f), std::declval<value_type &>())) {
+    constexpr auto and_then(F &&f) //
+        & -> decltype(ltl::invoke(FWD(f), std::declval<value_type &>())) {
         if (*this) {
             return ltl::invoke(FWD(f), this->result());
         }
@@ -147,8 +150,8 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     }
 
     template <typename F>
-    constexpr auto and_then(F && f) //
-        const &->decltype(ltl::invoke(FWD(f), std::declval<const value_type &>())) {
+    constexpr auto and_then(F &&f) //
+        const & -> decltype(ltl::invoke(FWD(f), std::declval<const value_type &>())) {
         if (*this) {
             return ltl::invoke(FWD(f), this->result());
         }
@@ -156,8 +159,8 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     }
 
     template <typename F>
-    constexpr auto and_then(F && f) //
-        &&->decltype(ltl::invoke(FWD(f), std::declval<value_type &&>())) {
+    constexpr auto and_then(F &&f) //
+        && -> decltype(ltl::invoke(FWD(f), std::declval<value_type &&>())) {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(*this).result());
         }
@@ -165,8 +168,8 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     }
 
     template <typename F>
-    constexpr auto and_then(F && f) //
-        const &&->decltype(ltl::invoke(FWD(f), std::declval<const value_type &&>())) {
+    constexpr auto and_then(F &&f) //
+        const && -> decltype(ltl::invoke(FWD(f), std::declval<const value_type &&>())) {
         if (*this) {
             return ltl::invoke(FWD(f), std::move(*this).result());
         }
@@ -194,7 +197,7 @@ class [[nodiscard]] expected : public ltl::crtp::Comparable<expected<Result, Err
     Awaiter operator co_await() const & { return {*this}; }
     Awaiter operator co_await() && { return {std::move(*this)}; }
 
-    expected(promise_type & promise) { promise.resultObject = this; }
+    expected(promise_type &promise) { promise.resultObject = this; }
 
     // Because we must not have a trivially copyable object, else it is allowed to passed by registers
     constexpr ~expected() {}

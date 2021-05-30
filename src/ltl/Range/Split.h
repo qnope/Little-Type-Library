@@ -1,3 +1,6 @@
+/**
+ * @file Split.h
+ */
 #pragma once
 
 #include "Range.h"
