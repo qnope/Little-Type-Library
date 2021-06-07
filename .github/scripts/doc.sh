@@ -2,7 +2,7 @@ set -e
 git branch -D documentation || true
 git checkout -b documentation
 sudo apt install doxygen ninja-build graphviz gcovr pcregrep
-cmake -S . -B build -G "Ninja" -DLTL_BUILD_TESTS=ON -DLTL_TEST_CPP20=OFF -DLTL_GENERATE_DOCUMENTATION=ON -CMAKE_BUILD_TYPE=Debug
+cmake -S . -B build -G "Ninja" -DLTL_BUILD_TESTS=ON -DLTL_TEST_CPP20=OFF -DLTL_GENERATE_DOCUMENTATION=ON -DCMAKE_BUILD_TYPE=Debug
 rm -rf docs || true
 rm -rf coverage.json coverage.xml || true
 cmake --build build > logs.out
