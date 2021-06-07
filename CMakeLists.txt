@@ -12,10 +12,12 @@ option(LTL_CODE_COVERAGE "Generate Code Coverage" ON)
 add_subdirectory(src/)
 
 if(LTL_BUILD_TESTS)
+    message("Build tests and benchmarks")
     add_subdirectory(Tests/)
     add_subdirectory(benchmarks/)
 endif()
 
 if(LTL_GENERATE_DOCUMENTATION)
+    message("Build documentation")
     add_subdirectory(doc/)
 endif()

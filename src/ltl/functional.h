@@ -64,6 +64,11 @@ constexpr decltype(auto) curry(F f, Args &&... args) {
     }
 }
 
+constexpr auto identity = [](auto &&t) -> remove_rvalue_reference_t<decltype(FWD(t))> { return FWD(t); };
+constexpr auto id_copy = [](auto x) { return std::move(x); };
+
+constexpr auto compose() { return identity; }
+
 template <typename F, typename... Fs>
 /**
  * @brief Compose the function in the left to right order.
@@ -102,7 +107,7 @@ constexpr auto compose(F f, Fs... fs) {
 
 template <typename F>
 constexpr auto unzip(F f) {
-    return [f = std::move(f)](auto &&tuple) { return apply(f, FWD(tuple)); };
+    return [f = std::move(f)](auto &&tuple) { return FWD(tuple)(f); };
 }
 
 namespace detail {
@@ -127,9 +132,6 @@ constexpr auto construct_with_tuple(Tuple &&... tuple) noexcept {
     static_assert(sizeof...(Tuple) <= 1, "Must have 0 or one tuple");
     return curry(unzip(construct<T>()), FWD(tuple)...);
 }
-
-constexpr auto identity = [](auto &&t) -> remove_rvalue_reference_t<decltype(FWD(t))> { return FWD(t); };
-constexpr auto id_copy = [](auto x) { return x; };
 
 /// @}
 ///
@@ -274,7 +276,12 @@ constexpr auto does(Fs... fs) {
 
 template <typename T>
 /**
- * @brief less_than
+ * @brief less_than- This function builds a predicate testing if a value is less than t
+ *
+ * @code
+ *  std::vector<int> values;
+ *  auto number = ltl::find_if(values, less_than(5));
+ * @endcode
  *
  * @param t
  */
@@ -284,7 +291,12 @@ constexpr auto less_than(T t) {
 
 template <typename T>
 /**
- * @brief less_than_equal
+ * @brief less_than_equal- This function builds a predicate testing if a value is less than or equal to t
+ *
+ * @code
+ *  std::vector<int> values;
+ *  auto number = ltl::find_if(values, less_than_equal(5));
+ * @endcode
  *
  * @param t
  */
@@ -293,26 +305,81 @@ constexpr auto less_than_equal(T t) {
 }
 
 template <typename T>
+/**
+ * @brief greater_than- This function builds a predicate testing if a value is greater than t
+ *
+ * @code
+ *  std::vector<int> values;
+ *  auto number = ltl::find_if(values, greater_than(5));
+ * @endcode
+ *
+ * @param t
+ */
 constexpr auto greater_than(T t) {
     return Predicate{[t = std::move(t)](const auto &x) { return x > t; }};
 }
 
 template <typename T>
+/**
+ * @brief greater_than_equal- This function builds a predicate testing if a value is greater than or equal to t
+ *
+ * @code
+ *  std::vector<int> values;
+ *  auto number = ltl::find_if(values, greater_than_equal(5));
+ * @endcode
+ *
+ * @param t
+ */
 constexpr auto greater_than_equal(T t) {
     return Predicate{[t = std::move(t)](const auto &x) { return x >= t; }};
 }
 
 template <typename T>
+/**
+ * @brief equal_to- This function builds a predicate testing if a value is equal to t
+ *
+ * @code
+ *  std::vector<int> values;
+ *  auto number = ltl::find_if(values, equal_to(5));
+ * @endcode
+ *
+ * @param t
+ */
 constexpr auto equal_to(T t) {
     return Predicate{[t = std::move(t)](const auto &x) { return x == t; }};
 }
 
 template <typename T>
+/**
+ * @brief not_equal_to- This function builds a predicate testing if a value is not equal to t
+ *
+ * @code
+ *  std::vector<int> values;
+ *  auto number = ltl::find_if(values, not_equal_to(5));
+ * @endcode
+ *
+ * @param t
+ */
 constexpr auto not_equal_to(T t) {
     return Predicate{[t = std::move(t)](const auto &x) { return x != t; }};
 }
 
 template <typename... Fs>
+/**
+ * @brief byAscending - This function builds a comparator that compares for ascending orders
+ *
+ * @code
+ *  struct Person {
+ *      std::string name;
+ *  };
+ *  std::vector<int> values;
+ *  std::vector<Person> persons;
+ *
+ *  ltl::sort(values, byAscending()); // values are sorted in an ascending way
+ *  ltl::sort(persons, byAscending(&Person::name)); // persons are sorted by ascending name
+ * @endcode
+ * @param fs
+ */
 constexpr auto byAscending(Fs... fs) {
     return [f = compose(std::move(fs)...)](const auto &x, const auto &y) noexcept { //
         return ltl::fast_invoke(f, x) < ltl::fast_invoke(f, y);
@@ -320,6 +387,21 @@ constexpr auto byAscending(Fs... fs) {
 };
 
 template <typename... Fs>
+/**
+ * @brief byDescending - This function builds a comparator that compares for descending orders
+ *
+ * @code
+ *  struct Person {
+ *      std::string name;
+ *  };
+ *  std::vector<int> values;
+ *  std::vector<Person> persons;
+ *
+ *  ltl::sort(values, byDescending()); // values are sorted in a descending way
+ *  ltl::sort(persons, byDescending(&Person::name)); // persons are sorted by descending name
+ * @endcode
+ * @param fs
+ */
 constexpr auto byDescending(Fs... fs) {
     return [f = compose(std::move(fs)...)](const auto &x, const auto &y) noexcept { //
         return ltl::fast_invoke(f, x) > ltl::fast_invoke(f, y);

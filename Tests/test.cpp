@@ -1604,10 +1604,10 @@ TEST(LTL_test, test_actions) {
 
     std::vector e = {5, 4, 2, 1, 6, 5, 8, 9, 10};
 
-    e |= ltl::actions::sort_by(ltl::byAscending(ltl::identity));
+    e |= ltl::actions::sort_by(ltl::byAscending());
     ASSERT_TRUE(ltl::equal(e, std::array{1, 2, 4, 5, 5, 6, 8, 9, 10}));
 
-    e |= ltl::actions::sort_by(ltl::byDescending(ltl::identity));
+    e |= ltl::actions::sort_by(ltl::byDescending());
     ASSERT_TRUE(ltl::equal(e, std::array{10, 9, 8, 6, 5, 5, 4, 2, 1}));
 
     e |= ltl::actions::reverse;

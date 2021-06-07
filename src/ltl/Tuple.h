@@ -93,14 +93,69 @@ using integer_sequence_to_number_list = typename detail::integer_sequence_to_num
 
 template <typename... Ts>
 /**
- * @brief The tuple_t struct
+ * @brief tuple_t - Fast compiling tuple
+ *
+ * You can use it like a std::tuple / make_tuple
+ *
+ * @code
+ *  std::string name;
+ *  ltl::tuple_t<int, double, std::string> x;
+ *  ltl::tuple_t y{5, 3.0, "John Doe"s};
+ *  ltl::tuple_t z{std::ref(name)}; // tuple_t<std::string&>
+ * @endcode
+ *
+ * To get a value, you may use get() or operator[]
+ *
+ * @code
+ *   ltl::tuple_t<int, double> x;
+ *   int a = x.get<0>();
+ *   double b = x[1_n];
+ * @endcode
+ *
+ * You may apply a function thanks to the apply function or the operator()
+ *
+ * @code
+ *  ltl::tuple_t<int, double> x;
+ *  x([](int a, double b) {});
+ *  apply([](int a, double b){}, x);
+ * @endcode
+ *
+ * You may push, pop, or extract values thanks to push_back, push_front, pop_back, pop_front and extract functions
+ *
+ * extract takes an integer sequence or an integral constant list and returns a tuple
+ * @code
+ *  ltl::tuple_t<int, double, std::string> x;
+ *  ltl::tuple_t<std::string, int, double, std::string> y = x.extract(2_n, 0_n, 1_n, 2_n);
+ * @endcode
+ *
+ * Tuples are comparable, in a lexical sense.
+ *
+ * Structured bindings works with ltl::tuple_t
+ * @code
+ *  ltl::tuple_t<int, double> x;
+ *  auto [a, b] = x;
+ * @endcode
  */
 struct [[nodiscard]] tuple_t {
+    /**
+     * @brief indexer_sequence_t - It is an indexer sequence that may be used to iterate on values
+     */
     using indexer_sequence_t = std::make_integer_sequence<int, sizeof...(Ts)>;
+
+    /// \cond
     using super = detail::tuple_base_t<indexer_sequence_t, Ts...>;
     super impl{};
 
+    /// \endcond
+
+    /**
+     * @brief length This gives you an integral constant meaning the size of the tuple
+     */
     constexpr static auto length = number_v<sizeof...(Ts)>;
+
+    /**
+     * @brief isEmpty - This gives you a boolean constant meaning if the tuple is empty or not
+     */
     constexpr static auto isEmpty = length == 0_n;
 
     static constexpr auto getTypes() noexcept { return fast::type_list<Ts...>{}; }
@@ -152,7 +207,7 @@ struct [[nodiscard]] tuple_t {
     }
 
     template <int I>
-    [[nodiscard]] constexpr decltype(auto) get(number_t<I> n) &noexcept {
+        [[nodiscard]] constexpr decltype(auto) get(number_t<I> n) & noexcept {
         typed_static_assert(n < length);
         return detail::get_leaf<I>(impl);
     }
@@ -164,13 +219,13 @@ struct [[nodiscard]] tuple_t {
     }
 
     template <int I>
-    [[nodiscard]] constexpr decltype(auto) get(number_t<I> n) &&noexcept {
+        [[nodiscard]] constexpr decltype(auto) get(number_t<I> n) && noexcept {
         typed_static_assert(n < length);
         return detail::get_leaf<I>(std::move(impl));
     }
 
     template <int I>
-    [[nodiscard]] constexpr decltype(auto) get() &noexcept {
+        [[nodiscard]] constexpr decltype(auto) get() & noexcept {
         static_assert(I < length.value);
         return detail::get_leaf<I>(impl);
     }
@@ -182,7 +237,7 @@ struct [[nodiscard]] tuple_t {
     }
 
     template <int I>
-    [[nodiscard]] constexpr decltype(auto) get() &&noexcept {
+        [[nodiscard]] constexpr decltype(auto) get() && noexcept {
         static_assert(I < length.value);
         return detail::get_leaf<I>(std::move(impl));
     }
@@ -193,7 +248,7 @@ struct [[nodiscard]] tuple_t {
     }
 
     template <int... Is>
-    [[nodiscard]] constexpr auto extract(number_t<Is>...) &&noexcept {
+        [[nodiscard]] constexpr auto extract(number_t<Is>...) && noexcept {
         return std::move(*this).extract(std::integer_sequence<int, Is...>{});
     }
 
@@ -203,38 +258,38 @@ struct [[nodiscard]] tuple_t {
     }
 
     template <int... Is>
-    [[nodiscard]] constexpr auto extract(std::integer_sequence<int, Is...>) &&noexcept {
+        [[nodiscard]] constexpr auto extract(std::integer_sequence<int, Is...>) && noexcept {
         return tuple_t<decltype(detail::get_leaf<Is>(std::declval<super>()))...>{
             {detail::get_leaf<Is>(std::move(impl))...}};
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto push_back(T &&newValue) const & {
-        auto fwdAll = [&newValue](auto &&...xs) {
+    [[nodiscard]] constexpr auto push_back(T && newValue) const & {
+        auto fwdAll = [&newValue](auto &&... xs) {
             return tuple_t<Ts..., decay_reference_wrapper_t<T>>{{FWD(xs)..., FWD(newValue)}};
         };
         return detail::apply_impl(indexer_sequence_t{}, fwdAll, *this);
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto push_back(T &&newValue) && {
-        auto fwdAll = [&newValue](Ts &&...xs) {
+    [[nodiscard]] constexpr auto push_back(T && newValue) && {
+        auto fwdAll = [&newValue](Ts &&... xs) {
             return tuple_t<Ts..., decay_reference_wrapper_t<T>>{{FWD(xs)..., FWD(newValue)}};
         };
         return detail::apply_impl(indexer_sequence_t{}, fwdAll, std::move(*this));
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto push_front(T &&newValue) const & {
-        auto fwdAll = [&newValue](auto &&...xs) {
+    [[nodiscard]] constexpr auto push_front(T && newValue) const & {
+        auto fwdAll = [&newValue](auto &&... xs) {
             return tuple_t<decay_reference_wrapper_t<T>, Ts...>{{FWD(newValue), FWD(xs)...}};
         };
         return detail::apply_impl(indexer_sequence_t{}, fwdAll, *this);
     }
 
     template <typename T>
-    [[nodiscard]] constexpr auto push_front(T &&newValue) && {
-        auto fwdAll = [&newValue](Ts &&...xs) {
+    [[nodiscard]] constexpr auto push_front(T && newValue) && {
+        auto fwdAll = [&newValue](Ts &&... xs) {
             return tuple_t<decay_reference_wrapper_t<T>, Ts...>{{FWD(newValue), FWD(xs)...}};
         };
         return detail::apply_impl(indexer_sequence_t{}, fwdAll, std::move(*this));
@@ -256,8 +311,14 @@ struct [[nodiscard]] tuple_t {
         return std::move(*this).extract(detail::make_integer_sequence<1, length.value>{});
     }
 
+    /**
+     * @brief make_indexer_sequence - Returns the indexer_sequence_t
+     */
     static constexpr auto make_indexer_sequence() noexcept { return indexer_sequence_t{}; }
 
+    /**
+     * @brief make_indexer - returns a tuple of number_t bound to the indexer_sequence
+     */
     static constexpr auto make_indexer() noexcept { return integer_sequence_to_number_list<indexer_sequence_t>{}; }
 
     template <typename... _Ts>
@@ -290,7 +351,7 @@ struct [[nodiscard]] tuple_t {
 };
 
 template <typename... Ts>
-tuple_t(Ts...) -> tuple_t<decay_reference_wrapper_t<Ts>...>;
+tuple_t(Ts...)->tuple_t<decay_reference_wrapper_t<Ts>...>;
 
 ////////////////////// Templates
 /// Convenience types
@@ -310,7 +371,7 @@ template <bool... Bs>
 constexpr bool_list_t<Bs...> bool_list_v{};
 
 template <typename... Ts>
-tuple_t<Ts &...> tie(Ts &...ts) noexcept {
+tuple_t<Ts &...> tie(Ts &... ts) noexcept {
     return {ts...};
 }
 
@@ -346,7 +407,7 @@ constexpr decltype(auto) apply(F &&f, Tuple &&tuple) {
 
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
 F for_each(Tuple &&tuple, F &&f) {
-    auto retrieveAllArgs = [&f](auto &&...xs) { (static_cast<F &&>(f)(FWD(xs)), ...); };
+    auto retrieveAllArgs = [&f](auto &&... xs) { (static_cast<F &&>(f)(FWD(xs)), ...); };
     FWD(tuple)(retrieveAllArgs);
     return FWD(f);
 }
