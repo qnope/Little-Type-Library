@@ -248,6 +248,7 @@ TEST(LTL_test, tuple_test_algo) {
         static_assert(*ltl::fast::find_v<int, list> == 0);
         static_assert(*ltl::fast::find_v<int, list, 1> == 2);
         static_assert(*ltl::fast::find_v<double, list> == 1);
+        static_assert(std::is_same_v<double, ltl::fast::at_t<1, list>>);
     }
 
     {
@@ -468,10 +469,10 @@ TEST(LTL_test, test_trait) {
 
     {
         using namespace ltl;
-        typed_static_assert(type_v<remove_rvalue_reference_t<const int>> == ltl::type_v<int>);
-        typed_static_assert(type_v<remove_rvalue_reference_t<const int &>> == ltl::type_v<const int &>);
-        typed_static_assert(type_v<remove_rvalue_reference_t<int &>> == ltl::type_v<int &>);
-        typed_static_assert(type_v<remove_rvalue_reference_t<int &&>> == ltl::type_v<int>);
+        typed_static_assert(type_v<fast::remove_rvalue_reference_t<const int>> == ltl::type_v<int>);
+        typed_static_assert(type_v<fast::remove_rvalue_reference_t<const int &>> == ltl::type_v<const int &>);
+        typed_static_assert(type_v<fast::remove_rvalue_reference_t<int &>> == ltl::type_v<int &>);
+        typed_static_assert(type_v<fast::remove_rvalue_reference_t<int &&>> == ltl::type_v<int>);
     }
 }
 
@@ -925,11 +926,11 @@ TEST(LTL_test, test_functional) {
 
     static_assert(divisor(1000, 10, 10, 10) == 1);
 
-    ASSERT_TRUE(ltl::report_call(divisor, 1000, 10, 5, 5)() == 4);
-    ASSERT_TRUE(ltl::report_call(divisor, 1000, 10, 5)(5) == 4);
-    ASSERT_TRUE(ltl::report_call(divisor, 1000, 10)(5, 5) == 4);
-    ASSERT_TRUE(ltl::report_call(divisor, 1000)(10, 5, 5) == 4);
-    ASSERT_TRUE(ltl::report_call(divisor)(1000, 10, 5, 5) == 4);
+    ASSERT_TRUE(ltl::defer(divisor, 1000, 10, 5, 5)() == 4);
+    ASSERT_TRUE(ltl::defer(divisor, 1000, 10, 5)(5) == 4);
+    ASSERT_TRUE(ltl::defer(divisor, 1000, 10)(5, 5) == 4);
+    ASSERT_TRUE(ltl::defer(divisor, 1000)(10, 5, 5) == 4);
+    ASSERT_TRUE(ltl::defer(divisor)(1000, 10, 5, 5) == 4);
 
     ASSERT_TRUE(ltl::curry(divisor, 1000, 10, 5, 5) == 4);
     ASSERT_TRUE(ltl::curry(divisor, 1000, 10, 5)(5) == 4);
@@ -1506,16 +1507,16 @@ TEST(LTL_test, test_zip_tuple) {
     int sumI = 0;
     double sumD = 0.0;
 
-    ltl::zip_with(
+    (void)ltl::zip_with(
         ltl::overloader{[&sumI](int a, int b) { sumI += a + b; }, [&sumD](double a, double b) { sumD += a + b; }}, a,
         b);
 
     ASSERT_TRUE(sumI == 5);
     ASSERT_TRUE(sumD == 10.0 + 3.0);
 
-    ltl::enumerate_with(ltl::overloader{[&sumI](auto i, int x) { sumI += i.value + x; },
-                                        [&sumD](auto i, double x) { sumD += double(i.value) + x; }},
-                        b);
+    (void)ltl::enumerate_with(ltl::overloader{[&sumI](auto i, int x) { sumI += i.value + x; },
+                                              [&sumD](auto i, double x) { sumD += double(i.value) + x; }},
+                              b);
 
     ASSERT_TRUE(sumI == 5 + 4);
     ASSERT_TRUE(sumD == 10.0 + 3.0 + 1.0 + 10.0);
@@ -1538,7 +1539,6 @@ TEST(LTL_test, test_scanl_tuple) {
 
 TEST(LTL_test, test_construct) {
     struct A {
-        A() = default;
         A(int a, int b, int c) : a(a), b(b), c(c) {}
         int a, b, c;
         bool operator==(A d) const noexcept { return a == d.a && b == d.b && c == d.c; }
@@ -1554,7 +1554,7 @@ TEST(LTL_test, test_construct) {
     ASSERT_TRUE(a.c == 2);
     ASSERT_TRUE(a == ltl::construct<A>(0)(1, 2));
     ASSERT_TRUE(a == ltl::construct<A>(0, 1)(2));
-    ASSERT_TRUE(a == ltl::construct<A>(0)(1)(2));
+    ASSERT_TRUE(a == ltl::construct<A>()(0, 1, 2));
 
     auto b = ltl::construct_with_tuple<A>(tuple);
     auto c = ltl::construct_with_tuple<A>()(tuple);
@@ -2320,7 +2320,7 @@ TEST(LTL_test, predicate) {
     ASSERT_EQ(woodie, persons.begin() + 3);
 }
 
-#if LTL_CPP20
+#if LTL_COROUTINE
 namespace opt {
 ltl::optional<int> h(bool success) {
     if (success)

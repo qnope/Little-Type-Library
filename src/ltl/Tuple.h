@@ -10,25 +10,27 @@
 #include <array>
 
 namespace ltl {
+
+/**
+ *\defgroup Tuple The Tuple group
+ *@{
+ */
+
 template <typename... Ts>
 struct tuple_t;
-
-namespace detail {
-template <int... Is, typename F, typename T>
-constexpr decltype(auto) apply_impl(std::integer_sequence<int, Is...>, F &&f, T &&t) {
-    return FWD(f)(FWD(t)[number_v<Is>]...);
-}
-
-} // namespace detail
 
 template <int... Is, typename F>
 constexpr decltype(auto) execute_with_indices(std::integer_sequence<int, Is...>, F &&f) {
     return FWD(f)(number_v<Is>...);
 }
 
+/// \cond
+
 namespace detail {
-template <typename T>
-using safe_add_lvalue_reference = std::conditional_t<std::is_reference_v<T>, T, std::add_lvalue_reference_t<T>>;
+template <int... Is, typename F, typename T>
+constexpr decltype(auto) apply_impl(std::integer_sequence<int, Is...>, F &&f, T &&t) {
+    return FWD(f)(FWD(t)[number_v<Is>]...);
+}
 
 template <int I, typename T>
 struct tuple_leaf {
@@ -72,12 +74,6 @@ struct make_integer_sequence_impl<N1, std::integer_sequence<int, Is...>> {
 template <std::size_t N1, std::size_t N2>
 using make_integer_sequence = typename make_integer_sequence_impl<N1, std::make_integer_sequence<int, N2 - N1>>::type;
 
-} // namespace detail
-
-template <typename... Ts>
-struct tuple_t;
-
-namespace detail {
 template <typename Seq>
 struct integer_sequence_to_number_listImpl;
 
@@ -87,6 +83,8 @@ struct integer_sequence_to_number_listImpl<std::integer_sequence<int, Is...>> {
 };
 
 } // namespace detail
+
+/// \endcond
 
 template <typename Seq>
 using integer_sequence_to_number_list = typename detail::integer_sequence_to_number_listImpl<Seq>::type;
@@ -158,8 +156,12 @@ struct [[nodiscard]] tuple_t {
      */
     constexpr static auto isEmpty = length == 0_n;
 
+    /**
+     * @brief getTypes - Returns the type list of the tuple
+     */
     static constexpr auto getTypes() noexcept { return fast::type_list<Ts...>{}; }
 
+    /// \cond
     template <typename... _Ts>
     tuple_t &operator=(const tuple_t<_Ts...> &t) {
         execute_with_indices(indexer_sequence_t{}, [&](auto... indices) { //
@@ -311,16 +313,6 @@ struct [[nodiscard]] tuple_t {
         return std::move(*this).extract(detail::make_integer_sequence<1, length.value>{});
     }
 
-    /**
-     * @brief make_indexer_sequence - Returns the indexer_sequence_t
-     */
-    static constexpr auto make_indexer_sequence() noexcept { return indexer_sequence_t{}; }
-
-    /**
-     * @brief make_indexer - returns a tuple of number_t bound to the indexer_sequence
-     */
-    static constexpr auto make_indexer() noexcept { return integer_sequence_to_number_list<indexer_sequence_t>{}; }
-
     template <typename... _Ts>
     constexpr auto operator==(const tuple_t<_Ts...> &t) const {
         typed_static_assert_msg(t.length == length, "Tuple must have the same size");
@@ -346,6 +338,18 @@ struct [[nodiscard]] tuple_t {
             return resultComparison;
         });
     }
+
+    /// \endcond
+
+    /**
+     * @brief make_indexer_sequence - Returns the indexer_sequence_t
+     */
+    static constexpr auto make_indexer_sequence() noexcept { return indexer_sequence_t{}; }
+
+    /**
+     * @brief make_indexer - returns a tuple of number_t bound to the indexer_sequence
+     */
+    static constexpr auto make_indexer() noexcept { return integer_sequence_to_number_list<indexer_sequence_t>{}; }
 
     LTL_CRTP_COMPARABLE(tuple_t)
 };
@@ -391,6 +395,11 @@ template <typename N>
 }
 
 template <typename... T1, typename... T2>
+/**
+ * @brief operator + - It is used to concat two tuples
+ * @param t1
+ * @param t2
+ */
 constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
     return ::ltl::execute_with_indices(t1.make_indexer_sequence(), [&](auto... n1s) {
         return ::ltl::execute_with_indices(t2.make_indexer_sequence(), [&](auto... n2s) {
@@ -400,12 +409,21 @@ constexpr auto operator+(const tuple_t<T1...> &t1, const tuple_t<T2...> &t2) {
 }
 
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
+/**
+ * @brief apply - call f(tuple[0_n], tuple[1_n]...)
+ */
 constexpr decltype(auto) apply(F &&f, Tuple &&tuple) {
     constexpr auto indexer = ltl::remove_cvref_t<Tuple>::make_indexer_sequence();
     return detail::apply_impl(indexer, FWD(f), FWD(tuple));
 }
 
 template <typename F, typename Tuple, requires_f(IsTuple<Tuple>)>
+/**
+ * @brief for_each - call f on each member of the tuple
+ * @param tuple
+ * @param f
+ * @return
+ */
 F for_each(Tuple &&tuple, F &&f) {
     auto retrieveAllArgs = [&f](auto &&... xs) { (static_cast<F &&>(f)(FWD(xs)), ...); };
     FWD(tuple)(retrieveAllArgs);
@@ -449,5 +467,7 @@ template <std::size_t N, typename Tuple, requires_f(::ltl::IsTuple<Tuple>)>
 decltype(auto) get(Tuple &&tuple) {
     return FWD(tuple)[number_v<N>];
 }
+
+/// @}
 
 } // namespace std

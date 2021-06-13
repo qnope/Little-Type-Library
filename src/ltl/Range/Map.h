@@ -18,7 +18,7 @@ struct MapIterator :
     WithFunction<Function>,
     IteratorOperationWithDistance<MapIterator<It, Function>>,
     IteratorSimpleComparator<MapIterator<It, Function>> {
-    using reference = remove_rvalue_reference_t<decltype(
+    using reference = fast::remove_rvalue_reference_t<decltype(
         fast_invoke(std::declval<Function>(), std::declval<typename std::iterator_traits<It>::reference>()))>;
 
     DECLARE_EVERYTHING_BUT_REFERENCE(get_iterator_category<It>);
@@ -107,7 +107,7 @@ struct MapCachedIterator :
     WithFunction<Function>,
     WithSentinel<It>,
     IteratorSimpleComparator<MapCachedIterator<It, Function>> {
-    using result_type = remove_rvalue_reference_t<decltype(
+    using result_type = fast::remove_rvalue_reference_t<decltype(
         fast_invoke(std::declval<Function>(), std::declval<typename std::iterator_traits<It>::reference>()))>;
 
     using reference = typename ltl::remove_cvref_t<decltype(*std::declval<result_type>())>::underlying_type;

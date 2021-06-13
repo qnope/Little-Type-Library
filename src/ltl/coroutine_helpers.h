@@ -5,7 +5,13 @@
 
 #include "ltl.h"
 
-#if LTL_CPP20
+#if defined(__cpp_impl_coroutine) || defined(__cpp_lib_coroutine)
+#define LTL_COROUTINE 1
+#else
+#define LTL_COROUTINE 0
+#endif
+
+#if LTL_COROUTINE
 #include <coroutine>
 
 namespace ltl {

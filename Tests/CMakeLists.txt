@@ -21,8 +21,5 @@ if(LTL_TEST_CPP20)
     target_compile_features(LTLtest20 PRIVATE cxx_std_20)
     target_link_libraries(LTLtest20 PRIVATE LTL::LTL gtest_main)
     add_test(NAME LTLtest20 COMMAND LTLtest20)
-    if(CMAKE_COMPILER_IS_GNUCXX)
-        target_compile_options(LTL INTERFACE  $<$<COMPILE_FEATURES:cxx_std_20>:-fconcepts -fcoroutines>)
-    endif()
 endif()
 

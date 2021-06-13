@@ -26,10 +26,6 @@
 
 #define lift(f) [](auto &&... xs) -> decltype(f(FWD(xs)...)) { return f(FWD(xs)...); }
 
-#ifndef LTL_CPP20
-#define LTL_CPP20 0
-#endif
-
 /// The LTL namespace
 namespace ltl {
 template <typename>
@@ -54,9 +50,6 @@ struct decay_reference_wrapper<std::reference_wrapper<T>> {
 
 template <typename T>
 using decay_reference_wrapper_t = typename decay_reference_wrapper<ltl::remove_cvref_t<T>>::type;
-
-template <typename T>
-using remove_rvalue_reference_t = std::conditional_t<std::is_lvalue_reference_v<T>, T, ltl::remove_cvref_t<T>>;
 
 ///////////////////// overloader
 template <typename... Fs>

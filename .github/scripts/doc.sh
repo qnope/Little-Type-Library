@@ -4,7 +4,7 @@ git checkout -b documentation
 sudo apt install doxygen graphviz gcovr pcregrep gcc-10 g++-10 > logs.out
 export CC=gcc-10
 export CXX=g++-10
-cmake -S . -B build -DLTL_BUILD_TESTS=ON -DLTL_TEST_CPP20=ON -DLTL_GENERATE_DOCUMENTATION=ON -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build -DLTL_BUILD_TESTS=ON -DLTL_GENERATE_DOCUMENTATION=ON -DCMAKE_BUILD_TYPE=Debug
 rm -rf docs || true
 rm -rf coverage.json coverage.xml || true
 cmake --build build -j 8 > logs.out

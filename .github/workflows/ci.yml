@@ -11,14 +11,15 @@ jobs:
       fail-fast: false
       matrix: 
         config: [
-        {"CC":gcc-7,    "CXX":g++-7,      "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": gcc-7 g++-7},
-        {"CC":gcc-8,    "CXX":g++-8,      "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": gcc-8 g++-8},
-        {"CC":gcc-9,    "CXX":g++-9,      "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": gcc-9 g++-9},
-        {"CC":gcc-10,   "CXX":g++-10,     "os":ubuntu-latest,  "CPP_TEST_20": ON,  "package": gcc-10 g++-10},
-        {"CC":clang-10, "CXX":clang++-10, "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": clang-10},
-        {"CC":clang-11, "CXX":clang++-11, "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": clang-11},
-        {"CC":clang-12, "CXX":clang++-12, "os":ubuntu-latest,  "CPP_TEST_20": OFF, "package": clang-12},
-        {"CC":cl,       "CXX":cl,         "os":windows-latest, "CPP_TEST_20": ON}]
+        {"CC":gcc-7,    "CXX":g++-7,      "os":ubuntu-latest, "package": gcc-7 g++-7},
+        {"CC":gcc-8,    "CXX":g++-8,      "os":ubuntu-latest, "package": gcc-8 g++-8},
+        {"CC":gcc-9,    "CXX":g++-9,      "os":ubuntu-latest, "package": gcc-9 g++-9},
+        {"CC":gcc-10,   "CXX":g++-10,     "os":ubuntu-latest, "package": gcc-10 g++-10},
+        {"CC":gcc-11,   "CXX":g++-11,     "os":ubuntu-latest, "package": gcc-11 g++-11},
+        {"CC":clang-10, "CXX":clang++-10, "os":ubuntu-latest, "package": clang-10},
+        {"CC":clang-11, "CXX":clang++-11, "os":ubuntu-latest, "package": clang-11},
+        {"CC":clang-12, "CXX":clang++-12, "os":ubuntu-latest, "package": clang-12},
+        {"CC":cl,       "CXX":cl,         "os":windows-latest}]
 
     runs-on: ${{ matrix.config.os }}
 

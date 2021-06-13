@@ -14,7 +14,7 @@
 #include "traits.h"
 #include "Range/Range.h"
 
-#if LTL_CPP20
+#ifdef __cpp_lib_constexpr_algorithms
 #define LTL_CONSTEXPR_ALGO constexpr
 #else
 #define LTL_CONSTEXPR_ALGO

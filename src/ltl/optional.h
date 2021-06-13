@@ -10,8 +10,41 @@
 #include "coroutine_helpers.h"
 
 namespace ltl {
+
+/**
+ *\defgroup Utils Utilitary group
+ *@{
+ */
+
 template <typename T>
+/**
+ * @brief The optional class
+ *
+ * It is the same as std::optional<T>
+ * However, it provides a `map` function, and `and_then` function.
+ * The map function is the _functor_ operator
+ * The and_then is the _monad_ operator
+ *
+ * @code
+ *  int square(int);
+ *  ltl::optional<int> f(int);
+ *  ltl::optional<int> x;
+ *  auto y = x.map(square); // y = square(*x) or nullopt if x is empty
+ *  auto z = x.and_then(f); // z = f(*x) or nullopt if x is empty
+ * @endcode
+ *
+ * If coroutines are enabled, it also provides the co_await monadic operator
+ *
+ * @code
+ *  ltl::optional<int> f();
+ *
+ *  ltl::optional<int> g() {
+ *      co_return co_await f() * 2; // return f() * 2 or nullopt if f() returns a nullopt
+ *  }
+ * @endcode
+ */
 class optional : private std::optional<T>, public ltl::crtp::Comparable<optional<T>> {
+    /// \cond
   public:
     using std::optional<T>::optional;
     using std::optional<T>::operator=;
@@ -25,7 +58,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     using std::optional<T>::reset;
     using std::optional<T>::emplace;
 
-#if LTL_CPP20
+#if LTL_COROUTINE
     using promise_type = ltl::promise_type<optional<T>>;
 
     struct Awaiter {
@@ -143,15 +176,27 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
         }
         return std::nullopt;
     }
+
+    /// \endcond
 };
 
+/// \cond
+
 template <class T>
-optional(T) -> optional<T>;
+optional(T)->optional<T>;
+
+/// \endcond
 
 inline constexpr auto nullopt = ::std::nullopt;
 
 template <typename T>
+/**
+ * @brief make_optional - build an optional
+ * @param x
+ */
 constexpr auto make_optional(T x) {
     return optional{std::move(x)};
 }
+
+/// @}
 } // namespace ltl

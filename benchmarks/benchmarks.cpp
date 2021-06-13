@@ -1,5 +1,3 @@
-#include <benchmark/benchmark.h>
-
 #include <random>
 
 #include <ltl/algos.h>
@@ -10,6 +8,7 @@
 #include <ltl/Range/actions.h>
 
 #include <ltl/expected.h>
+#include <benchmark/benchmark.h>
 
 using namespace ltl;
 
@@ -125,7 +124,7 @@ static void expected_error(benchmark::State &state) {
     }
 }
 
-#if LTL_CPP20
+#if LTL_COROUTINE
 
 static ltl::expected<int, const char *> fMonade(bool success) {
     if (!success)
@@ -187,14 +186,14 @@ BENCHMARK(sum_filter_double) RANGE;
 
 BENCHMARK(expected_result);
 
-#if LTL_CPP20
+#if LTL_COROUTINE
 BENCHMARK(monade_result);
 #endif
 
 BENCHMARK(exception_result);
 BENCHMARK(expected_error);
 
-#if LTL_CPP20
+#if LTL_COROUTINE
 BENCHMARK(monade_error);
 #endif
 

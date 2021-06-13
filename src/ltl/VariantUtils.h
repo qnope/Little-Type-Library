@@ -10,12 +10,26 @@
 #include <variant>
 
 namespace ltl {
+
+/**
+ *\defgroup Utils Utilitary group
+ *@{
+ */
+
 template <typename V, typename... Fs>
-constexpr decltype(auto) match(V &&v, Fs &&...fs) {
+/**
+ * @brief match Simple variant visitation
+ *
+ * It is roughly equivalent to `std::visit(overloader{FWD(fs)...}, FWD(v));`
+ */
+constexpr decltype(auto) match(V &&v, Fs &&... fs) {
     return ::std::visit(overloader{FWD(fs)...}, FWD(v));
 }
 
 template <typename Variant, typename... Fs>
+/**
+ * @brief match_result This is the same function as match, but it returns a variant of results
+ */
 constexpr auto match_result(Variant &&variant, Fs... fs) {
     using qualified_types = typename fast::qualified_type_list<Variant>::type;
     using result_from_function = fast::function_to_metafunction<overloader<Fs...>>;
@@ -26,10 +40,15 @@ constexpr auto match_result(Variant &&variant, Fs... fs) {
 }
 
 template <typename F, typename Variant>
+/**
+ * @brief is_callable_from - To know if the function F can handle all the types of the variant
+ */
 constexpr auto is_callable_from(F &&, Variant &&) {
     using qualified_types = typename fast::qualified_type_list<Variant>::type;
     return bool_v<fast::all_of_v<qualified_types, fast::bind1st<std::is_invocable, F>::template apply>>;
 }
+
+/// \cond
 
 template <typename T>
 class recursive_wrapper {
@@ -62,8 +81,14 @@ class recursive_wrapper {
 
 LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, is_recursive_wrapper_f, IsRecursiveWrapper, typename, );
 
+/// \endcond
+
 template <typename... Ts>
+/**
+ * @brief The recursive_variant class - A variant that supports recursive type
+ */
 class recursive_variant {
+    /// \cond
   public:
     template <typename T>
     recursive_variant(T &&v) noexcept {
@@ -86,9 +111,9 @@ class recursive_variant {
     }
 
     template <typename F, typename... Variants>
-    friend decltype(auto) recursive_visit(F &&f, Variants &&...variants) {
+    friend decltype(auto) recursive_visit(F &&f, Variants &&... variants) {
         std::visit(
-            [&f](auto &&...xs) {
+            [&f](auto &&... xs) {
                 auto unwrap = [](auto &x) -> decltype(auto) {
                     if constexpr (IsRecursiveWrapper<decltype(x)>) { //
                         return *x;
@@ -101,8 +126,12 @@ class recursive_variant {
             FWD(variants).m_variant...);
     }
 
+    /// \endcond
+
   private:
     std::variant<Ts...> m_variant;
 };
+
+/// @}
 
 } // namespace ltl

@@ -51,22 +51,37 @@ fix(F)->fix<F>;
 /// \endcond
 
 template <typename F, typename... Args>
-constexpr auto report_call(F f, Args... xs) {
+/**
+ * @brief defer - This function is used to defer the call to f
+ * @param f
+ * @param xs
+ */
+constexpr auto defer(F f, Args... xs) {
     return [f = std::move(f), xs...](auto &&... _ys) -> decltype(auto) { return ltl::invoke(f, xs..., FWD(_ys)...); };
 }
 
 template <typename F, typename... Args>
+/**
+ * @brief curry - Currying is done to transform n ary function into unary ones
+ *
+ * Currying may be used to simplify some functions that are too complicates by saving the first args.
+ */
 constexpr decltype(auto) curry(F f, Args &&... args) {
     if constexpr (std::is_invocable_v<F, Args...>) {
         return ltl::invoke(f, FWD(args)...);
     } else {
-        return report_call(lift(curry), std::move(f), FWD(args)...);
+        return defer(lift(curry), std::move(f), FWD(args)...);
     }
 }
 
-constexpr auto identity = [](auto &&t) -> remove_rvalue_reference_t<decltype(FWD(t))> { return FWD(t); };
+constexpr auto identity = [](auto &&t) -> fast::remove_rvalue_reference_t<decltype(FWD(t))> { return FWD(t); };
 constexpr auto id_copy = [](auto x) { return std::move(x); };
 
+/**
+ * @brief compose - Version without argument
+ *
+ * For syntaxic sugar, compose() is the identity function
+ */
 constexpr auto compose() { return identity; }
 
 template <typename F, typename... Fs>
@@ -106,9 +121,23 @@ constexpr auto compose(F f, Fs... fs) {
 }
 
 template <typename F>
+/**
+ * @brief unzip - It is the opposite of zip. It will feed f with all elements of the tuple
+ *
+ * It may be useful when you have to deal with tuple_t.
+ *
+ * @code
+ *  std::vector<ltl::tuple_t<int, double>> vector;
+ *  // strings is a range of string in a form of : "int, double"
+ *  auto strings = vector | map(unzip([](int i, double d) { return std::to_string(i) + "," + std::to_string(d);} );
+ * @endcode
+ * @param f
+ */
 constexpr auto unzip(F f) {
-    return [f = std::move(f)](auto &&tuple) { return FWD(tuple)(f); };
+    return [f = std::move(f)](auto &&tuple) { return apply(f, FWD(tuple)); };
 }
+
+/// \cond
 
 namespace detail {
 template <typename T>
@@ -120,17 +149,76 @@ struct construct_impl {
 };
 } // namespace detail
 
-template <typename T, typename... Args>
-constexpr auto construct(Args &&... args) noexcept {
-    using namespace ltl;
+/// \endcond
 
-    return [args...](auto &&... xs) { return curry(detail::construct_impl<T>{}, args..., FWD(xs)...); };
+template <typename T, typename... Args>
+/**
+ * @brief construct - This function returns a builder of the type T
+ *
+ * This function may be used to convert a range of a type to another one
+ * @code
+ *  struct A {};
+ *  struct B {
+ *      B(A);
+ *  };
+ *  struct C {
+ *      C(int, B);
+ *  };
+ *  std::vector<A> someAs;
+ *  std::vector<B> someBs = someAs | map(construct<B>());
+ *  std::vector<C> someCs = someBs | map(construct<C>(5));
+ * @endcode
+ *
+ * Be careful, this function is lazy
+ * @param args
+ */
+constexpr auto construct(Args... args) noexcept {
+    return [args = tuple_t{std::move(args)...}](auto &&... ys) { //
+        return apply(
+            [&](auto &&... xs) { //
+                return T{xs..., FWD(ys)...};
+            },
+            args);
+    };
 }
 
-template <typename T, typename... Tuple>
-constexpr auto construct_with_tuple(Tuple &&... tuple) noexcept {
-    static_assert(sizeof...(Tuple) <= 1, "Must have 0 or one tuple");
-    return curry(unzip(construct<T>()), FWD(tuple)...);
+template <typename T, typename Tuple>
+/**
+ * @brief construct_with_tuple - This function builds the type T thanks to the given tuple
+ *
+ * Be careful, this function is eager
+ * @param tuple
+ */
+constexpr auto construct_with_tuple(Tuple &&tuple) noexcept {
+    return apply([](auto &&... xs) { return T{FWD(xs)...}; }, FWD(tuple));
+}
+
+template <typename T>
+/**
+ * @brief construct_with_tuple - This function returns a builder for the type T
+ *
+ * It may be used to convert a range of tuple into a range of a specific type
+ *
+ * @code
+ *  struct Person {
+ *      Person(int, std::string);
+ *      int hp;
+ *      std::string name;
+ *  };
+ *  std::vector<ltl::tuple_t<int, std::string>> values;
+ *  std::vector<Person> persons = values | map(construct_with_tuple<Person>());
+ * @endcode
+ *
+ * Be careful, this function is lazy
+ */
+constexpr auto construct_with_tuple() noexcept {
+    return [](auto &&tuple) { //
+        return apply(
+            [](auto &&... xs) { //
+                return T{FWD(xs)...};
+            },
+            FWD(tuple));
+    };
 }
 
 /// @}
@@ -151,6 +239,8 @@ template <typename... Fs>
  *  std::vector<Person> persons;
  *  auto person = ltl::find_if(persons, &Person::name, ltl::not_(&std::string::empty));
  * @endcode
+ *
+ * Generally, you don't want to use this function, use the Predicate structure operators !
  * @param fs
  */
 constexpr auto not_(Fs... fs) {
@@ -170,6 +260,8 @@ template <typename... Fs>
  *  std::vector<Person> persons;
  *  auto person = ltl::find_if(persons, &Person::name, ltl::or_(ltl::equal_to("Bill"), ltl::equal_to("John")));
  * @endcode
+ *
+ * Generally, you don't want to use this function, use the Predicate structure operators !
  * @param fs
  */
 constexpr auto or_(Fs... fs) {
@@ -186,6 +278,8 @@ template <typename... Fs>
  *  std::vector<int> values;
  *  auto value = ltl::find_if(values, ltl::and_(ltl::less_than(25), ltl::greater_than(18)));
  * @endcode
+ *
+ * Generally, you don't want to use this function, use the Predicate structure operators !
  * @param fs
  */
 constexpr auto and_(Fs... fs) {
@@ -193,7 +287,22 @@ constexpr auto and_(Fs... fs) {
 }
 
 template <typename F>
+/**
+ * @brief The Predicate struct represents a predicate function to give to an algorithm
+ *
+ * Generally, such predicate will be created using less_than, greater_than, equal_to, not_equal_to, less_than_equal
+ * or greater_than_equal.
+ *
+ * The purpose of this structure is to make it possible to write expressive combinaisons of predicates thanks to
+ * `&&` and `||` operators:
+ *
+ * @code
+ *  std::vector<int> values;
+ *  auto value = ltl::find_if(values, equal_to(18) || less_than(10))
+ * @endcode
+ */
 struct Predicate {
+    /// \cond
     F f;
 
     template <typename... Args>
@@ -205,7 +314,11 @@ struct Predicate {
     constexpr auto operator()(Args &&... args) noexcept {
         return ltl::fast_invoke(f, FWD(args)...);
     }
+
+    /// \endcond
 };
+
+/// \cond
 
 template <typename F>
 Predicate(F)->Predicate<F>;
@@ -220,7 +333,10 @@ constexpr auto operator&&(Predicate<F1> p1, Predicate<F2> p2) {
     return Predicate{and_(std::move(p1), std::move(p2))};
 }
 
-/// \cond
+template <typename F1>
+constexpr auto operator!(Predicate<F1> p1) {
+    return Predicate{not_(std::move(p1))};
+}
 
 template <typename F>
 struct Does {

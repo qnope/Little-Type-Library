@@ -17,8 +17,8 @@ template <typename T>
 std::add_rvalue_reference_t<T> declval(T &&);
 
 #define TRAIT(name)                                                                                                    \
-    [[maybe_unused]] constexpr auto name = [](auto &&...xs) constexpr noexcept {                                       \
-        return bool_v<std::LPL_CAT(name, _v) < ltl::remove_cvref_t<decltype(declval(FWD(xs)))>...> > ;                 \
+    [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
+        return bool_v<std::LPL_CAT(name, _v) < ltl::remove_cvref_t<decltype(declval(FWD(xs)))>...>> ;                  \
     };
 
 // Primary type categories
@@ -93,13 +93,13 @@ TRAIT(is_convertible)
 #undef TRAIT
 
 #define TRAIT_REFERENCE(name)                                                                                          \
-    [[maybe_unused]] constexpr auto name = [](auto &&...xs) constexpr noexcept {                                       \
-        return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...> > ;                                      \
+    [[maybe_unused]] constexpr auto name = [](auto &&... xs) constexpr noexcept {                                      \
+        return bool_v<std::LPL_CAT(name, _v) < decltype(declval(FWD(xs)))...>> ;                                       \
     };
 
 #define TRAIT_CVNESS(name)                                                                                             \
     [[maybe_unused]] constexpr auto name = [](auto &&x) constexpr {                                                    \
-        return bool_v<std::LPL_CAT(name, _v) < std::remove_reference_t<decltype(declval(FWD(x)))>> > ;                 \
+        return bool_v<std::LPL_CAT(name, _v) < std::remove_reference_t<decltype(declval(FWD(x)))>>> ;                  \
     };
 
 // Reference / cv-ness
@@ -111,7 +111,7 @@ TRAIT_CVNESS(is_array)
 
 #define TRAIT(name)                                                                                                    \
     template <typename T>                                                                                              \
-        [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T> > name(type_t<T>) {                               \
+        [[nodiscard]] constexpr number_t<std::LPL_CAT(name, _v) < T>> name(type_t<T>) {                                \
         return {};                                                                                                     \
     }
 
@@ -128,7 +128,7 @@ TRAIT(rank)
 
 #define TRAIT(name)                                                                                                    \
     [[maybe_unused]] constexpr auto name = [](auto x) constexpr noexcept {                                             \
-        return type_v<std::LPL_CAT(name, _t) < decltype_t(x)> > ;                                                      \
+        return type_v<std::LPL_CAT(name, _t) < decltype_t(x)>> ;                                                       \
     };
 
 // const-volatibility specifiers
@@ -269,10 +269,10 @@ constexpr bool is_validImpl<F, std::void_t<decltype(std::declval<F>()(declval(st
 
 template <typename F>
 constexpr auto is_valid(F &&) {
-    return [](auto &&...xs) { return bool_t<detail::is_validImpl<F, void, decltype(xs)...>>{}; };
+    return [](auto &&... xs) { return bool_t<detail::is_validImpl<F, void, decltype(xs)...>>{}; };
 }
 
-#if LTL_CPP20
+#ifdef __cpp_concepts
 #define LTL_CONCEPT concept
 #else
 #define LTL_CONCEPT [[maybe_unused]] constexpr bool
@@ -312,7 +312,7 @@ constexpr auto is_derived_from(type_t<T> type) {
     return [type](auto &&x) { return is_base_of(type, decay_from(declval(FWD(x)))); };
 }
 
-inline constexpr auto is_invocable = [](auto &&f, auto &&...args) {
+inline constexpr auto is_invocable = [](auto &&f, auto &&... args) {
     return bool_v<std::is_invocable_v<decltype(f), decltype(args)...>>;
 };
 
