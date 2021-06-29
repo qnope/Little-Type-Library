@@ -1604,10 +1604,10 @@ TEST(LTL_test, test_actions) {
 
     std::vector e = {5, 4, 2, 1, 6, 5, 8, 9, 10};
 
-    e |= ltl::actions::sort_by(ltl::byAscending());
+    e |= ltl::actions::sort_by_ascending();
     ASSERT_TRUE(ltl::equal(e, std::array{1, 2, 4, 5, 5, 6, 8, 9, 10}));
 
-    e |= ltl::actions::sort_by(ltl::byDescending());
+    e |= ltl::actions::sort_by_descending();
     ASSERT_TRUE(ltl::equal(e, std::array{10, 9, 8, 6, 5, 5, 4, 2, 1}));
 
     e |= ltl::actions::reverse;
@@ -1719,7 +1719,7 @@ TEST(LTL_test, test_expected_monade) {
     }
 
     {
-        auto good = [](auto x) { return expected<std::string, std::string>{value_tag{}, std::to_string(x)}; };
+        auto good = [](auto x) { return expected<std::string, std::string>{value_tag, std::to_string(x)}; };
         auto bad = [](auto) { return expected<double, std::string>{"FALSE"}; };
 
         auto a = res >> map(good);
@@ -2269,6 +2269,9 @@ TEST(LTL_test, optional_cpp17) {
 
     ASSERT_EQ(y.and_then([](int x) { return ltl::make_optional(x); }), ltl::nullopt);
     ASSERT_EQ(x.and_then([](int) -> ltl::optional<int> { return {}; }), ltl::nullopt);
+
+    ASSERT_EQ(x.value_or({}), 18);
+    ASSERT_EQ(y.value_or({}), 0);
 }
 
 TEST(LTL_test, expected_map_and_then) {

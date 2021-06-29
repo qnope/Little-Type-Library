@@ -10,6 +10,14 @@
 #include "BaseIterator.h"
 
 namespace ltl {
+
+/**
+ * \defgroup Iterator The iterator group
+ * @{
+ */
+
+/// \cond
+
 template <typename It>
 class JoinIterator :
     public BaseIterator<JoinIterator<It>, It>,
@@ -88,7 +96,24 @@ class JoinIterator :
 };
 
 struct join_t {};
+
+/// \endcond
+
+/**
+ * @brief join join an array of array into one big array
+ *
+ * Join operation perform a concatenation of a an array of array
+ *
+ * @code
+ *  std::vector<std::vector<int>> values = {{1}, {2, 2}, {3, 3, 3}, {4, 4, 4, 4}};
+ *
+ *  // joined = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4};
+ *  auto joined = values | ltl::join;
+ * @endcode
+ */
 constexpr join_t join{};
+
+/// \cond
 
 template <>
 struct is_chainable_operation<join_t> : true_t {};
@@ -101,4 +126,8 @@ constexpr decltype(auto) operator|(T1 &&a, join_t) {
     return Range{JoinIterator<it>{begin(FWD(a)), begin(FWD(a)), end(FWD(a))},
                  JoinIterator<it>{end(FWD(a)), begin(FWD(a)), end(FWD(a))}};
 }
+
+/// \endcond
+
+/// @}
 } // namespace ltl

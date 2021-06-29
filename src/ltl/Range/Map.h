@@ -12,14 +12,20 @@
 
 namespace ltl {
 
+/**
+ * \defgroup Iterator The iterator group
+ * @{
+ */
+
+/// \cond
 template <typename It, typename Function>
 struct MapIterator :
     BaseIterator<MapIterator<It, Function>, It>,
     WithFunction<Function>,
     IteratorOperationWithDistance<MapIterator<It, Function>>,
     IteratorSimpleComparator<MapIterator<It, Function>> {
-    using reference = fast::remove_rvalue_reference_t<decltype(
-        fast_invoke(std::declval<Function>(), std::declval<typename std::iterator_traits<It>::reference>()))>;
+    using reference = fast::remove_rvalue_reference_t<decltype(fast_invoke(
+        std::declval<Function>(), std::declval<typename std::iterator_traits<It>::reference>()))>;
 
     DECLARE_EVERYTHING_BUT_REFERENCE(get_iterator_category<It>);
 
@@ -37,16 +43,56 @@ struct MapType {
     F f;
 };
 
+/// \endcond
+
 template <typename... Fs>
+/**
+ * @brief map - Used to perform map operation on a functor
+ *
+ * Apply the composition of fs to the functor. The functor can be different things.
+ * * It may be an array
+ * * It may be an optional
+ * * It may be an expected
+ * We use it through the `operator |`
+ *
+ * @code
+ *  std::vector<int> numbers;
+ *
+ *  // Here we get the square of the numbers as string
+ *  std::vector<std::string> strings_square = numbers | ltl::map(square, lift(std::to_string));
+ * @endcode
+ *
+ * We may apply the operation with a monadic behaviour using `operator>>`
+ *
+ * @code
+ *  std::vector<int> f(int value);
+ *  std::vector<int> numbers;
+ *
+ *  std::vector<std::vector<int>> result = numbers | ltl::map(f);
+ *  std::vector<int> result = numbers | ltl::map(f) | ltl::join;
+ *  std::vector<int> result = numbers >> ltl::map(f);
+ * @endcode
+ *
+ * For an array, the `operator>>` is equivalent to `operator|` and a `join`
+ *
+ * @param fs
+ */
 constexpr auto map(Fs... fs) {
     auto foo = compose(std::move(fs)...);
     return MapType<decltype(foo)>{std::move(foo)};
 }
 
 template <typename F, typename... Fs, requires_f(!IsIterable<F>)>
+/**
+ * @brief transform - Same as ltl::map(f, fs...)
+ * @param f
+ * @param fs
+ */
 constexpr auto transform(F f, Fs... fs) {
     return map(std::move(f), std::move(fs)...);
 }
+
+/// \cond
 
 template <typename F>
 struct is_chainable_operation<MapType<F>> : true_t {};
@@ -107,8 +153,8 @@ struct MapCachedIterator :
     WithFunction<Function>,
     WithSentinel<It>,
     IteratorSimpleComparator<MapCachedIterator<It, Function>> {
-    using result_type = fast::remove_rvalue_reference_t<decltype(
-        fast_invoke(std::declval<Function>(), std::declval<typename std::iterator_traits<It>::reference>()))>;
+    using result_type = fast::remove_rvalue_reference_t<decltype(fast_invoke(
+        std::declval<Function>(), std::declval<typename std::iterator_traits<It>::reference>()))>;
 
     using reference = typename ltl::remove_cvref_t<decltype(*std::declval<result_type>())>::underlying_type;
     DECLARE_EVERYTHING_BUT_REFERENCE(std::input_iterator_tag);
@@ -174,12 +220,20 @@ constexpr decltype(auto) operator>>(T1 &&a, MapCachedType<F> b) {
     return FWD(a) | std::move(b) | join;
 }
 
+/// \endcond
+
 template <typename T>
+/**
+ * @brief make_move_range - Will move each elements of the array
+ * @param t
+ */
 auto make_move_range(T &&t) {
     auto move = [](auto &x) -> ltl::remove_cvref_t<decltype(x)> { //
         return std::move(x);
     };
     return FWD(t) | ltl::map(move);
 }
+
+/// @}
 
 } // namespace ltl

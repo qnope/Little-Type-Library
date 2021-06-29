@@ -7,6 +7,14 @@
 #include "Reverse.h"
 
 namespace ltl {
+
+/**
+ * \defgroup Iterator The iterator group
+ * @{
+ */
+
+/// \cond
+
 using std::begin;
 using std::end;
 
@@ -72,30 +80,96 @@ struct chunk_t {
     std::size_t n;
 };
 
+template <typename F>
+struct GroupByType {
+    F f;
+};
+
 template <typename T>
 struct is_chainable_operation<split_with_t<T>> : true_t {};
 
 template <>
 struct is_chainable_operation<chunk_t> : true_t {};
 
+template <typename F>
+struct is_chainable_operation<GroupByType<F>> : true_t {};
+
+/// \endcond
+
 template <typename T>
+/**
+ * @brief split - Used to split an array according to an element
+ *
+ * It may be used to split a string into several string_view
+ *
+ * @code
+ *  auto to_view = [](auto &&r) { return std::string_view(&*r.begin(), r.size()); };
+ *  std::string to_split = "My name is John Doe";
+ *  // splitted = {"My", "name", "is", "John", "Doe"};
+ *  auto splitted = to_split | ltl::split(' ') | ltl::map(to_view);
+ * @endcode
+ * @param t
+ */
 auto split(T t) {
     return split_with_t<T>{std::move(t)};
 }
 
+/**
+ * @brief chunks - group elements by chunks of n elements
+ *
+ * It can be useful to separate an array into several chunk of identical size.
+ *
+ * @code
+ *  std::vector<int> bigArray;
+ *
+ *  for(auto chunk : bigArray | ltl::chunks(100)) {
+ *      for(auto element : chunk) {
+ *          use(element);
+ *      }
+ *  }
+ * @endcode
+ *
+ * Note : The last chunk may not contained n elements if there is less than n remaining elements
+ *
+ * @param n
+ * @return
+ */
 chunk_t chunks(std::size_t n) { return {n}; }
 
 template <typename F>
-struct GroupByType {
-    F f;
-};
-template <typename F>
+/**
+ * @brief group_by - group elements of an array
+ *
+ * group_by works only on sorted array (or at least on partitionned array). Else, you could encountered some weird
+ * behaviors.
+ *
+ * Let's say we have a list of players belonging to a team, your players are partitionned by teams and you want to
+ * iterate on teams and their players
+ *
+ * The idea using group_by is the following one
+ * @code
+ *  struct Player {
+ *      std::string name;
+ *      std::string team;
+ *  };
+ *
+ *  std::vector<Player> players;
+ *
+ *  for(auto [team, players] : players | ltl::group_by(&Player::team)) {
+ *      std::cout << "Player in team " << team << " are:\n";
+ *      for(const auto &player : players) {
+ *          std::cout << "  " << player.name << std::endl;
+ *      }
+ *  };
+ * @endcode
+ *
+ * @param f
+ */
 auto group_by(F &&f) {
     return GroupByType<ltl::remove_cvref_t<F>>{FWD(f)};
 }
 
-template <typename F>
-struct is_chainable_operation<GroupByType<F>> : true_t {};
+/// \cond
 
 namespace details {
 inline auto dereference_to_range = [](auto it, auto end) { return Range<decltype(it)>{std::move(it), std::move(end)}; };
@@ -159,5 +233,9 @@ constexpr decltype(auto) operator|(T1 &&a, GroupByType<F> b) {
         SplitIterator<it, Advance, Dereference, 0>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)), advance, dereference},
         SplitIterator<it, Advance, Dereference, 0>{end(FWD(a)), begin(FWD(a)), end(FWD(a)), advance, dereference}};
 }
+
+/// \endcond
+
+/// @}
 
 } // namespace ltl

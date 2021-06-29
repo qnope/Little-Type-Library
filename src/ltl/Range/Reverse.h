@@ -8,8 +8,15 @@
 
 namespace ltl {
 
+/**
+ * \defgroup Iterator The iterator group
+ * @{
+ */
+
 using std::begin;
 using std::end;
+
+/// \cond
 
 template <typename It>
 class ReverseIterator :
@@ -94,7 +101,22 @@ template <typename It, bool reversable = std::is_base_of_v<std::bidirectional_it
 using WithSentinel = WithSentinelImpl<It, reversable>;
 
 struct reverse_t {};
+
+/// \endcond
+
+/**
+ * @brief reversed - Used to iterate on a reversed array
+ *
+ * @code
+ *  std::vector<int> array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+ *
+ *  // reversed_array = {9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
+ *  auto reversed_array = array | ltl::reversed;
+ * @endcode
+ */
 constexpr reverse_t reversed;
+
+/// \cond
 
 template <>
 struct is_chainable_operation<reverse_t> : true_t {};
@@ -111,5 +133,9 @@ constexpr decltype(auto) operator|(T1 &&a, reverse_t) {
     auto rb = std::prev(e);
     return Range<It>{{rb, b, false}, {b, b, true}};
 }
+
+/// \endcond
+
+/// @}
 
 } // namespace ltl

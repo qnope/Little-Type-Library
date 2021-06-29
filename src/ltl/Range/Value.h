@@ -8,6 +8,14 @@
 #include "Range.h"
 
 namespace ltl {
+
+/**
+ * \defgroup Iterator The iterator group
+ * @{
+ */
+
+/// \cond
+
 template <typename ValueType>
 struct ValueIterator :
     BaseIterator<ValueIterator<ValueType>, ValueType>,
@@ -44,21 +52,37 @@ struct ValueIterator :
     ValueType m_step{static_cast<ValueType>(1)};
 };
 
+/// \endcond
+
 template <typename ValueType>
+/**
+ * @brief valueRange - returns the full range value of type ValueType
+ */
 auto valueRange() {
     return Range{ValueIterator{std::numeric_limits<ValueType>::lowest()},
                  ValueIterator{std::numeric_limits<ValueType>::max()}};
 }
 
 template <typename ValueType>
+/**
+ * @brief valueRange
+ * @param start
+ */
 auto valueRange(ValueType start) {
     return Range{ValueIterator{start}, ValueIterator{std::numeric_limits<ValueType>::max()}};
 }
 
 template <typename ValueType>
+/**
+ * @brief valueRange
+ * @param start
+ * @param end
+ */
 auto valueRange(ValueType start, ValueType end) {
     return Range{ValueIterator{start}, ValueIterator{end}};
 }
+
+/// \cond
 
 template <typename ValueType>
 auto steppedValueRange(ValueType step) {
@@ -80,5 +104,20 @@ auto steppedValueRange(ValueType start, ValueType end, ValueType step) {
     auto _end = ValueIterator{end, step};
     return Range{begin, _end};
 }
+
+/// \endcond
+
+/**
+ * @brief ints - returns an "infinite" list beginning at 0
+ */
+inline auto ints() { return valueRange<int>(0); }
+
+/**
+ * @brief ints - returns a finite list beginning at 0 finishing at size - 1
+ * @param size
+ */
+inline auto ints(int size) { return valueRange<int>(0, size); }
+
+/// @}
 
 } // namespace ltl

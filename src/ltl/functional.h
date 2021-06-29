@@ -32,13 +32,13 @@ template <typename F>
 struct fix : F {
     /// \cond
     template <typename... Args>
-    constexpr auto operator()(Args &&... args) const
+    constexpr auto operator()(Args &&...args) const
         -> decltype(std::declval<const F &>()(std::declval<const fix &>(), std::declval<Args>()...)) {
         return static_cast<const F &>(*this)(*this, FWD(args)...);
     }
 
     template <typename... Args>
-    constexpr auto operator()(Args &&... args)
+    constexpr auto operator()(Args &&...args)
         -> decltype(std::declval<F &>()(std::declval<fix &>(), std::declval<Args>()...)) {
         return static_cast<F &>(*this)(*this, FWD(args)...);
     }
@@ -47,7 +47,7 @@ struct fix : F {
 
 /// \cond
 template <typename F>
-fix(F)->fix<F>;
+fix(F) -> fix<F>;
 /// \endcond
 
 template <typename F, typename... Args>
@@ -57,7 +57,7 @@ template <typename F, typename... Args>
  * @param xs
  */
 constexpr auto defer(F f, Args... xs) {
-    return [f = std::move(f), xs...](auto &&... _ys) -> decltype(auto) { return ltl::invoke(f, xs..., FWD(_ys)...); };
+    return [f = std::move(f), xs...](auto &&..._ys) -> decltype(auto) { return ltl::invoke(f, xs..., FWD(_ys)...); };
 }
 
 template <typename F, typename... Args>
@@ -66,7 +66,7 @@ template <typename F, typename... Args>
  *
  * Currying may be used to simplify some functions that are too complicates by saving the first args.
  */
-constexpr decltype(auto) curry(F f, Args &&... args) {
+constexpr decltype(auto) curry(F f, Args &&...args) {
     if constexpr (std::is_invocable_v<F, Args...>) {
         return ltl::invoke(f, FWD(args)...);
     } else {
@@ -114,7 +114,7 @@ constexpr auto compose(F f, Fs... fs) {
     if constexpr (sizeof...(Fs) == 0) {
         return f;
     } else {
-        return [f, fs...](auto &&... xs) -> decltype(auto) { //
+        return [f, fs...](auto &&...xs) -> decltype(auto) { //
             return ltl::fast_invoke(compose(fs...), ltl::fast_invoke(f, FWD(xs)...));
         };
     }
@@ -136,20 +136,6 @@ template <typename F>
 constexpr auto unzip(F f) {
     return [f = std::move(f)](auto &&tuple) { return apply(f, FWD(tuple)); };
 }
-
-/// \cond
-
-namespace detail {
-template <typename T>
-struct construct_impl {
-    template <typename... Ts>
-    constexpr auto operator()(Ts &&... ts) -> decltype(T{std::declval<Ts>()...}) {
-        return T{FWD(ts)...};
-    }
-};
-} // namespace detail
-
-/// \endcond
 
 template <typename T, typename... Args>
 /**
@@ -173,9 +159,9 @@ template <typename T, typename... Args>
  * @param args
  */
 constexpr auto construct(Args... args) noexcept {
-    return [args = tuple_t{std::move(args)...}](auto &&... ys) { //
+    return [args = tuple_t{std::move(args)...}](auto &&...ys) { //
         return apply(
-            [&](auto &&... xs) { //
+            [&](auto &&...xs) { //
                 return T{xs..., FWD(ys)...};
             },
             args);
@@ -190,7 +176,7 @@ template <typename T, typename Tuple>
  * @param tuple
  */
 constexpr auto construct_with_tuple(Tuple &&tuple) noexcept {
-    return apply([](auto &&... xs) { return T{FWD(xs)...}; }, FWD(tuple));
+    return apply([](auto &&...xs) { return T{FWD(xs)...}; }, FWD(tuple));
 }
 
 template <typename T>
@@ -214,7 +200,7 @@ template <typename T>
 constexpr auto construct_with_tuple() noexcept {
     return [](auto &&tuple) { //
         return apply(
-            [](auto &&... xs) { //
+            [](auto &&...xs) { //
                 return T{FWD(xs)...};
             },
             FWD(tuple));
@@ -244,7 +230,7 @@ template <typename... Fs>
  * @param fs
  */
 constexpr auto not_(Fs... fs) {
-    return [f = compose(std::move(fs)...)](auto &&... xs) { return !ltl::fast_invoke(f, FWD(xs)...); };
+    return [f = compose(std::move(fs)...)](auto &&...xs) { return !ltl::fast_invoke(f, FWD(xs)...); };
 }
 
 template <typename... Fs>
@@ -265,7 +251,7 @@ template <typename... Fs>
  * @param fs
  */
 constexpr auto or_(Fs... fs) {
-    return [fs...](auto &&... xs) { return (false_v || ... || (fs(FWD(xs)...))); };
+    return [fs...](auto &&...xs) { return (false_v || ... || (fs(FWD(xs)...))); };
 }
 
 template <typename... Fs>
@@ -283,7 +269,7 @@ template <typename... Fs>
  * @param fs
  */
 constexpr auto and_(Fs... fs) {
-    return [fs...](auto &&... xs) { return (true_v && ... && (fs(FWD(xs)...))); };
+    return [fs...](auto &&...xs) { return (true_v && ... && (fs(FWD(xs)...))); };
 }
 
 template <typename F>
@@ -306,12 +292,12 @@ struct Predicate {
     F f;
 
     template <typename... Args>
-    constexpr auto operator()(Args &&... args) const noexcept {
+    constexpr auto operator()(Args &&...args) const noexcept {
         return ltl::fast_invoke(f, FWD(args)...);
     }
 
     template <typename... Args>
-    constexpr auto operator()(Args &&... args) noexcept {
+    constexpr auto operator()(Args &&...args) noexcept {
         return ltl::fast_invoke(f, FWD(args)...);
     }
 
@@ -321,7 +307,7 @@ struct Predicate {
 /// \cond
 
 template <typename F>
-Predicate(F)->Predicate<F>;
+Predicate(F) -> Predicate<F>;
 
 template <typename F1, typename F2>
 constexpr auto operator||(Predicate<F1> p1, Predicate<F2> p2) {
@@ -362,7 +348,7 @@ struct Does {
 };
 
 template <typename F>
-Does(F)->Does<F>;
+Does(F) -> Does<F>;
 
 /// \endcond
 
@@ -500,7 +486,7 @@ constexpr auto byAscending(Fs... fs) {
     return [f = compose(std::move(fs)...)](const auto &x, const auto &y) noexcept { //
         return ltl::fast_invoke(f, x) < ltl::fast_invoke(f, y);
     };
-};
+}
 
 template <typename... Fs>
 /**
@@ -522,7 +508,7 @@ constexpr auto byDescending(Fs... fs) {
     return [f = compose(std::move(fs)...)](const auto &x, const auto &y) noexcept { //
         return ltl::fast_invoke(f, x) > ltl::fast_invoke(f, y);
     };
-};
+}
 
 /// @}
 

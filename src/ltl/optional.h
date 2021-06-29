@@ -6,6 +6,7 @@
 #include <optional>
 #include "traits.h"
 #include "crtp.h"
+#include "functional.h"
 
 #include "coroutine_helpers.h"
 
@@ -33,6 +34,14 @@ template <typename T>
  *  auto z = x.and_then(f); // z = f(*x) or nullopt if x is empty
  * @endcode
  *
+ * It provides also a better `value_or` function in the sense that it has a default parameter type.
+ * It leads to the possibility to write
+ *
+ * @code
+ *  ltl::optional<int> x;
+ *  x.value_or({});
+ * @endcode
+ *
  * If coroutines are enabled, it also provides the co_await monadic operator
  *
  * @code
@@ -53,7 +62,6 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     using std::optional<T>::operator bool;
     using std::optional<T>::has_value;
     using std::optional<T>::value;
-    using std::optional<T>::value_or;
     using std::optional<T>::swap;
     using std::optional<T>::reset;
     using std::optional<T>::emplace;
@@ -76,6 +84,20 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     // Because we must not have a trivially copyable object, else it is allowed to passed by registers
     constexpr ~optional() {}
 #endif
+
+    template <typename U = T>
+    constexpr T value_or(U x) const & {
+        if (*this)
+            return **this;
+        return FWD(x);
+    }
+
+    template <typename U = T>
+    constexpr T value_or(U &&x) && {
+        if (*this)
+            return std::move(**this);
+        return FWD(x);
+    }
 
     constexpr friend bool operator==(const optional &a, const optional &b) noexcept {
         return static_cast<const std::optional<T> &>(a) == static_cast<const std::optional<T> &>(b);
@@ -105,74 +127,76 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
         return static_cast<const std::optional<T> &>(a) < static_cast<const _T &>(b);
     }
 
-    template <typename F>
-    constexpr auto map(F &&f) //
-        & -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<T &>()))>> {
+    template <typename... Fs>
+    constexpr auto map(Fs &&...fs) //
+        & -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &>()))>> {
         if (*this) {
-            return ltl::invoke(FWD(f), **this);
+            return ltl::invoke(compose(FWD(fs)...), **this);
         }
         return std::nullopt;
     }
 
-    template <typename F>
-    constexpr auto map(F &&f) //
-        const & -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const T &>()))>> {
+    template <typename... Fs>
+    constexpr auto map(Fs &&...fs) //
+        const & -> ltl::optional<
+            ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &>()))>> {
         if (*this) {
-            return ltl::invoke(FWD(f), **this);
+            return ltl::invoke(compose(FWD(fs)...), **this);
         }
         return std::nullopt;
     }
 
-    template <typename F>
-    constexpr auto map(F &&f) //
-        && -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<T &&>()))>> {
+    template <typename... Fs>
+    constexpr auto map(Fs &&...fs) //
+        && -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &&>()))>> {
         if (*this) {
-            return ltl::invoke(FWD(f), std::move(**this));
+            return ltl::invoke(compose(FWD(fs)...), std::move(**this));
         }
         return std::nullopt;
     }
 
-    template <typename F>
-    constexpr auto map(F &&f) //
-        const && -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(FWD(f), std::declval<const T &&>()))>> {
+    template <typename... Fs>
+    constexpr auto map(Fs &&...fs) //
+        const && -> ltl::optional<
+            ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &&>()))>> {
         if (*this) {
-            return ltl::invoke(FWD(f), std::move(**this));
+            return ltl::invoke(compose(FWD(fs)...), std::move(**this));
         }
         return std::nullopt;
     }
 
-    template <typename F>
-    constexpr auto and_then(F &&f) //
-        & -> decltype(ltl::invoke(FWD(f), std::declval<T &>())) {
+    template <typename... Fs>
+    constexpr auto and_then(Fs &&...fs) //
+        & -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &>())) {
         if (*this) {
-            return ltl::invoke(FWD(f), **this);
+            return ltl::invoke(compose(FWD(fs)...), **this);
         }
         return std::nullopt;
     }
 
-    template <typename F>
-    constexpr auto and_then(F &&f) //
-        const & -> decltype(ltl::invoke(FWD(f), std::declval<const T &>())) {
+    template <typename... Fs>
+    constexpr auto and_then(Fs &&...fs) //
+        const & -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &>())) {
         if (*this) {
-            return ltl::invoke(FWD(f), **this);
+            return ltl::invoke(compose(FWD(fs)...), **this);
         }
         return std::nullopt;
     }
 
-    template <typename F>
-    constexpr auto and_then(F &&f) //
-        && -> decltype(ltl::invoke(FWD(f), std::declval<T &&>())) {
+    template <typename... Fs>
+    constexpr auto and_then(Fs &&...fs) //
+        && -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &&>())) {
         if (*this) {
-            return ltl::invoke(FWD(f), std::move(**this));
+            return ltl::invoke(compose(FWD(fs)...), std::move(**this));
         }
         return std::nullopt;
     }
 
-    template <typename F>
-    constexpr auto and_then(F &&f) //
-        const && -> decltype(ltl::invoke(FWD(f), std::declval<const T &&>())) {
+    template <typename... Fs>
+    constexpr auto and_then(Fs &&...fs) //
+        const && -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &&>())) {
         if (*this) {
-            return ltl::invoke(FWD(f), std::move(**this));
+            return ltl::invoke(compose(FWD(fs)...), std::move(**this));
         }
         return std::nullopt;
     }
@@ -183,7 +207,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 /// \cond
 
 template <class T>
-optional(T)->optional<T>;
+optional(T) -> optional<T>;
 
 /// \endcond
 

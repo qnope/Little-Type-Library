@@ -278,14 +278,7 @@ constexpr auto is_valid(F &&) {
 #define LTL_CONCEPT [[maybe_unused]] constexpr bool
 #endif
 
-#define LTL_WRITE_AUTO_WITH_COMMA_IMPL(x) , auto &&x
-
-#define LTL_WRITE_AUTO_IMPL(x, ...) (auto &&x LPL_MAP(LTL_WRITE_AUTO_WITH_COMMA_IMPL, __VA_ARGS__))
-
-#define LTL_ENSURE_NOT_EMPTY(...) (__VA_ARGS__, ())
-#define IS_VALID(variables, ...)                                                                                       \
-    ltl::is_valid(                                                                                                     \
-        [] LPL_IDENTITY(LTL_WRITE_AUTO_IMPL LTL_ENSURE_NOT_EMPTY variables) -> decltype(__VA_ARGS__, void()) {})
+#define IS_VALID(args, ...) ltl::is_valid([](LPL_MAP(LPL_ADD_AUTO, args)) -> decltype(__VA_ARGS__, void()) {})
 
 #define LTL_MAKE_IS_KIND(type, nameStruct, nameLambda, conceptName, templateType, v)                                   \
     template <typename T>                                                                                              \

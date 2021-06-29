@@ -31,9 +31,9 @@
 #define LPL_INC_8 9
 #define LPL_INC(...) LPL_CAT(LPL_INC_, LPL_HEAD(__VA_ARGS__, ()))
 
-#define LPL_COMPL_1 0
-#define LPL_COMPL_0 1
-#define LPL_COMPL(...) LPL_CAT(LPL_COMPL_, __VA_ARGS__)
+#define LPL_NOT_1 0
+#define LPL_NOT_0 1
+#define LPL_NOT(x) LPL_CAT_IMPL(LPL_NOT_, x)
 
 #define LPL_IDENTITY(x) x
 
@@ -52,64 +52,44 @@
 #define LPL_EVAL6(...) LPL_EVAL5(LPL_EVAL5(__VA_ARGS__))
 #define LPL_EVAL(...) LPL_EVAL6(LPL_EVAL6(__VA_ARGS__))
 
-#define LPL_HEAD(x, ...) x
-#define LPL_SECOND(x, y, ...) y
-#define LPL_TAIL(x, ...) __VA_ARGS__
+#define LPL_HEAD_IMPL(x, ...) x
+#define LPL_HEAD(...) LPL_HEAD_IMPL __VA_ARGS__
+#define LPL_TAIL_IMPL(x, ...) (__VA_ARGS__)
+#define LPL_TAIL(...) LPL_TAIL_IMPL __VA_ARGS__
 
 #define LPL_STRIP_PARENTHESES_IMPL(...) __VA_ARGS__
 #define LPL_STRIP_PARENTHESES(x) LPL_STRIP_PARENTHESES_IMPL x
 
-#define LPL_PROBE UNUSED, 1
+#define LPL_PROBE() UNUSED, 1
 #define LPL_CHECK_IMPL(unused, n, ...) n
-#define LPL_CHECK(expressionToTest) LPL_CHECK_IMPL(expressionToTest, 0, 0)
+#define LPL_CHECK(...) LPL_CHECK_IMPL(__VA_ARGS__, 0)
 
-#define LPL_IS_PARENTHESES_IMPL(...) LPL_PROBE
-#define LPL_IS_PARENTHESES(x) LPL_CHECK(LPL_IS_PARENTHESES_IMPL x)
-
-#define LPL_IS_NOT_PARENTHESES(x) LPL_COMPL(LPL_IS_PARENTHESES(x))
-
-#define LPL_IS_0_0 LPL_PROBE
-#define LPL_IS_0(...) LPL_CHECK(LPL_CAT(LPL_IS_0_, LPL_HEAD(__VA_ARGS__, ())))
-
-#define LPL_IS_NOT_0(...) LPL_COMPL(LPL_IS_0(LPL_HEAD(__VA_ARGS__, ())))
+#define LPL_IS_PARENTHESES(...) LPL_CHECK(LPL_PROBE __VA_ARGS__)
+#define LPL_IS_NOT_PARENTHESES(...) LPL_NOT(LPL_IS_PARENTHESES(__VA_ARGS__))
 
 #define LPL_IF_0(t, f) f
 #define LPL_IF_1(t, f) t
-#define LPL_IF(c) LPL_CAT(LPL_IF_, LPL_IS_NOT_0(c))
+#define LPL_IF(c) LPL_CAT(LPL_IF_, c)
 
 #define LPL_WHEN(c) LPL_IF(c)(LPL_EXPAND, LPL_EAT)
+#define LPL_WHEN_NOT(c) LPL_IF(c)(LPL_EAT, LPL_EXPAND)
 
-// WHILE
-#define LPL_WHILE_IMPL(x, predicat, macroToApplyToX, motif)                                                            \
-    LPL_WHEN(predicat(x))                                                                                              \
-    (motif(x) LPL_DEFER_TWICE(LPL_WHILE_IMPL_I)()(macroToApplyToX(x), predicat, macroToApplyToX, motif))
+#define LPL_ADD_AUTO(x) auto &&x
 
-#define LPL_WHILE_IMPL_I() LPL_WHILE_IMPL
+#define LPL_ADD_SENTINEL_IMPL(...) (__VA_ARGS__, ())
+#define LPL_ADD_SENTINEL(...) LPL_ADD_SENTINEL_IMPL __VA_ARGS__
 
-#define LPL_WHILE(x, predicat, macroToApplyToX, motif) LPL_EVAL(LPL_WHILE_IMPL(x, predicat, macroToApplyToX, motif))
-
+#define LPL_IS_END_IMPL(arg) LPL_PROBE arg
+#define LPL_IS_END(args) LPL_CHECK(LPL_IS_END_IMPL(LPL_HEAD(args)))
 // MAP
-#define LPL_MAP_IMPL_PARENTHESES_1(...)
-#define LPL_MAP_IMPL_PARENTHESES_0(macroToApply, x, ...)                                                               \
-    macroToApply(x) LPL_DEFER(LPL_MAP_IMPL_I)()(macroToApply, __VA_ARGS__)
 
-#define LPL_MAP_IMPL(macroToApply, x, ...)                                                                             \
-    LPL_CAT(LPL_MAP_IMPL_PARENTHESES_, LPL_IS_PARENTHESES(x))                                                          \
-    (macroToApply, x, __VA_ARGS__)
+#define LPL_MAP_IMPL(MACRO, args)                                                                                      \
+    MACRO(LPL_HEAD(args))                                                                                              \
+    LPL_WHEN_NOT(LPL_IS_END(LPL_TAIL(args)))(LPL_DEFER_TWICE(LPL_MAP_I)()(MACRO, LPL_TAIL(args)))
 
-#define LPL_MAP_IMPL_I() LPL_MAP_IMPL
+#define LPL_MAP_I() , LPL_MAP_IMPL
 
-#define LPL_MAP(macroToApply, ...) LPL_EVAL(LPL_MAP_IMPL(macroToApply, __VA_ARGS__, (), ()))
-
-#define LPL_AND_IMPL(x, ...) LPL_WHEN(LPL_IS_0(x))(, 0)
-
-/* LPL_SECOND(UNUSED, 0, 1, UNUSED) if 0
-   LPL_SECOND(UNUSED, 1, UNUSED) if 1 */
-#define LPL_AND(...) LPL_EVAL(LPL_DEFER(LPL_SECOND)(UNUSED LPL_MAP(LPL_AND_IMPL, __VA_ARGS__), 1, UNUSED))
-
-#define LPL_OR_IMPL(x, ...) LPL_WHEN(LPL_IS_NOT_0(x))(, 1)
-
-#define LPL_OR(...) LPL_EVAL(LPL_DEFER(LPL_SECOND)(UNUSED LPL_MAP(LPL_OR_IMPL, __VA_ARGS__), 0, UNUSED))
+#define LPL_MAP(MACRO, args) LPL_EVAL(LPL_MAP_IMPL(MACRO, LPL_ADD_SENTINEL(args)))
 
 #define LPL_COUNT_IMPL(                                                                                                \
     _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24,     \
