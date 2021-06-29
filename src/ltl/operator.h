@@ -18,12 +18,7 @@
 #include "condition.h"
 #include "optional_type.h"
 
-#define _LAMBDA_WRITE_AUTO(x, y, ...)                                                                                  \
-    auto &&x LPL_WHEN(LPL_IS_NOT_PARENTHESES(y))(LPL_CAT(, , ) LPL_DEFER_TWICE(_LAMBDA_WRITE_AUTO_I)()(y, __VA_ARGS__))
-
-#define _LAMBDA_WRITE_AUTO_I() _LAMBDA_WRITE_AUTO
-#define _(variables, expr)                                                                                             \
-    [](LPL_EVAL(LPL_DEFER(_LAMBDA_WRITE_AUTO)(LPL_STRIP_PARENTHESES(variables), (), ()))) { return expr; }
+#define _(args, expr) [](LPL_MAP(LPL_ADD_AUTO, args)) { return expr; }
 
 namespace ltl {
 

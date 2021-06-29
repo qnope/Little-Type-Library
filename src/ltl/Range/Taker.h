@@ -8,6 +8,14 @@
 #include "BaseIterator.h"
 
 namespace ltl {
+
+/**
+ * \defgroup Iterator The iterator group
+ * @{
+ */
+
+/// \cond
+
 using std::begin;
 using std::end;
 
@@ -28,18 +36,6 @@ template <typename F>
 struct DropWhileType {
     F f;
 };
-
-inline auto take_n(std::size_t n) { return TakeNType{n}; }
-inline auto drop_n(std::size_t n) { return DropNType{n}; }
-
-template <typename F>
-auto take_while(F f) {
-    return TakeWhileType<F>{std::move(f)};
-}
-template <typename F>
-auto drop_while(F f) {
-    return DropWhileType<F>{std::move(f)};
-}
 
 template <typename F>
 struct is_chainable_operation<TakeWhileType<F>> : true_t {};
@@ -81,4 +77,66 @@ constexpr decltype(auto) operator|(T1 &&a, DropWhileType<F> b) {
     });
     return Range{sentinelBegin, end(FWD(a))};
 }
+
+/// \endcond
+
+/**
+ * @brief take_n - take the first n elements
+ *
+ * @code
+ *  std::vector<int> elements;
+ *
+ *  auto takenElements = elements | ltl::take_n(5);
+ * @endcode
+ * @param n
+ */
+inline auto take_n(std::size_t n) { return TakeNType{n}; }
+
+/**
+ * @brief drop_n - Remove the first n elements
+ *
+ * @code
+ *  std::vector<int> elements;
+ *
+ *  auto takenElements = elements | ltl::drop_n(5);
+ * @endcode
+ * @param n
+ */
+inline auto drop_n(std::size_t n) { return DropNType{n}; }
+
+template <typename F>
+/**
+ * @brief take_while - take while a predicate is true
+ *
+ * @code
+ *  std::vector<int> sortedElements;
+ *
+ *  // all elements are less than 10
+ *  auto takenElements = elements | ltl::take_while(ltl::less_than(10));
+ * @endcode
+ * @param f
+ */
+auto take_while(F f) {
+    return TakeWhileType<F>{std::move(f)};
+}
+
+template <typename F>
+/**
+ * @brief drop_while - Drop while a predicate is true
+ *
+ * @code
+ *  std::vector<int> sortedElements;
+ *
+ *  // all elements are greater or equal to 10
+ *  auto takenElements = elements | ltl::drop_while(ltl::less_than(10)); *
+ * @endcode
+ *
+ * @param f
+ */
+auto drop_while(F f) {
+    return DropWhileType<F>{std::move(f)};
+}
+
+/// @}
+
 } // namespace ltl

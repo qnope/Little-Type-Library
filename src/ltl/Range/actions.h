@@ -10,10 +10,19 @@
 #include "Taker.h"
 
 namespace ltl {
+
+/// The actions namespace
 namespace actions {
+
+/**
+ * \defgroup Actions The actions group
+ * @{
+ */
 
 using std::begin;
 using std::end;
+
+/// \cond
 
 struct AbstractAction {};
 struct AbstractModifyingAction : AbstractAction {};
@@ -24,8 +33,7 @@ constexpr bool IsAction = std::is_base_of_v<AbstractAction, ltl::remove_cvref_t<
 template <typename T>
 constexpr bool IsModifyingAction = std::is_base_of_v<AbstractModifyingAction, ltl::remove_cvref_t<T>>;
 
-constexpr struct Sort : AbstractModifyingAction {
-} sort;
+struct Sort : AbstractModifyingAction {};
 
 template <typename F>
 struct SortBy : AbstractModifyingAction {
@@ -33,16 +41,89 @@ struct SortBy : AbstractModifyingAction {
     F f;
 };
 
+/// \endcond
+/**
+ * @brief sort - action to sort an array
+ *
+ * @code
+ *  std::vector<int> values;
+ *  values |= ltl::actions::sort;
+ * @endcode
+ */
+inline constexpr Sort sort{};
+
 template <typename F>
+/**
+ * @brief sort_by - Sort according to the given comparator function
+ *
+ * This function will generally not be used and users will prefer to use directly `ltl::sort_by_ascending` or
+ * `ltl::sort_by_descending`
+ * @param f
+ */
 constexpr auto sort_by(F f) {
     return SortBy<F>{std::move(f)};
 }
 
-constexpr struct Unique : AbstractModifyingAction {
-} unique;
+template <typename... Fs>
+/**
+ * @brief sort_by_ascending - action to sort by ascending order
+ *
+ * @code
+ *  struct Person {
+ *      std::string name;
+ *  };
+ *
+ *  std::vector<Person> persons;
+ *  std::vector<Person> sorted_persons = persons | ltl::actions::sort_by_ascending(&Person::name);
+ * @endcode
+ * @param fs
+ */
+constexpr auto sort_by_ascending(Fs... fs) {
+    return sort_by(ltl::byAscending(std::move(fs)...));
+}
 
-constexpr struct Reverse : AbstractModifyingAction {
-} reverse;
+template <typename... Fs>
+/**
+ * @brief sort_by_descending - action to sort by descending order
+ *
+ * @code
+ *  struct Person {
+ *      std::string name;
+ *  };
+ *
+ *  std::vector<Person> persons;
+ *  std::vector<Person> sorted_persons = persons | ltl::actions::sort_by_descending(&Person::name);
+ * @endcode
+ * @param fs
+ */
+constexpr auto sort_by_descending(Fs... fs) {
+    return sort_by(ltl::byDescending(std::move(fs)...));
+}
+
+struct Unique : AbstractModifyingAction {};
+struct Reverse : AbstractModifyingAction {};
+
+/**
+ * @brief unique - action to remove adjacent duplicates
+ *
+ * @code
+ *  std::vector<int> values;
+ *  values |= ltl::actions::sort | ltl::actions::unique;
+ * @endcode
+ */
+inline constexpr Unique unique{};
+
+/**
+ * @brief reverse - action to reverse the order of an array
+ *
+ * @code
+ *  std::vector<int> values;
+ *  values |= ltl::actions::reverse;
+ * @endcode
+ */
+inline constexpr Reverse reverse{};
+
+/// \cond
 
 template <typename T>
 struct Find : AbstractAction {
@@ -81,28 +162,58 @@ struct FindIfPtr : AbstractAction {
     F f;
 };
 
+/// \endcond
+
 template <typename T>
+/**
+ * @brief find
+ * @param e
+ */
 constexpr auto find(T &&e) {
     return Find<T>{FWD(e)};
 }
+
 template <typename T>
+/**
+ * @brief find_value
+ * @param e
+ */
 constexpr auto find_value(T &&e) {
     return FindValue<T>{FWD(e)};
 }
+
 template <typename T>
+/**
+ * @brief find_ptr
+ * @param e
+ */
 constexpr auto find_ptr(T &&e) {
     return FindPtr<T>{FWD(e)};
 }
 
 template <typename... Fs>
+/**
+ * @brief find_if
+ * @param fs
+ */
 constexpr auto find_if(Fs... fs) {
     return FindIf{compose(std::move(fs)...)};
 }
+
 template <typename... Fs>
+/**
+ * @brief find_if_value
+ * @param fs
+ */
 constexpr auto find_if_value(Fs... fs) {
     return FindIfValue{compose(std::move(fs)...)};
 }
+
 template <typename... Fs>
+/**
+ * @brief find_if_ptr
+ * @param fs
+ */
 constexpr auto find_if_ptr(Fs... fs) {
     return FindIfPtr{compose(std::move(fs)...)};
 }
@@ -230,7 +341,7 @@ auto operator|(C c, Action a) {
 
 template <typename C, typename... Actions, requires_f(ltl::IsIterable<C>)>
 auto &operator|=(C &c, ltl::tuple_t<Actions...> actions) {
-    return actions([&c](const auto &...xs) -> C & {
+    return actions([&c](const auto &... xs) -> C & {
         ((c |= xs), ...);
         return c;
     });
@@ -239,8 +350,11 @@ auto &operator|=(C &c, ltl::tuple_t<Actions...> actions) {
 template <typename C, typename... Actions, requires_f(ltl::IsIterable<C>),
           requires_f((true && ... && IsAction<Actions>))>
 auto operator|(C c, ltl::tuple_t<Actions...> actions) {
-    return actions([c = std::move(c)](const auto &...xs) mutable { return (c | ... | xs); });
+    return actions([c = std::move(c)](const auto &... xs) mutable { return (c | ... | xs); });
 }
 
+/// @}
+
 } // namespace actions
+
 } // namespace ltl

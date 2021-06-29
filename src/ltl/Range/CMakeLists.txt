@@ -5,7 +5,6 @@ target_sources(LTL PUBLIC
     DefaultView.h
     enumerate.h
     Filter.h
-    GroupBy.h
     Join.h
     Map.h
     NullableFunction.h

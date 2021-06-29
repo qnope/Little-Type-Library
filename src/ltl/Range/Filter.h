@@ -8,6 +8,14 @@
 #include "ltl/functional.h"
 
 namespace ltl {
+
+/**
+ * \defgroup Iterator The iterator group
+ * @{
+ */
+
+/// \cond
+
 template <typename It, typename Predicate>
 class FilterIterator :
     public BaseIterator<FilterIterator<It, Predicate>, It>,
@@ -44,17 +52,43 @@ struct FilterType {
     F f;
 };
 
+/// \endcond
+
 template <typename... Fs>
+/**
+ * @brief filter - Used to filter a list of element
+ *
+ * @code
+ *  struct Person {
+ *      std::string name;
+ *  };
+ *
+ *  std::vector<Person> persons;
+ *
+ *  // Here you have an array of persons named "Bill"
+ *  std::vector<Person> bills = persons | ltl::filter(ltl::does(&Person::name) == "Bill");
+ *
+ * @endcode
+ *
+ * @param fs
+ */
 constexpr auto filter(Fs... fs) {
     auto foo = compose(std::move(fs)...);
     return FilterType<decltype(foo)>{std::move(foo)};
 }
 
 template <typename F, typename... Fs, requires_f(!IsIterable<F>)>
+/**
+ * @brief remove_if Same as ltl::filter(ltl::not_(compose(fs...)))
+ * @param f
+ * @param fs
+ */
 constexpr auto remove_if(F f, Fs... fs) {
     auto foo = not_(compose(std::move(f), std::move(fs)...));
     return FilterType<decltype(foo)>{std::move(foo)};
 }
+
+/// \cond
 
 template <typename F>
 struct is_chainable_operation<FilterType<F>> : true_t {};
@@ -67,4 +101,9 @@ constexpr decltype(auto) operator|(T1 &&a, FilterType<F> b) {
     return Range{FilterIterator<it, decltype(b.f)>{begin(FWD(a)), begin(FWD(a)), end(FWD(a)), b.f},
                  FilterIterator<it, decltype(b.f)>{end(FWD(a)), begin(FWD(a)), end(FWD(a)), b.f}};
 }
+
+/// \endcond
+
+/// @}
+
 } // namespace ltl

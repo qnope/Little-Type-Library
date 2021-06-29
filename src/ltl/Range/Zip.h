@@ -8,6 +8,13 @@
 #include "Range.h"
 
 namespace ltl {
+/**
+ * \defgroup Iterator The iterator group
+ * @{
+ */
+
+/// \cond
+
 template <typename... Iterators>
 struct ZipIterator :
     BaseIterator<ZipIterator<Iterators...>, tuple_t<Iterators...>>,
@@ -65,7 +72,22 @@ class ZipRange : public AbstractRange<ZipRange<Containers...>> {
     ltl::tuple_t<Containers...> m_containers;
 };
 
+/// \endcond
+
 template <typename... Containers>
+/**
+ * @brief zip - Allows to iterate on several containers at the same time
+ *
+ * @code
+ *  std::vector is = {0, 1, 2, 3, 4};
+ *  std::vector ss = {"0", "1", "2", "3", "4"};
+ *
+ *  for(auto [i, s]: zip(is, ss)) {
+ *      use(i, s);
+ *  }
+ * @endcode
+ * @param containers
+ */
 auto zip(Containers &&...containers) {
     using std::size;
     static_assert(sizeof...(Containers) > 0);
@@ -73,5 +95,7 @@ auto zip(Containers &&...containers) {
 
     return ZipRange<Containers...>{FWD(containers)...};
 }
+
+/// @}
 
 } // namespace ltl
