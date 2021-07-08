@@ -1,5 +1,4 @@
-![](asset/LTL.png)
-
+<img src="LTL.png" alt="drawing" width="1000"/>
 ## Introduction
 **Little Type Library** or **LTL** for short is a lightweight library that can be used for meta programming and / or functional programming.
 **LTL** is under MIT license, and as such, you can use it without any limitation. I just ask you to signal me every bugs you are going to experience.
