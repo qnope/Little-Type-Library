@@ -10,6 +10,7 @@
 #include <ltl/algos.h>
 #include <ltl/stream.h>
 #include <ltl/traits.h>
+#include <ltl/thread.h>
 #include <ltl/optional.h>
 #include <ltl/operator.h>
 #include <ltl/expected.h>
@@ -2321,6 +2322,15 @@ TEST(LTL_test, predicate) {
     auto woodie = find_if(persons, does(&Person::name, &std::string::size) == 6);
     ASSERT_EQ(bill, persons.begin() + 1);
     ASSERT_EQ(woodie, persons.begin() + 3);
+}
+
+TEST(LTL_test, test_mutex) {
+    ltl::mutex<int> value;
+
+    auto isConst = [](auto &x) { return std::is_const_v<std::remove_reference_t<decltype(x)>>; };
+
+    ASSERT_TRUE(std::as_const(value).with_lock(isConst));
+    ASSERT_FALSE(value.with_lock(isConst));
 }
 
 #if LTL_COROUTINE

@@ -20,6 +20,7 @@ target_sources(LTL PUBLIC
     TypedTuple.h
     VariantUtils.h
     fast.h
-    coroutine_helpers.h)
+    coroutine_helpers.h
+    thread.h)
 
 add_subdirectory(Range)
