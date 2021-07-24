@@ -5,6 +5,7 @@
 
 #include <type_traits>
 #include <utility>
+#include <optional>
 
 #include "invoke.h"
 
@@ -229,5 +230,38 @@ template <int N>
 true_t is_number_t(number_t<N>);
 
 struct empty_t {};
+
+template <typename F>
+struct finally {
+    finally(F f) : f{std::move(f)} {}
+
+    finally(const finally &) = delete;
+    finally &operator=(const finally &) = delete;
+
+    ~finally() { f(); }
+
+  private:
+    F f;
+};
+
+template <typename F>
+struct deferrable_finally {
+    deferrable_finally(F f) : f{std::move(f)} {}
+
+    deferrable_finally(deferrable_finally &&x) noexcept : f{std::exchange(x.f, std::nullopt)} {}
+
+    deferrable_finally &operator=(deferrable_finally &&x) {
+        f = std::exchange(x.f, std::nullopt);
+        return *this;
+    }
+
+    ~deferrable_finally() {
+        if (f)
+            (*f)();
+    }
+
+  private:
+    std::optional<F> f;
+};
 
 } // namespace ltl

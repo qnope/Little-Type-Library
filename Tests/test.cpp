@@ -2333,6 +2333,22 @@ TEST(LTL_test, test_mutex) {
     ASSERT_FALSE(value.with_lock(isConst));
 }
 
+TEST(LTL_test, test_finally) {
+    int x = 0;
+    {
+        ltl::finally{[&] { x++; }};
+    }
+    ASSERT_EQ(x, 1);
+
+    auto make_finally = [&] {
+        auto finally = ltl::deferrable_finally{[&] { x++; }};
+        return finally;
+    };
+
+    { auto f = make_finally(); }
+    ASSERT_EQ(x, 2);
+}
+
 #if LTL_COROUTINE
 namespace opt {
 ltl::optional<int> h(bool success) {
