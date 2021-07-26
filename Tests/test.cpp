@@ -2273,6 +2273,9 @@ TEST(LTL_test, optional_cpp17) {
 
     ASSERT_EQ(x.value_or({}), 18);
     ASSERT_EQ(y.value_or({}), 0);
+
+    x = 19;
+    ASSERT_EQ(x, 19);
 }
 
 TEST(LTL_test, expected_map_and_then) {

@@ -56,7 +56,6 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     /// \cond
   public:
     using std::optional<T>::optional;
-    using std::optional<T>::operator=;
     using std::optional<T>::operator->;
     using std::optional<T>::operator*;
     using std::optional<T>::operator bool;
@@ -65,6 +64,28 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     using std::optional<T>::swap;
     using std::optional<T>::reset;
     using std::optional<T>::emplace;
+
+    optional &operator=(std::nullopt_t) {
+        static_cast<std::optional<T> &>(*this) = std::nullopt;
+        return *this;
+    }
+
+    optional &operator=(optional x) {
+        static_cast<std::optional<T> &>(*this) = static_cast<std::optional<T> &&>(x);
+        return *this;
+    }
+
+    template <typename U = T>
+    optional &operator=(U &&x) {
+        static_cast<std::optional<T> &>(*this) = FWD(x);
+        return *this;
+    }
+
+    template <typename U>
+    optional &operator=(ltl::optional<U> x) {
+        static_cast<std::optional<T> &>(*this) = static_cast<std::optional<T> &&>(x);
+        return *this;
+    }
 
 #if LTL_COROUTINE
     using promise_type = ltl::promise_type<optional<T>>;
