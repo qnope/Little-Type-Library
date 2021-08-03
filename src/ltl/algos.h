@@ -5,13 +5,13 @@
 
 #include <algorithm>
 #include <numeric>
-#include <optional>
 #include <functional>
 
 #include "Tuple.h"
-#include "concept.h"
-#include "invoke.h"
 #include "traits.h"
+#include "invoke.h"
+#include "concept.h"
+#include "optional.h"
 #include "Range/Range.h"
 
 #ifdef __cpp_lib_constexpr_algorithms
@@ -102,9 +102,9 @@ LTL_CONSTEXPR_ALGO auto mismatch(C1 &c1, C2 &c2) {
     auto [it1, it2] = std::mismatch(begin(c1), end(c1), begin(c2), end(c2));
 
     if (it1 == end(c1) && it2 == end(c2))
-        return decltype(std::make_optional(tuple_t{it1, it2})){};
+        return decltype(ltl::make_optional(tuple_t{it1, it2})){};
 
-    return std::make_optional(tuple_t{it1, it2});
+    return ltl::make_optional(tuple_t{it1, it2});
 }
 
 template <typename C1, typename C2, typename F>
@@ -113,9 +113,9 @@ LTL_CONSTEXPR_ALGO auto mismatch(C1 &c1, C2 &c2, F &&f) {
     auto [it1, it2] = std::mismatch(begin(c1), end(c1), begin(c2), end(c2), MAKE_CALLER(f));
 
     if (it1 == end(c1) && it2 == end(c2))
-        return decltype(std::make_optional(tuple_t{it1, it2})){};
+        return decltype(ltl::make_optional(tuple_t{it1, it2})){};
 
-    return std::make_optional(tuple_t{it1, it2});
+    return ltl::make_optional(tuple_t{it1, it2});
 }
 
 template <typename C, typename V>
@@ -139,9 +139,9 @@ LTL_CONSTEXPR_ALGO auto find_value(const C &c, const V &v) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::find(begin(c), end(c), v);
     if (it != end(c)) {
-        return std::make_optional(*it);
+        return ltl::make_optional(*it);
     }
-    return decltype(std::make_optional(*it)){};
+    return decltype(ltl::make_optional(*it)){};
 }
 
 template <typename C, typename F>
@@ -165,9 +165,9 @@ LTL_CONSTEXPR_ALGO auto find_if_value(const C &c, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::find_if(begin(c), end(c), MAKE_CALLER(f));
     if (it != end(c)) {
-        return std::make_optional(*it);
+        return ltl::make_optional(*it);
     }
-    return decltype(std::make_optional(*it)){};
+    return decltype(ltl::make_optional(*it)){};
 }
 
 template <typename C, typename F>
@@ -191,13 +191,13 @@ LTL_CONSTEXPR_ALGO auto find_if_not_value(const C &c, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::find_if_not(begin(c), end(c), MAKE_CALLER(f));
     if (it != end(c)) {
-        return std::make_optional(*it);
+        return ltl::make_optional(*it);
     }
-    return decltype(std::make_optional(*it)){};
+    return decltype(ltl::make_optional(*it)){};
 }
 
 template <typename C, typename V>
-LTL_CONSTEXPR_ALGO std::optional<std::size_t> index_of(const C &c, V &&v) {
+LTL_CONSTEXPR_ALGO ltl::optional<std::size_t> index_of(const C &c, V &&v) {
     static_assert(IsIterable<C>, "C must be iterable");
     if (auto it = find(c, FWD(v)); it != end(c)) {
         return std::size_t(std::distance(begin(c), it));
@@ -206,7 +206,7 @@ LTL_CONSTEXPR_ALGO std::optional<std::size_t> index_of(const C &c, V &&v) {
 }
 
 template <typename C, typename F>
-LTL_CONSTEXPR_ALGO std::optional<std::size_t> index_if(const C &c, F &&f) {
+LTL_CONSTEXPR_ALGO ltl::optional<std::size_t> index_if(const C &c, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     if (auto it = find_if(c, FWD(f)); it != end(c)) {
         return std::size_t(std::distance(begin(c), it));
@@ -259,9 +259,9 @@ LTL_CONSTEXPR_ALGO auto adjacent_find_value(const C &c) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::adjacent_find(begin(c), end(c));
     if (it != end(c)) {
-        return std::make_optional(*it);
+        return ltl::make_optional(*it);
     }
-    return decltype(std::make_optional(*it)){};
+    return decltype(ltl::make_optional(*it)){};
 }
 
 template <typename C, typename F>
@@ -285,9 +285,9 @@ LTL_CONSTEXPR_ALGO auto adjacent_find_value(const C &c, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::adjacent_find(begin(c), end(c), MAKE_CALLER(f));
     if (it != end(c)) {
-        return std::make_optional(*it);
+        return ltl::make_optional(*it);
     }
-    return decltype(std::make_optional(*it)){};
+    return decltype(ltl::make_optional(*it)){};
 }
 
 template <typename C1, typename C2>
@@ -319,9 +319,9 @@ LTL_CONSTEXPR_ALGO auto search_n_value(const C &c, Size count, const V &v) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::search_n(begin(c), end(c), count, v);
     if (it != end(c)) {
-        return std::make_optional(*it);
+        return ltl::make_optional(*it);
     }
-    return decltype(std::make_optional(*it)){};
+    return decltype(ltl::make_optional(*it)){};
 }
 
 template <typename C, typename Size, typename V, typename F>
@@ -346,9 +346,9 @@ LTL_CONSTEXPR_ALGO auto search_n_value(const C &c, Size count, const V &v, F &&f
 
     auto it = std::search_n(begin(c), end(c), count, v, MAKE_CALLER(f));
     if (it != end(c)) {
-        return std::make_optional(*it);
+        return ltl::make_optional(*it);
     }
-    return decltype(std::make_optional(*it)){};
+    return decltype(ltl::make_optional(*it)){};
 }
 
 template <typename C, typename It>
@@ -636,9 +636,9 @@ LTL_CONSTEXPR_ALGO auto lower_bound_value(const C &c, const V &v) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::lower_bound(begin(c), end(c), v);
     if (it == end(c)) {
-        return decltype(std::make_optional(*it)){};
+        return decltype(ltl::make_optional(*it)){};
     }
-    return std::make_optional(*it);
+    return ltl::make_optional(*it);
 }
 
 template <typename C, typename V, typename F>
@@ -646,9 +646,9 @@ LTL_CONSTEXPR_ALGO auto lower_bound_value(const C &c, const V &v, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::lower_bound(begin(c), end(c), v, MAKE_CALLER(f));
     if (it == end(c)) {
-        return decltype(std::make_optional(*it)){};
+        return decltype(ltl::make_optional(*it)){};
     }
-    return std::make_optional(*it);
+    return ltl::make_optional(*it);
 }
 
 template <typename C, typename V>
@@ -688,9 +688,9 @@ LTL_CONSTEXPR_ALGO auto upper_bound_value(const C &c, const V &v) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::upper_bound(begin(c), end(c), v);
     if (it == end(c)) {
-        return decltype(std::make_optional(*it)){};
+        return decltype(ltl::make_optional(*it)){};
     }
-    return std::make_optional(*it);
+    return ltl::make_optional(*it);
 }
 
 template <typename C, typename V, typename F>
@@ -698,9 +698,9 @@ LTL_CONSTEXPR_ALGO auto upper_bound_value(const C &c, const V &v, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::upper_bound(begin(c), end(c), v, MAKE_CALLER(f));
     if (it == end(c)) {
-        return decltype(std::make_optional(*it)){};
+        return decltype(ltl::make_optional(*it)){};
     }
-    return std::make_optional(*it);
+    return ltl::make_optional(*it);
 }
 
 template <typename C, typename V>
@@ -908,8 +908,8 @@ LTL_CONSTEXPR_ALGO auto max_element_value(const C &c) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::max_element(begin(c), end(c));
     if (it == end(c))
-        return decltype(std::make_optional(*it)){};
-    return std::make_optional(*it);
+        return decltype(ltl::make_optional(*it)){};
+    return ltl::make_optional(*it);
 }
 
 template <typename C, typename F>
@@ -917,8 +917,8 @@ LTL_CONSTEXPR_ALGO auto max_element_value(const C &c, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::max_element(begin(c), end(c), MAKE_CALLER(f));
     if (it == end(c))
-        return decltype(std::make_optional(*it)){};
-    return std::make_optional(*it);
+        return decltype(ltl::make_optional(*it)){};
+    return ltl::make_optional(*it);
 }
 
 template <typename C>
@@ -956,8 +956,8 @@ LTL_CONSTEXPR_ALGO auto min_element_value(const C &c) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::min_element(begin(c), end(c));
     if (it == end(c))
-        return decltype(std::make_optional(*it)){};
-    return std::make_optional(*it);
+        return decltype(ltl::make_optional(*it)){};
+    return ltl::make_optional(*it);
 }
 
 template <typename C, typename F>
@@ -965,8 +965,8 @@ LTL_CONSTEXPR_ALGO auto min_element_value(const C &c, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto it = std::min_element(begin(c), end(c), MAKE_CALLER(f));
     if (it == end(c))
-        return decltype(std::make_optional(*it)){};
-    return std::make_optional(*it);
+        return decltype(ltl::make_optional(*it)){};
+    return ltl::make_optional(*it);
 }
 
 template <typename C>
@@ -986,8 +986,8 @@ LTL_CONSTEXPR_ALGO auto minmax_element_ptr(C &c) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto pair = std::minmax_element(begin(c), end(c));
     if (pair.first == end(c))
-        return decltype(std::make_optional(tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)})){};
-    return std::make_optional(tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)});
+        return decltype(ltl::make_optional(tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)})){};
+    return ltl::make_optional(tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)});
 }
 
 template <typename C, typename F>
@@ -995,8 +995,8 @@ LTL_CONSTEXPR_ALGO auto minmax_element_ptr(C &c, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto pair = std::minmax_element(begin(c), end(c), MAKE_CALLER(f));
     if (pair.first == end(c))
-        return decltype(std::make_optional(tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)})){};
-    return std::make_optional(tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)});
+        return decltype(ltl::make_optional(tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)})){};
+    return ltl::make_optional(tuple_t{std::addressof(*pair.first), std::addressof(*pair.second)});
 }
 
 template <typename C>
@@ -1004,8 +1004,8 @@ LTL_CONSTEXPR_ALGO auto minmax_element_value(const C &c) {
     static_assert(IsIterable<C>, "C must be iterable");
     auto pair = std::minmax_element(begin(c), end(c));
     if (pair.first == end(c))
-        return decltype(std::make_optional(tuple_t{*pair.first, *pair.second})){};
-    return std::make_optional(tuple_t{*pair.first, *pair.second});
+        return decltype(ltl::make_optional(tuple_t{*pair.first, *pair.second})){};
+    return ltl::make_optional(tuple_t{*pair.first, *pair.second});
 }
 
 template <typename C, typename F>
@@ -1013,8 +1013,8 @@ LTL_CONSTEXPR_ALGO auto minmax_element_value(const C &c, F &&f) {
     typed_static_assert_msg(is_iterable(c), "C must be iterable");
     auto pair = std::minmax_element(begin(c), end(c), MAKE_CALLER(f));
     if (pair.first == end(c))
-        return decltype(std::make_optional(tuple_t{*pair.first, *pair.second})){};
-    return std::make_optional(tuple_t{*pair.first, *pair.second});
+        return decltype(ltl::make_optional(tuple_t{*pair.first, *pair.second})){};
+    return ltl::make_optional(tuple_t{*pair.first, *pair.second});
 }
 
 template <typename C1, typename C2>
@@ -1150,11 +1150,11 @@ LTL_CONSTEXPR_ALGO auto computeMean(const C &c) {
     static_assert(IsIterable<C>, "C must be iterable");
 
     if (c.empty()) {
-        return std::optional<decltype(std::accumulate(std::next(begin(c)), end(c), *begin(c)) / size(c))>{};
+        return ltl::optional<decltype(std::accumulate(std::next(begin(c)), end(c), *begin(c)) / size(c))>{};
     }
 
     const auto total = std::accumulate(std::next(begin(c)), end(c), *begin(c));
-    return std::make_optional(total / size(c));
+    return ltl::make_optional(total / size(c));
 }
 
 template <typename C, typename V>
@@ -1184,9 +1184,9 @@ template <typename C>
 LTL_CONSTEXPR_ALGO auto map_find_value(C &&c, const typename ltl::remove_cvref_t<C>::key_type &k) {
     auto it = FWD(c).find(FWD(k));
     if (it == FWD(c).end()) {
-        return std::optional<decltype(it->second)>{};
+        return ltl::optional<decltype(it->second)>{};
     }
-    return std::make_optional(it->second);
+    return ltl::make_optional(it->second);
 }
 
 template <typename C>
@@ -1202,9 +1202,9 @@ template <typename C>
 LTL_CONSTEXPR_ALGO auto map_take(C &c, const typename ltl::remove_cvref_t<C>::key_type &k) {
     auto it = c.find(FWD(k));
     if (it == c.end()) {
-        return std::optional<decltype(it->second)>{};
+        return ltl::optional<decltype(it->second)>{};
     }
-    auto result = std::make_optional(std::move(it->second));
+    auto result = ltl::make_optional(std::move(it->second));
     c.erase(it);
     return result;
 }
