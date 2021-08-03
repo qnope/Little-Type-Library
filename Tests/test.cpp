@@ -1793,6 +1793,23 @@ TEST(LTL_test, test_repeater) {
     auto sum =
         ltl::accumulate(ltl::valueRange(0, 10) >> ltl::map([](auto x) { return ltl::yield_if(x % 2 == 1, x); }), 0);
     ASSERT_EQ(sum, 0 + 1 + 3 + 5 + 7 + 9);
+
+    {
+        struct Person {
+            std::string name;
+        };
+        std::vector<std::optional<Person>> persons;
+        persons.push_back(Person{"Bill"});
+        persons.push_back(std::nullopt);
+        persons.push_back(Person{"John"});
+
+        // persons2 = [Person{"Bill"}, Person{"John"}];
+        std::vector<Person> persons2 = persons >> ltl::map([](auto x) { return ltl::yield(std::move(x)); });
+
+        ASSERT_EQ(persons2.size(), 2);
+        ASSERT_EQ(persons2[0].name, "Bill");
+        ASSERT_EQ(persons2[1].name, "John");
+    }
 }
 
 TEST(LTL_test, test_reverse) {

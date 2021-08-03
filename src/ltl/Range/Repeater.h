@@ -152,6 +152,32 @@ auto yield_if(bool toYield, T value) noexcept {
     return make_repeater_range(std::move(value), n);
 }
 
+template <typename Nullable>
+/**
+ * @brief yield - Returns a range of one or zero value depending on the nullable type
+ *
+ * @code
+ *  struct Person {
+ *      std::string name;
+ *  };
+ *  std::vector<std::optional<Person>> persons;
+ *  persons.push_back(Person{"Bill"});
+ *  persons.push_back(std::nullopt);
+ *  persons.push_back(Person{"John"});
+ *
+ *  // persons2 = [Person{"Bill"}, Person{"John"}];
+ *  std::vector<Person> persons2 = persons >> ltl::map([](auto x) {return ltl::yield(std::move(x));};
+ * @endcode
+ * @param x
+ */
+auto yield(Nullable x) noexcept {
+    if (x) {
+        return make_mono_element_range(std::move(*x));
+    } else {
+        return make_empty_range<remove_cvref_t<decltype(*std::declval<Nullable>())>>();
+    }
+}
+
 /// @}
 
 } // namespace ltl
