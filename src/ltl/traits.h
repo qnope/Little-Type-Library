@@ -6,6 +6,7 @@
 #include "ltl.h"
 #include <array>
 #include <tuple>
+#include <memory>
 
 #define qualifier_from(x) ltl::qualifier_v<ltl::getQualifierEnum(type_from(x))>
 
@@ -280,20 +281,18 @@ constexpr auto is_valid(F &&) {
 
 #define IS_VALID(args, ...) ltl::is_valid([](LPL_MAP(LPL_ADD_AUTO, args)) -> decltype(__VA_ARGS__, void()) {})
 
-#define LTL_MAKE_IS_KIND(type, nameStruct, nameLambda, conceptName, templateType, v)                                   \
+#define LTL_MAKE_IS_KIND(type, name, conceptName, templateType, v)                                                     \
     template <typename T>                                                                                              \
-    struct nameStruct {                                                                                                \
-        static constexpr auto value = false;                                                                           \
-    };                                                                                                                 \
+    struct name : ::ltl::false_t {};                                                                                   \
     template <templateType v Ts>                                                                                       \
-    struct nameStruct<type<Ts v>> {                                                                                    \
-        static constexpr auto value = true;                                                                            \
+    struct name<type<Ts v>> : ::ltl::true_t {};                                                                        \
+    template <typename T>                                                                                              \
+    LTL_CONCEPT conceptName = name<ltl::remove_cvref_t<T>>::value;                                                     \
+    [[maybe_unused]] constexpr auto LPL_CAT(name, _f) = [](auto &&x) constexpr noexcept {                              \
+        return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
     };                                                                                                                 \
     template <typename T>                                                                                              \
-    LTL_CONCEPT conceptName = nameStruct<ltl::remove_cvref_t<T>>::value;                                               \
-    [[maybe_unused]] constexpr auto nameLambda = [](auto &&x) constexpr noexcept {                                     \
-        return bool_t<conceptName<decltype(::ltl::declval(x))>>{};                                                     \
-    }
+    constexpr auto LPL_CAT(name, _v) = name<T>::value
 
 template <typename T>
 constexpr auto is_type(type_t<T> type) {
@@ -357,5 +356,26 @@ constexpr ltl::true_t is_fixed_size_array(const T (&)[N]);
 
 template <typename T, std::size_t N>
 constexpr ltl::true_t is_fixed_size_array(const std::array<T, N> &);
+
+template <typename T>
+struct is_smart_pointer : false_t {};
+
+template <typename T>
+struct is_smart_pointer<std::shared_ptr<T>> : true_t {};
+
+template <typename T>
+struct is_smart_pointer<std::unique_ptr<T>> : true_t {};
+
+template <typename T>
+constexpr auto is_smart_pointer_v = is_smart_pointer<T>::value;
+
+template <typename T>
+struct is_weak_ptr : false_t {};
+
+template <typename T>
+struct is_weak_ptr<std::weak_ptr<T>> : true_t {};
+
+template <typename T>
+constexpr auto is_weak_ptr_v = is_weak_ptr<T>::value;
 
 } // namespace ltl

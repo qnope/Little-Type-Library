@@ -379,10 +379,10 @@ tuple_t<Ts &...> tie(Ts &... ts) noexcept {
     return {ts...};
 }
 
-LTL_MAKE_IS_KIND(tuple_t, is_tuple, is_tuple_t, IsTuple, typename, ...);
-LTL_MAKE_IS_KIND(type_list_t, is_type_list, is_type_list_t, IsTypeList, typename, ...);
-LTL_MAKE_IS_KIND(number_list_t, is_number_list, is_number_list_t, IsNumberList, int, ...);
-LTL_MAKE_IS_KIND(bool_list_t, is_bool_list, is_bool_list_t, IsBoolList, bool, ...);
+LTL_MAKE_IS_KIND(tuple_t, is_tuple, IsTuple, typename, ...);
+LTL_MAKE_IS_KIND(type_list_t, is_type_list, IsTypeList, typename, ...);
+LTL_MAKE_IS_KIND(number_list_t, is_number_list, IsNumberList, int, ...);
+LTL_MAKE_IS_KIND(bool_list_t, is_bool_list, IsBoolList, bool, ...);
 
 template <typename N1, typename N2>
 [[nodiscard]] constexpr auto build_index_list(N1, N2) {

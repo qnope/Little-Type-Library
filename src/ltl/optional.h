@@ -149,7 +149,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     }
 
     template <typename... Fs>
-    constexpr auto map(Fs &&...fs) //
+    constexpr auto map(Fs &&... fs) //
         & -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &>()))>> {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), **this);
@@ -158,7 +158,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     }
 
     template <typename... Fs>
-    constexpr auto map(Fs &&...fs) //
+    constexpr auto map(Fs &&... fs) //
         const & -> ltl::optional<
             ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &>()))>> {
         if (*this) {
@@ -168,7 +168,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     }
 
     template <typename... Fs>
-    constexpr auto map(Fs &&...fs) //
+    constexpr auto map(Fs &&... fs) //
         && -> ltl::optional<ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &&>()))>> {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), std::move(**this));
@@ -177,7 +177,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     }
 
     template <typename... Fs>
-    constexpr auto map(Fs &&...fs) //
+    constexpr auto map(Fs &&... fs) //
         const && -> ltl::optional<
             ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &&>()))>> {
         if (*this) {
@@ -187,7 +187,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     }
 
     template <typename... Fs>
-    constexpr auto and_then(Fs &&...fs) //
+    constexpr auto and_then(Fs &&... fs) //
         & -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &>())) {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), **this);
@@ -196,7 +196,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     }
 
     template <typename... Fs>
-    constexpr auto and_then(Fs &&...fs) //
+    constexpr auto and_then(Fs &&... fs) //
         const & -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &>())) {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), **this);
@@ -205,7 +205,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     }
 
     template <typename... Fs>
-    constexpr auto and_then(Fs &&...fs) //
+    constexpr auto and_then(Fs &&... fs) //
         && -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &&>())) {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), std::move(**this));
@@ -214,7 +214,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
     }
 
     template <typename... Fs>
-    constexpr auto and_then(Fs &&...fs) //
+    constexpr auto and_then(Fs &&... fs) //
         const && -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &&>())) {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), std::move(**this));
@@ -228,7 +228,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 /// \cond
 
 template <class T>
-optional(T) -> optional<T>;
+optional(T)->optional<T>;
 
 /// \endcond
 
@@ -242,6 +242,9 @@ template <typename T>
 constexpr auto make_optional(T x) {
     return optional{std::move(x)};
 }
+
+template <typename T>
+struct is_optional<ltl::optional<T>> : true_t {};
 
 /// @}
 } // namespace ltl

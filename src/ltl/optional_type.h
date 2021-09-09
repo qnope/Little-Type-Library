@@ -18,7 +18,7 @@ struct optional_type {
     static constexpr true_t has_value{};
 
     constexpr auto operator*() const noexcept { return T{}; }
-    constexpr auto operator->() const noexcept { return AsPointer{T{}}; }
+    constexpr auto operator-> () const noexcept { return AsPointer{T{}}; }
 };
 
 template <>
@@ -27,10 +27,10 @@ struct optional_type<detail::EmptyOptionalType> {
 };
 
 template <typename T>
-optional_type(T) -> optional_type<T>;
+optional_type(T)->optional_type<T>;
 
 constexpr optional_type<detail::EmptyOptionalType> nullopt_type;
 
-LTL_MAKE_IS_KIND(optional_type, is_optional_type, is_optional_type_f, IsOptionalType, typename, );
+LTL_MAKE_IS_KIND(optional_type, is_optional_type, IsOptionalType, typename, );
 
 } // namespace ltl

@@ -475,6 +475,14 @@ TEST(LTL_test, test_trait) {
         typed_static_assert(type_v<fast::remove_rvalue_reference_t<int &>> == ltl::type_v<int &>);
         typed_static_assert(type_v<fast::remove_rvalue_reference_t<int &&>> == ltl::type_v<int>);
     }
+
+    {
+        static_assert(ltl::is_smart_pointer_v<std::shared_ptr<int>>);
+        static_assert(ltl::is_smart_pointer_v<std::unique_ptr<int>>);
+        static_assert(!ltl::is_smart_pointer_v<std::weak_ptr<int>>);
+        static_assert(!ltl::is_weak_ptr_v<std::shared_ptr<int>>);
+        static_assert(ltl::is_weak_ptr_v<std::weak_ptr<int>>);
+    }
 }
 
 TEST(LTL_test, test_qualifier) {
@@ -2293,6 +2301,9 @@ TEST(LTL_test, optional_cpp17) {
 
     x = 19;
     ASSERT_EQ(x, 19);
+
+    static_assert(ltl::is_optional_v<std::optional<int>>);
+    static_assert(ltl::is_optional_v<ltl::optional<int>>);
 }
 
 TEST(LTL_test, expected_map_and_then) {

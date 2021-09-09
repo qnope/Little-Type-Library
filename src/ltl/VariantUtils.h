@@ -79,7 +79,7 @@ class recursive_wrapper {
     std::unique_ptr<T> m_ptr;
 };
 
-LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, is_recursive_wrapper_f, IsRecursiveWrapper, typename, );
+LTL_MAKE_IS_KIND(recursive_wrapper, is_recursive_wrapper, IsRecursiveWrapper, typename, );
 
 /// \endcond
 

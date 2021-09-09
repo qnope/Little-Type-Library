@@ -13,7 +13,7 @@ namespace ltl {
 using std::begin;
 using std::end;
 
-LTL_MAKE_IS_KIND(::std::optional, is_optional, is_optional_f, IsOptional, typename, );
+LTL_MAKE_IS_KIND(::std::optional, is_optional, IsOptional, typename, );
 
 /// \cond
 namespace detail {
