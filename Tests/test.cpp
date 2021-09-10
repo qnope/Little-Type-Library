@@ -2305,6 +2305,13 @@ TEST(LTL_test, optional_cpp17) {
 
     static_assert(ltl::is_optional_v<std::optional<int>>);
     static_assert(ltl::is_optional_v<ltl::optional<int>>);
+
+    {
+        ltl::optional<int> x = ltl::optional<std::size_t>{5};
+        ASSERT_EQ(x, 5);
+        x = ltl::optional<std::size_t>{7};
+        ASSERT_EQ(x, 7);
+    }
 }
 
 TEST(LTL_test, expected_map_and_then) {
