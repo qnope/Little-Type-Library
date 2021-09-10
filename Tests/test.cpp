@@ -482,6 +482,7 @@ TEST(LTL_test, test_trait) {
         static_assert(!ltl::is_smart_pointer_v<std::weak_ptr<int>>);
         static_assert(!ltl::is_weak_ptr_v<std::shared_ptr<int>>);
         static_assert(ltl::is_weak_ptr_v<std::weak_ptr<int>>);
+        static_assert(std::is_same_v<int, ltl::underlying_type_from_smart_pointer_t<std::shared_ptr<int>>>);
     }
 }
 
