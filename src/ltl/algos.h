@@ -599,6 +599,22 @@ LTL_CONSTEXPR_ALGO auto nth_element(C &c, It &&nth, F &&f) {
     return std::nth_element(begin(c), FWD(nth), end(c), MAKE_CALLER(f));
 }
 
+template <typename C>
+LTL_CONSTEXPR_ALGO auto nth_element_n(C &c, std::size_t n) {
+    typed_static_assert_msg(is_iterable(c) && !is_const(c), "C must be iterable and not const");
+    auto it = std::next(begin(c), n);
+    std::nth_element(begin(c), it, end(c));
+    return it;
+}
+
+template <typename C, typename F>
+LTL_CONSTEXPR_ALGO auto nth_element_n(C &c, std::size_t n, F &&f) {
+    typed_static_assert_msg(is_iterable(c) && !is_const(c), "C must be iterable and not const");
+    auto it = std::next(begin(c), n);
+    std::nth_element(begin(c), it, end(c), MAKE_CALLER(f));
+    return it;
+}
+
 template <typename C, typename V>
 LTL_CONSTEXPR_ALGO auto lower_bound(C &c, const V &v) {
     static_assert(IsIterable<C>, "C must be iterable");
