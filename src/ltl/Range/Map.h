@@ -40,6 +40,26 @@ struct MapIterator :
 
 template <typename F>
 struct MapType {
+    template <typename... Ts>
+    constexpr decltype(auto) operator()(Ts &&...ts) & {
+        return ltl::fast_invoke(f, FWD(ts)...);
+    }
+
+    template <typename... Ts>
+    constexpr decltype(auto) operator()(Ts &&...ts) const & {
+        return ltl::fast_invoke(f, FWD(ts)...);
+    }
+
+    template <typename... Ts>
+    constexpr decltype(auto) operator()(Ts &&...ts) && {
+        return ltl::fast_invoke(std::move(f), FWD(ts)...);
+    }
+
+    template <typename... Ts>
+    constexpr decltype(auto) operator()(Ts &&...ts) const && {
+        return ltl::fast_invoke(std::move(f), FWD(ts)...);
+    }
+
     F f;
 };
 

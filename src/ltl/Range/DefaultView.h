@@ -20,10 +20,11 @@ namespace ltl {
  * @code
  *  std::vector<std::unique_ptr<int>> ptrs;
  *  auto values = ptrs | ltl::map(ltl::dereference());
+ *  auto values2 = ptrs | ltl::dereference()
  * @endcode
  */
 inline auto dereference() noexcept {
-    return [](auto &&x) noexcept -> fast::remove_rvalue_reference_t<decltype(*FWD(x))> { return *FWD(x); };
+    return map([](auto &&x) noexcept -> fast::remove_rvalue_reference_t<decltype(*FWD(x))> { return *FWD(x); });
 }
 
 /**

@@ -2388,6 +2388,25 @@ TEST(LTL_test, test_finally) {
     ASSERT_EQ(x, 2);
 }
 
+TEST(LTL_test, test_filter_value) {
+    std::map<int, std::unique_ptr<int>> map;
+    map[0] = nullptr;
+    map[1] = std::make_unique<int>(5);
+    map[2] = std::make_unique<int>(6);
+    map[3] = nullptr;
+    map[10] = std::make_unique<int>(1);
+
+    auto values = map | ltl::filter(ltl::values()) | ltl::values() | ltl::dereference();
+    auto values2 =
+        map | ltl::filter(ltl::values(), ltl::not_equal_to(nullptr)) | ltl::values() | ltl::map(ltl::dereference());
+
+    auto array = std::array{5, 6, 1};
+    ASSERT_EQ(values.size(), 3);
+    ASSERT_EQ(values2.size(), 3);
+    ASSERT_TRUE(ltl::equal(values, array));
+    ASSERT_TRUE(ltl::equal(values, values2));
+}
+
 #if LTL_COROUTINE
 namespace opt {
 ltl::optional<int> h(bool success) {
