@@ -1940,6 +1940,14 @@ TEST(LTL_test, test_chunks) {
     }
 }
 
+struct Person {
+    std::string name;
+    int age = 18;
+
+    friend bool operator==(const Person &a, const Person &b) { return a.name == b.name; }
+    friend bool operator!=(const Person &a, const Person &b) { return a.name != b.name; }
+};
+
 TEST(LTL_test, test_actions_find) {
     using namespace ltl;
     using namespace std::literals;
@@ -1967,6 +1975,38 @@ TEST(LTL_test, test_actions_find) {
     ASSERT_EQ(itJFM, begin(array_string) + 5);
     ASSERT_EQ(optJFM, "Jean-Francois-Michel");
     ASSERT_EQ(ptrJFM, std::addressof(array_string.back()));
+
+    auto make_optional_person = [](const auto &string) { return ltl::make_optional(Person{string}); };
+    auto make_shared_person = [](const auto &string) { return std::make_shared<Person>(Person{string}); };
+    auto optional_persons = array_string | map(make_optional_person) | to_vector;
+    auto shared_persons = array_string | map(make_shared_person) | to_vector;
+
+    {
+        auto personToFind = Person{"Baptiste", 28};
+        auto found = optional_persons | actions::find_nullable(personToFind);
+        ASSERT_TRUE(found);
+        ASSERT_EQ(found->age, 18);
+
+        personToFind.name = "lolll";
+        ASSERT_FALSE(optional_persons | actions::find_nullable(personToFind));
+
+        static_assert(std::is_same_v<decltype(found), ltl::optional<Person>>);
+    }
+
+    {
+        auto found_shared = shared_persons | actions::find_if_nullable(&Person::name, equal_to("Baptiste"));
+        auto found_optional = optional_persons | actions::find_if_nullable(&Person::name, equal_to("Baptiste"));
+        ASSERT_TRUE(found_shared);
+        ASSERT_TRUE(found_optional);
+        ASSERT_EQ(found_shared->age, 18);
+        ASSERT_EQ(found_optional->age, 18);
+
+        static_assert(std::is_same_v<decltype(found_shared), std::shared_ptr<Person>>);
+        static_assert(std::is_same_v<decltype(found_optional), ltl::optional<Person>>);
+
+        ASSERT_FALSE(shared_persons | actions::find_if_nullable(&Person::name, equal_to("Lolll")));
+        ASSERT_FALSE(optional_persons | actions::find_if_nullable(&Person::name, equal_to("Lolll")));
+    }
 }
 
 TEST(LTL_test, test_group_by) {

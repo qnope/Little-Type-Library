@@ -27,7 +27,7 @@ namespace ltl {
  * @{
  */
 
-#define MAKE_CALLER(f) [&f](auto &&... xs) { return ltl::fast_invoke(static_cast<F &&>(f), FWD(xs)...); }
+#define MAKE_CALLER(f) [&f](auto &&...xs) { return ltl::fast_invoke(static_cast<F &&>(f), FWD(xs)...); }
 
 using std::begin;
 using std::end;
@@ -144,6 +144,16 @@ LTL_CONSTEXPR_ALGO auto find_value(const C &c, const V &v) {
     return decltype(ltl::make_optional(*it)){};
 }
 
+template <typename C, typename V>
+LTL_CONSTEXPR_ALGO auto find_nullable(const C &c, const V &v) {
+    static_assert(IsIterable<C>, "C must be iterable");
+    auto it = std::find(begin(c), end(c), v);
+    if (it != end(c)) {
+        return *it;
+    }
+    return decltype(*it){};
+}
+
 template <typename C, typename F>
 LTL_CONSTEXPR_ALGO auto find_if(C &c, F &&f) {
     static_assert(IsIterable<C>, "C must be iterable");
@@ -168,6 +178,16 @@ LTL_CONSTEXPR_ALGO auto find_if_value(const C &c, F &&f) {
         return ltl::make_optional(*it);
     }
     return decltype(ltl::make_optional(*it)){};
+}
+
+template <typename C, typename F>
+LTL_CONSTEXPR_ALGO auto find_if_nullable(const C &c, F &&f) {
+    static_assert(IsIterable<C>, "C must be iterable");
+    auto it = std::find_if(begin(c), end(c), MAKE_CALLER(f));
+    if (it != end(c)) {
+        return *it;
+    }
+    return decltype(*it){};
 }
 
 template <typename C, typename F>
@@ -1133,8 +1153,8 @@ LTL_CONSTEXPR_ALGO auto inner_product(const C &c, It &&it, T &&init, F1 &&f1, F2
     static_assert(IsIterable<C>, "C must be iterable");
     return std::inner_product(
         begin(c), end(c), FWD(it), FWD(init),
-        [&f1](auto &&... xs) { return ltl::fast_invoke(static_cast<F1 &&>(f1), FWD(xs)...); },
-        [&f2](auto &&... xs) { return ltl::fast_invoke(static_cast<F2 &&>(f2), FWD(xs)...); });
+        [&f1](auto &&...xs) { return ltl::fast_invoke(static_cast<F1 &&>(f1), FWD(xs)...); },
+        [&f2](auto &&...xs) { return ltl::fast_invoke(static_cast<F2 &&>(f2), FWD(xs)...); });
 }
 
 template <typename C, typename It>

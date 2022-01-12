@@ -158,6 +158,12 @@ struct FindPtr : AbstractAction {
     T elem;
 };
 
+template <typename T>
+struct FindNullable : AbstractAction {
+    FindNullable(T &&t) : elem{static_cast<T &&>(t)} {}
+    T elem;
+};
+
 template <typename F>
 struct FindIf : AbstractAction {
     FindIf(F &&f) : f{static_cast<F &&>(f)} {}
@@ -174,6 +180,12 @@ struct FindIfValue : AbstractAction {
 template <typename F>
 struct FindIfPtr : AbstractAction {
     FindIfPtr(F &&f) : f{static_cast<F &&>(f)} {}
+    F f;
+};
+
+template <typename F>
+struct FindIfNullable : AbstractAction {
+    FindIfNullable(F &&f) : f{static_cast<F &&>(f)} {}
     F f;
 };
 
@@ -224,6 +236,21 @@ template <typename T>
  */
 constexpr auto find_ptr(T &&e) {
     return FindPtr<T>{FWD(e)};
+}
+
+template <typename T>
+/**
+ * @brief find_nullable - return a first nullable element equal to e
+ *
+ * return nullptr if no element is found
+ * @code
+ *  std::vector<std::optional<int>> array;
+ *  auto it = array | ltl::actions::find_nullable(e)
+ * @endcode
+ * @param e
+ */
+constexpr auto find_nullable(T &&e) {
+    return FindNullable<T>{FWD(e)};
 }
 
 template <typename... Fs>
@@ -287,6 +314,27 @@ template <typename... Fs>
  */
 constexpr auto find_if_ptr(Fs... fs) {
     return FindIfPtr{compose(std::move(fs)...)};
+}
+
+template <typename... Fs>
+/**
+ * @brief find_if - return the first nullable element satisfying the predicate
+ *
+ * returns end if no element is found
+ *
+ * The predicate is given as a composition of a function. This composition must go from it::value_type to bool
+ *
+ * @code
+ *  struct Person {
+ *      std::string name;
+ *  };
+ *  std::vector<Person> persons;
+ *  auto billIt = array | ltl::actions::find_if_nullable(&Person::name, equal_to("Bill"));
+ * @endcode
+ * @param fs...
+ */
+constexpr auto find_if_nullable(Fs... fs) {
+    return FindIfNullable{compose(std::move(fs)...)};
 }
 
 template <typename D>
@@ -382,6 +430,11 @@ auto operator|(C &c, FindPtr<T> e) {
     return ::ltl::find_ptr(c, e.elem);
 }
 
+template <typename C, typename T, requires_f(ltl::IsIterable<C>)>
+auto operator|(C &c, FindNullable<T> e) {
+    return ::ltl::find_nullable(c, e.elem);
+}
+
 template <typename C, typename F, requires_f(ltl::IsIterable<C>)>
 auto operator|(C &c, FindIf<F> e) {
     return ::ltl::find_if(c, e.f);
@@ -395,6 +448,11 @@ auto operator|(const C &c, FindIfValue<F> e) {
 template <typename C, typename F, requires_f(ltl::IsIterable<C>)>
 auto operator|(C &c, FindIfPtr<F> e) {
     return ::ltl::find_if_ptr(c, e.f);
+}
+
+template <typename C, typename F, requires_f(ltl::IsIterable<C>)>
+auto operator|(C &c, FindIfNullable<F> e) {
+    return ::ltl::find_if_nullable(c, e.f);
 }
 
 template <typename C, typename D, requires_f(ltl::IsIterable<C>)>
