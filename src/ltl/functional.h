@@ -269,7 +269,7 @@ template <typename... Fs>
  * @param fs
  */
 constexpr auto and_(Fs... fs) {
-    return [fs...](auto &&...xs) { return (true_v && ... && (fs(FWD(xs)...))); };
+    return [fs...](auto &&...xs) { return (true_v && ... && (invoke(fs, FWD(xs)...))); };
 }
 
 template <typename F>

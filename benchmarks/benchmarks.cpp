@@ -80,16 +80,6 @@ static void sum_filter_single(benchmark::State &state) {
     }
 }
 
-static void sum_filter_single_and(benchmark::State &state) {
-    auto vector = createArray(state.range(0), state.range(1));
-
-    for (auto _ : state) {
-        auto predicate1 = [](auto x) { return x % 2 == 1; };
-        auto predicate2 = [](auto x) { return x % 154 == 0; };
-        benchmark::DoNotOptimize(vector | filter(ltl::and_(predicate1, predicate2)) | actions::sum);
-    }
-}
-
 static void sum_filter_double(benchmark::State &state) {
     auto vector = createArray(state.range(0), state.range(1));
 
@@ -181,7 +171,6 @@ BENCHMARK(sum_square_odd_normal) RANGE;
 BENCHMARK(sum_square_odd_range) RANGE;
 
 BENCHMARK(sum_filter_single) RANGE;
-BENCHMARK(sum_filter_single_and) RANGE;
 BENCHMARK(sum_filter_double) RANGE;
 
 BENCHMARK(expected_result);

@@ -71,23 +71,12 @@ inline auto to_pair = [](auto &&tuple) {
     return pair{FWD(tuple)[0_n], FWD(tuple)[1_n]};
 };
 
-template <int... Ns>
+template <int N>
 /**
  * @brief get - Generalization of ltl::keys and ltl::values for nth values
  */
-auto get(number_t<Ns>...) {
-    return map([](auto &&x) noexcept -> decltype(auto) {
-        static_assert(sizeof...(Ns) > 0, "You must provide at least one value to get");
-
-        if constexpr (sizeof...(Ns) == 1) {
-            return (::std::get<static_cast<std::size_t>(Ns)>(FWD(x)), ...);
-        }
-
-        else {
-            return ltl::tuple_t<decltype(::std::get<static_cast<std::size_t>(Ns)>(FWD(x)))...>{
-                ::std::get<static_cast<std::size_t>(Ns)>(FWD(x))...};
-        }
-    });
+auto get(number_t<N>) {
+    return map([](auto &&x) noexcept -> decltype(auto) { return (::std::get<N>(FWD(x))); });
 }
 
 /**
