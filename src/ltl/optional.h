@@ -194,7 +194,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 
     template <typename... Fs>
     constexpr auto and_then(Fs &&...fs) //
-        & -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &>())) {
+        & -> ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &>()))> {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), **this);
         }
@@ -203,7 +203,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 
     template <typename... Fs>
     constexpr auto and_then(Fs &&...fs) //
-        const & -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &>())) {
+        const & -> ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &>()))> {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), **this);
         }
@@ -212,7 +212,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 
     template <typename... Fs>
     constexpr auto and_then(Fs &&...fs) //
-        && -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &&>())) {
+        && -> ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<T &&>()))> {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), std::move(**this));
         }
@@ -221,7 +221,7 @@ class optional : private std::optional<T>, public ltl::crtp::Comparable<optional
 
     template <typename... Fs>
     constexpr auto and_then(Fs &&...fs) //
-        const && -> decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &&>())) {
+        const && -> ltl::remove_cvref_t<decltype(ltl::invoke(compose(FWD(fs)...), std::declval<const T &&>()))> {
         if (*this) {
             return ltl::invoke(compose(FWD(fs)...), std::move(**this));
         }

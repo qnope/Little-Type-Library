@@ -2447,6 +2447,31 @@ TEST(LTL_test, test_filter_value) {
     ASSERT_TRUE(ltl::equal(values, values2));
 }
 
+TEST(LTL_test, test_optional_temporary_failure) {
+    struct Person {
+        ltl::optional<std::string> name;
+    };
+
+    {
+        Person a{"Antoine"};
+        Person b;
+
+        ASSERT_EQ(a.name, "Antoine");
+        ASSERT_EQ(std::move(b).name, ltl::nullopt);
+        ASSERT_EQ(Person{"Antoine"}.name, "Antoine");
+    }
+
+    {
+        ltl::optional<Person> o_a = Person{"Antoine"};
+        ltl::optional<Person> o_b;
+        ASSERT_EQ(o_a.and_then(&Person::name), "Antoine");
+        ASSERT_EQ(o_b.and_then(&Person::name), ltl::nullopt);
+
+        ASSERT_EQ(std::move(o_a).and_then(&Person::name), "Antoine");
+        ASSERT_EQ(ltl::optional<Person>{Person{"Antoine"}}.and_then(&Person::name), "Antoine");
+    }
+}
+
 #if LTL_COROUTINE
 namespace opt {
 ltl::optional<int> h(bool success) {
