@@ -1,0 +1,2517 @@
+#include <any>
+#include <array>
+#include <string>
+#include <cassert>
+#include <cstddef>
+#include <functional>
+#include <forward_list>
+#include <unordered_map>
+
+#include <ltl/algos.h>
+#include <ltl/stream.h>
+#include <ltl/traits.h>
+#include <ltl/thread.h>
+#include <ltl/optional.h>
+#include <ltl/operator.h>
+#include <ltl/expected.h>
+#include <ltl/condition.h>
+#include <ltl/immutable.h>
+#include <ltl/Range/seq.h>
+#include <ltl/functional.h>
+#include <ltl/StrongType.h>
+#include <ltl/TypedTuple.h>
+#include <ltl/Range/Split.h>
+#include <ltl/Range/Value.h>
+#include <ltl/VariantUtils.h>
+#include <ltl/Range/Reverse.h>
+#include <ltl/optional_type.h>
+#include <ltl/Range/actions.h>
+#include <ltl/Range/Repeater.h>
+#include <ltl/Range/enumerate.h>
+#include <ltl/Range/DefaultView.h>
+#include <gtest/gtest.h>
+
+using namespace std::literals;
+
+TEST(LTL_test, bool_test) {
+    static_assert(false_v == false_v);
+    static_assert(false_v != true_v);
+    static_assert(true_v != false_v);
+    static_assert(true_v == true_v);
+
+    static_assert(true_v && true_v);
+    static_assert(!(false_v && false_v));
+    static_assert(!(false_v && true_v));
+    static_assert(!(true_v && false_v));
+
+    static_assert(!(false_v || false_v));
+    static_assert(false_v || true_v);
+    static_assert(true_v || false_v);
+    static_assert(true_v || true_v);
+
+    static_assert(!false_v);
+    static_assert(!!true_v);
+    static_assert(true_v);
+
+    static_assert(ltl::not_([] { return false_v; })());
+}
+
+TEST(LTL_test, type_test) {
+    static_assert(ltl::type_v<int> == ltl::type_v<int>);
+    static_assert(ltl::type_v<int> != ltl::type_v<double>);
+    static_assert(!(ltl::type_v<int> == ltl::type_v<double>));
+    static_assert(type_from(true_v == true_v) == ltl::type_v<ltl::true_t>);
+}
+
+TEST(LTL_test, number_test) {
+    constexpr ltl::number_t<1> one;
+    constexpr auto two = 2_n;
+    static_assert(3_n == one + two && one < two);
+    static_assert(1_n + 4_n == 5_n);
+    static_assert(4_n + 1_n != 6_n);
+    static_assert(-1_n + 5_n == 4_n);
+    static_assert(5_n + -3_n == 2_n);
+
+    static_assert(2_n * 3_n == 6_n);
+    static_assert(!(3_n * 0_n != 0_n));
+    static_assert(8_n * -5_n == -40_n);
+
+    static_assert(1024_n - 25_n == 999_n);
+    static_assert(1024_n / 2_n == 512_n);
+
+    static_assert((8_n & 2_n) == 0_n);
+    static_assert(((6_n & 1_n) == 0_n) && ((6_n & 2_n) == 2_n));
+    static_assert((8_n | 7_n) == 15_n);
+    static_assert((8_n ^ 15_n) == 7_n);
+
+    static_assert(ltl::max_type(5_n, 3_n, 8_n, 4_n) == 8_n);
+    static_assert(ltl::min_type(4_n, -8_n, 8_n, 4_n) == -8_n);
+}
+
+TEST(LTL_test, constexpr_tuple_test) {
+    constexpr ltl::tuple_t tuple{5, 3.0, 4};
+
+    static_assert(ltl::is_aggregate(tuple));
+
+    static_assert(decay_from(tuple) == ltl::type_v<ltl::tuple_t<int, double, int>>);
+    static_assert(apply([](auto a, auto b, auto c) { return a + b + c; }, tuple) == 12.0);
+
+    static_assert(tuple.get(0_n) == 5 && tuple.get(1_n) == 3.0);
+    static_assert(ltl::tuple_t{5, 3.0}.get(0_n) == 5 && ltl::tuple_t{5, 3.0}.get(1_n) == 3.0);
+
+    static_assert(tuple[0_n] == 5 && tuple[1_n] == 3.0);
+    static_assert(ltl::tuple_t{5, 3.0}[0_n] == 5 && ltl::tuple_t{5, 3.0}[1_n] == 3.0);
+
+    static_assert(tuple == ltl::tuple_t<int, double, int>{5, 3.0, 4});
+    static_assert(tuple != ltl::tuple_t<int, double, int>{5, 3.1, 4});
+
+    static_assert(tuple < ltl::tuple_t{5, 6.0, 1});
+    static_assert(tuple < ltl::tuple_t{6, 2.0, 8});
+    static_assert(tuple <= ltl::tuple_t{5, 3.0, 4});
+    static_assert(tuple < ltl::tuple_t{6, 3.0, 3});
+
+    static_assert(tuple > ltl::tuple_t{5, 2.0, 8});
+    static_assert(tuple >= ltl::tuple_t{5, 2.8, 8});
+
+    static_assert(ltl::type_list_v<int, double, char> ==
+                  ltl::type_list_v<double>.push_back(ltl::type_v<char>).push_front(ltl::type_v<int>));
+
+    static_assert(
+        ltl::type_list_v<float, int, double, double, char, double>.pop_front().pop_back().pop_back().pop_back().push_back(
+            ltl::type_v<char>) == ltl::type_list_v<int, double, char>);
+
+    constexpr auto number_list = ltl::number_list_v<2, 3, 4>;
+
+    static_assert(number_list.push_back(5_n).push_back(6_n) == ltl::number_list_v<2, 3, 4, 5, 6>);
+    static_assert(number_list.push_front(1_n).push_front(0_n) == ltl::number_list_v<0, 1, 2, 3, 4>);
+
+    static_assert(number_list.pop_back().pop_back() == ltl::number_list_v<2>);
+    static_assert(number_list.pop_front().pop_front() == ltl::number_list_v<4>);
+    static_assert(ltl::build_index_list(5_n) == ltl::number_list_v<0, 1, 2, 3, 4>);
+}
+
+TEST(LTL_test, tuple_test) {
+    ltl::tuple_t _tuple{5, 3.0};
+
+    ASSERT_EQ(apply([](auto a, auto b) { return a + b; }, _tuple), 8.0);
+    for_each(_tuple, ltl::overloader{[](int v) { ASSERT_EQ(v, 5); }, [](double v) { ASSERT_EQ(v, 3.0); }});
+    auto tuple = _tuple.push_front(8).push_back(95);
+    ASSERT_EQ(tuple[3_n], 95);
+    tuple[1_n] = 25;
+    tuple[2_n] = 25.3;
+
+    for_each(tuple.extract(1_n, 2_n),
+             ltl::overloader{[](int v) { ASSERT_EQ(v, 25); }, [](double v) { ASSERT_EQ(v, 25.3); }});
+    auto [a, b, c, d] = tuple;
+    auto &[a2, b2, c2, d2] = tuple;
+    const auto [a3, b3, c3, d3] = tuple;
+    const auto [a4, b4, c4, d4] = std::as_const(tuple);
+    const auto &[a5, b5, c5, d5] = tuple;
+    const auto &[a6, b6, c6, d6] = std::as_const(tuple);
+    auto [a7, b7, c7, d7] = std::move(tuple);
+    ASSERT_EQ(a, tuple[0_n]);
+    ASSERT_EQ(b, tuple[1_n]);
+    ASSERT_EQ(c, tuple[2_n]);
+    ASSERT_EQ(d, tuple[3_n]);
+
+    ASSERT_EQ(&a2, &tuple[0_n]);
+    ASSERT_EQ(&b2, &tuple[1_n]);
+    ASSERT_EQ(&c2, &tuple[2_n]);
+    ASSERT_EQ(&d2, &tuple[3_n]);
+
+    ASSERT_EQ(a3, a);
+    ASSERT_EQ(b3, b);
+    ASSERT_EQ(c3, c);
+    ASSERT_EQ(d3, d);
+
+    ASSERT_EQ(a4, a);
+    ASSERT_EQ(b4, b);
+    ASSERT_EQ(c4, c);
+    ASSERT_EQ(d4, d);
+
+    ASSERT_EQ(&a5, &tuple[0_n]);
+    ASSERT_EQ(&b5, &tuple[1_n]);
+    ASSERT_EQ(&c5, &tuple[2_n]);
+    ASSERT_EQ(&d5, &tuple[3_n]);
+
+    ASSERT_EQ(&a6, &tuple[0_n]);
+    ASSERT_EQ(&b6, &tuple[1_n]);
+    ASSERT_EQ(&c6, &tuple[2_n]);
+    ASSERT_EQ(&d6, &tuple[3_n]);
+
+    ASSERT_EQ(a7, a);
+    ASSERT_EQ(b7, b);
+    ASSERT_EQ(c7, c);
+    ASSERT_EQ(d7, d);
+
+    int ta, tb, td;
+    double tc;
+    ltl::tie(ta, tb, tc, td) = tuple;
+    ASSERT_EQ(ta, tuple[0_n]);
+    ASSERT_EQ(tb, tuple[1_n]);
+    ASSERT_EQ(tc, tuple[2_n]);
+    ASSERT_EQ(td, tuple[3_n]);
+
+    int lvalue = 25;
+    ltl::tuple_t firstTuple{28, lvalue, std::ref(lvalue)};
+    ltl::tuple_t secondTuple{34, std::cref(lvalue)};
+
+    typed_static_assert((ltl::type_v<ltl::tuple_t<int, int, int &>> == type_from(firstTuple)));
+    typed_static_assert((ltl::type_v<ltl::tuple_t<int, const int &>> == type_from(secondTuple)));
+
+    auto firstAdd = firstTuple + secondTuple;
+    auto secondAdd = firstTuple + std::move(secondTuple);
+    auto thirdAdd = std::move(firstTuple) + std::move(secondTuple);
+    auto lastAdd = std::move(secondTuple) + std::move(firstTuple);
+
+    typed_static_assert((ltl::type_v<ltl::tuple_t<int, int, int &, int, const int &>> == type_from(firstAdd)));
+    typed_static_assert((ltl::type_v<ltl::tuple_t<int, int, int &, int, const int &>> == type_from(secondAdd)));
+    typed_static_assert((ltl::type_v<ltl::tuple_t<int, int, int &, int, const int &>> == type_from(thirdAdd)));
+    typed_static_assert((ltl::type_v<ltl::tuple_t<int, const int &, int, int, int &>> == type_from(lastAdd)));
+
+    {
+        ltl::tuple_t<int, double, std::string> tuple = {0, 0.0, ""};
+
+        ASSERT_EQ(tuple[0_n], 0);
+        ASSERT_EQ(tuple[1_n], 0.0);
+        ASSERT_EQ(tuple[2_n], "");
+
+        tuple = {1, 2.0, "three"};
+
+        ASSERT_EQ(tuple[0_n], 1);
+        ASSERT_EQ(tuple[1_n], 2.0);
+        ASSERT_EQ(tuple[2_n], "three");
+    }
+}
+
+TEST(LTL_test, tuple_test_algo) {
+    {
+        int a;
+        ltl::tuple_t<int &, double, ltl::type_t<int>, int> tuple{a, 5.0, ltl::type_v<int>, 5};
+        typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int>));
+        typed_static_assert(ltl::contains_type(tuple, ltl::type_v<int &>));
+        typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<double &>));
+        typed_static_assert(ltl::contains_type(tuple, ltl::type_v<ltl::type_t<int>>));
+        typed_static_assert(!ltl::contains_type(tuple, ltl::type_v<char>));
+
+        typed_static_assert(ltl::count_type(tuple, ltl::type_v<int>) == 1_n);
+        typed_static_assert(ltl::count_type(tuple, ltl::type_v<char>) == 0_n);
+
+        typed_static_assert(*ltl::find_type(tuple, ltl::type_v<double>) == 1_n);
+        typed_static_assert(*ltl::find_type(tuple, ltl::type_v<int>) == 3_n);
+    }
+
+    {
+        using list = ltl::fast::type_list<int, double, int, int>;
+        static_assert(ltl::fast::contains_v<int, list>);
+        static_assert(!ltl::fast::contains_v<char, list>);
+        static_assert(ltl::fast::count_v<int, list> == 3);
+        static_assert(*ltl::fast::find_v<int, list> == 0);
+        static_assert(*ltl::fast::find_v<int, list, 1> == 2);
+        static_assert(*ltl::fast::find_v<double, list> == 1);
+        static_assert(std::is_same_v<double, ltl::fast::at_t<1, list>>);
+    }
+
+    {
+        ltl::type_list_t<int, double *, int *, int, char *> tuple;
+        typed_static_assert(ltl::contains_if_type(tuple, ltl::is_pointer));
+        typed_static_assert(ltl::count_if_type(tuple, ltl::is_pointer) == 3_n);
+        typed_static_assert(*ltl::find_if_type(tuple, ltl::is_pointer) == 1_n);
+        typed_static_assert(*ltl::find_if_type(tuple, ltl::is_pointer, 2_n) == 2_n);
+    }
+
+    {
+        using list = ltl::fast::type_list<int, int, unsigned int, char>;
+        static_assert(ltl::fast::all_of_v<list, std::is_integral>);
+        static_assert(ltl::fast::none_of_v<list, std::is_floating_point>);
+        static_assert(ltl::fast::any_of_v<list, std::is_unsigned>);
+    }
+
+    {
+        ltl::type_list_t<int, int, double, unsigned char> tuple;
+        ltl::type_list_t<int *, int *, double *, unsigned char *> ptrs;
+        typed_static_assert(type_from(ptrs) == type_from(ltl::transform_type(tuple, ltl::add_pointer)));
+    }
+
+    {
+        ltl::tuple_t<int, int *, double, int, double *, char, char, char *> tuple;
+        typed_static_assert((type_from(ltl::unique_type(tuple)) ==
+                             ltl::type_v<ltl::tuple_t<int, int *, double, double *, char, char *>>));
+    }
+
+    {
+        constexpr ltl::tuple_t<int, double, char> tuple1{8, 5.0, 3};
+        static_assert(16 == ltl::accumulate_type(tuple1));
+
+        constexpr ltl::type_list_t<int, double, char> tuple2;
+        constexpr auto accumulator = [](auto... types) { return (... + ltl::tuple_t{ltl::add_pointer(types)}); };
+        static_assert(type_from(ltl::accumulate_type(tuple2, accumulator)) ==
+                      type_from(ltl::transform_type(tuple2, ltl::add_pointer)));
+    }
+
+    {
+        constexpr auto list = ltl::tuple_t<int, double, char *, const char *, double *, double, void *>{};
+        auto listp = ltl::filter_type(list, ltl::is_pointer);
+        static_assert(ltl::tuple_t<char *, const char *, double *, void *>{} == decltype(listp){});
+        constexpr auto empty = ltl::tuple_t<>{};
+        static_assert(empty == ltl::filter_type(empty, ltl::is_pointer));
+    }
+
+    {
+        constexpr auto list1 = ltl::tuple_t<int, int, double, char>{};
+        constexpr auto list2 = ltl::tuple_t<double, int, char, double *>{};
+        typed_static_assert(!ltl::is_unique_type(list1));
+        typed_static_assert(ltl::is_unique_type(list2));
+    }
+}
+
+TEST(LTL_test, push_pop_test) {
+    using namespace std::literals;
+    ltl::tuple_t all_pop{"0"s, "1"s, "2"s};
+    auto l02_pop = all_pop.extract(0_n, 2_n);
+
+    auto l12_pop = all_pop.pop_front();
+    auto l01_pop = std::move(all_pop).pop_back();
+
+    for_each(l02_pop, [](auto s) { ASSERT_TRUE(s == "0" || s == "2"); });
+    for_each(l12_pop, [](auto s) { ASSERT_TRUE(s == "1" || s == "2"); });
+    for_each(l01_pop, [](auto s) { ASSERT_TRUE(s == "0" || s == "1"); });
+    for_each(all_pop, [](auto s) { ASSERT_TRUE(s == "" || s == "2"); });
+
+    ltl::tuple_t all_push{"1"s, "2"s};
+    auto l123 = all_push.push_back("3"s);
+    auto l012 = std::move(all_push).push_front("0"s);
+
+    for_each(all_push, [](auto s) { ASSERT_EQ(s, ""); });
+    for_each(l123, [](auto s) { ASSERT_TRUE(s == "1" || s == "2" || s == "3"); });
+    for_each(l012, [](auto s) { ASSERT_TRUE(s == "0" || s == "1" || s == "2"); });
+}
+
+TEST(LTL_test, tuple_reference_test) {
+    int a{0};
+    auto base = ltl::tuple_t{a, std::ref(a), 0};
+    auto pushedBackRef = base.push_back(std::ref(a));
+    auto pushedBack = base.push_back(a);
+    auto pushedFrontRef = base.push_front(std::ref(a));
+    auto pushedFront = base.push_front(a);
+    auto popBack = base.pop_back();
+    auto popFront = base.pop_front();
+
+    static_assert(type_from(base) == ltl::type_v<ltl::tuple_t<int, int &, int>>);
+
+    static_assert(type_from(pushedBackRef) == ltl::type_v<ltl::tuple_t<int, int &, int, int &>>);
+    static_assert(type_from(pushedBack) == ltl::type_v<ltl::tuple_t<int, int &, int, int>>);
+    static_assert(type_from(pushedFrontRef) == ltl::type_v<ltl::tuple_t<int &, int, int &, int>>);
+    static_assert(type_from(pushedFront) == ltl::type_v<ltl::tuple_t<int, int, int &, int>>);
+
+    static_assert(type_from(popBack) == ltl::type_v<ltl::tuple_t<int, int &>>);
+    static_assert(type_from(popFront) == ltl::type_v<ltl::tuple_t<int &, int>>);
+
+    ltl::tuple_t testBracket{a, std::ref(a), 0};
+
+    static_assert(type_from(testBracket) == ltl::type_v<ltl::tuple_t<int, int &, int>>);
+    static_assert(type_from(testBracket[1_n]) == ltl::type_v<int &>);
+    static_assert(type_from(testBracket[0_n]) == ltl::type_v<int &>);
+    static_assert(type_from(testBracket[2_n]) == ltl::type_v<int &>);
+
+    static_assert(type_from(std::move(testBracket)[1_n]) == ltl::type_v<int &>);
+    static_assert(type_from(std::move(testBracket)[0_n]) == ltl::type_v<int>);
+    static_assert(type_from(std::move(testBracket)[2_n]) == ltl::type_v<int>);
+}
+
+TEST(LTL_test, test_is_valid) {
+    using namespace std::literals;
+    constexpr auto additionnable = IS_VALID((x, y), x + y);
+
+    int integer;
+    typed_static_assert(additionnable(integer, 8));
+    typed_static_assert(!additionnable(integer, "lol"s));
+}
+
+TEST(LTL_test, test_trait) {
+    struct Default {
+        Default() = default;
+    };
+
+    struct NonDefault {
+        NonDefault() = delete;
+    };
+
+    static_assert(ltl::is_default_constructible(ltl::type_v<Default>));
+    static_assert(!ltl::is_default_constructible(ltl::type_v<NonDefault>));
+    static_assert(ltl::is_void(ltl::type_v<void>));
+    static_assert(!ltl::is_void(ltl::type_v<int>));
+    static_assert(ltl::is_null_pointer(type_from(nullptr)));
+    static_assert(ltl::is_integral(ltl::type_v<int>));
+    static_assert(ltl::is_floating_point(ltl::type_v<double>));
+    static_assert(ltl::is_array(ltl::type_v<float[]>));
+    static_assert(ltl::is_floating_point(5.0));
+    static_assert(!ltl::is_floating_point(5));
+    static_assert(ltl::is_integral(5));
+    static_assert(!ltl::is_integral(5.0));
+    static_assert(ltl::is_class(ltl::type_v<Default>));
+    static_assert(ltl::is_lvalue_reference(ltl::type_v<int &>));
+    static_assert(ltl::is_rvalue_reference(ltl::type_v<int &&>));
+    static_assert(ltl::is_const(ltl::type_v<const int>));
+    static_assert(ltl::is_trivially_destructible(ltl::type_v<Default>));
+    static_assert(ltl::extent(ltl::type_v<float[5][3]>, 1_n) == 3_n);
+    static_assert(ltl::extent(ltl::type_v<float[5][3]>, 0_n) == 5_n);
+    static_assert(ltl::extent(ltl::type_v<float[5][3]>) == 5_n);
+    static_assert(ltl::add_pointer(ltl::type_v<int>) == ltl::type_v<int *>);
+    typed_static_assert(ltl::is_iterable(ltl::type_v<std::vector<int>>));
+    typed_static_assert(!ltl::is_iterable(ltl::type_v<int>));
+    typed_static_assert(ltl::is_iterable(ltl::type_v<std::array<int, 1>>));
+    typed_static_assert(!ltl::is_generic_callable(std::any{}));
+
+    auto lambda_int = [](int) {};
+    auto lambda_double = [](double) {};
+    auto lambda_auto = [](auto) {};
+
+    typed_static_assert(!ltl::is_generic_callable(ltl::overloader{lambda_int, lambda_double}));
+    typed_static_assert(!ltl::is_generic_callable(lambda_int));
+    typed_static_assert(ltl::is_generic_callable(lambda_auto));
+    typed_static_assert(ltl::is_generic_callable(ltl::overloader{lambda_auto, lambda_int, lambda_double}));
+
+    typed_static_assert(ltl::copy_qualifier<double>(ltl::type_v<const int &>) == ltl::type_v<const double &>);
+    typed_static_assert(ltl::copy_qualifier<double>(ltl::type_v<int &>) == ltl::type_v<double &>);
+    typed_static_assert(ltl::copy_qualifier<double>(ltl::type_v<int &&>) == ltl::type_v<double &&>);
+
+    {
+        int lvalue;
+        const int clvalue = 0;
+        std::array<int, 5> array{};
+        std::vector<double> array2{};
+        std::optional<int> opt;
+        static_assert(!ltl::is_rvalue_reference(lvalue));
+        static_assert(ltl::is_rvalue_reference(std::move(lvalue)));
+        static_assert(ltl::is_rvalue_reference(5));
+        static_assert(ltl::is_const(clvalue));
+        static_assert(ltl::is_optional_f(opt));
+        typed_static_assert(!ltl::is_iterable(opt));
+        typed_static_assert(ltl::is_iterable(array));
+        typed_static_assert(ltl::is_iterable(array2));
+    }
+
+    {
+        static_assert(ltl::is_type(ltl::type_v<int>)(8));
+        static_assert(ltl::is_type(ltl::type_v<int>)(ltl::type_v<int>));
+
+        static_assert(!ltl::is_type(ltl::type_v<int>)(ltl::type_v<long>));
+
+        struct Base {};
+        struct Derived : Base {};
+        struct NotDerived {};
+        Derived d;
+        NotDerived nd;
+
+        static_assert(ltl::is_derived_from(ltl::type_v<Base>)(d));
+        static_assert(ltl::is_derived_from(ltl::type_v<Base>)(ltl::type_v<Derived>));
+
+        static_assert(!ltl::is_derived_from(ltl::type_v<Base>)(nd));
+        static_assert(!ltl::is_derived_from(ltl::type_v<Base>)(ltl::type_v<NotDerived>));
+    }
+
+    {
+        const int a[] = {0, 1, 2, 3};
+        int b[] = {0, 1, 2, 3};
+        std::array<double, 5> c;
+        const std::array<std::string, 6> d{};
+        int x;
+        std::string y;
+        std::vector<int> z;
+        typed_static_assert(ltl::is_fixed_size_array(a));
+        typed_static_assert(ltl::is_fixed_size_array(b));
+        typed_static_assert(ltl::is_fixed_size_array(c));
+        typed_static_assert(ltl::is_fixed_size_array(d));
+        typed_static_assert(!ltl::is_fixed_size_array(x));
+        typed_static_assert(!ltl::is_fixed_size_array(y));
+        typed_static_assert(!ltl::is_fixed_size_array(z));
+    }
+
+    {
+        using namespace ltl;
+        typed_static_assert(type_v<fast::remove_rvalue_reference_t<const int>> == ltl::type_v<int>);
+        typed_static_assert(type_v<fast::remove_rvalue_reference_t<const int &>> == ltl::type_v<const int &>);
+        typed_static_assert(type_v<fast::remove_rvalue_reference_t<int &>> == ltl::type_v<int &>);
+        typed_static_assert(type_v<fast::remove_rvalue_reference_t<int &&>> == ltl::type_v<int>);
+    }
+
+    {
+        static_assert(ltl::is_smart_pointer_v<std::shared_ptr<int>>);
+        static_assert(ltl::is_smart_pointer_v<std::unique_ptr<int>>);
+        static_assert(!ltl::is_smart_pointer_v<std::weak_ptr<int>>);
+        static_assert(!ltl::is_weak_ptr_v<std::shared_ptr<int>>);
+        static_assert(ltl::is_weak_ptr_v<std::weak_ptr<int>>);
+        static_assert(std::is_same_v<int, ltl::underlying_type_from_smart_pointer_t<std::shared_ptr<int>>>);
+    }
+}
+
+TEST(LTL_test, test_qualifier) {
+    int a = 0;
+    int &refA = a;
+    constexpr auto qualifier = qualifier_from(refA);
+    const double b = 8.0;
+    constexpr auto normalType = type_from(a);
+    constexpr auto constRefType =
+        qualifier_from(b) + normalType + qualifier + ltl::qualifier_v<ltl::qualifier_enum::VOLATILE>;
+
+    typed_static_assert(normalType == ltl::type_v<int>);
+    typed_static_assert(constRefType == ltl::type_v<volatile const int &>);
+    static_assert(ltl::getQualifierEnum(constRefType) ==
+                  (ltl::qualifier_enum::CONST_ | ltl::qualifier_enum::LVALUE_REF | ltl::qualifier_enum::VOLATILE));
+}
+
+using Float = ltl::strong_type_t<float, struct FloatTag, ltl::EqualityComparable, ltl::GreaterThan, ltl::LessThan,
+                                 ltl::Addable, ltl::Subtractable>;
+
+using Meter = ltl::strong_type_t<float, struct DistanceTag, ltl::EqualityComparable, ltl::GreaterThan, ltl::LessThan,
+                                 ltl::Addable, ltl::Subtractable, ltl::OStreamable>;
+
+using Km = ltl::multiple_of<Meter, std::ratio<1000>>;
+using Dm = ltl::multiple_of<Km, std::ratio<1, 100>>;
+
+constexpr float pi = 3.1415926535f;
+
+struct ConverterRadianDegree {
+    [[nodiscard]] static constexpr float convertToReference(float degree) { return degree * pi / 180.0f; }
+
+    [[nodiscard]] static constexpr float convertFromReference(float radians) { return radians * 180.0f / pi; }
+};
+
+using radians = ltl::strong_type_t<float, struct AngleTag, ltl::EqualityComparable>;
+using degrees = ltl::add_converter<radians, ConverterRadianDegree>;
+
+TEST(LTL_test, test_strong_type) {
+    constexpr Float floatDefault{};
+    constexpr Float floatSix{6.0f};
+    constexpr Float floatCopy(floatSix);
+    Float floatEquallyCopied;
+    floatEquallyCopied = floatCopy;
+    static_assert(floatSix == floatCopy);
+    static_assert(floatSix != floatDefault);
+    static_assert(floatSix > floatDefault);
+    static_assert(floatDefault < floatSix);
+    static_assert(floatSix + Float{6.0f} == Float{12.0f});
+    static_assert(floatSix - Float{6.0f} == Float{0.0f});
+
+    constexpr Km oneKilometer{1.0f};
+    constexpr Meter oneKilometerInMeter{oneKilometer};
+    Dm oneKilometerInDecimeter{oneKilometerInMeter};
+    static_assert(oneKilometer == Meter{1000.0f});
+    static_assert(oneKilometer != Meter{1200.0f});
+    static_assert(oneKilometerInMeter < Meter{1200.0f});
+    static_assert(oneKilometer < Meter{1200.0f});
+    static_assert(oneKilometer + oneKilometerInMeter == Meter{2000.0f});
+    static_assert(Meter{1200.0f} == Km{1.2f});
+    static_assert(type_from(oneKilometer + oneKilometerInMeter) == ltl::type_v<Km>);
+
+    // ratio<1000, 1000> is not the same type as ratio<1>, but it is equivalent
+    static_assert(ltl::type_v<ltl::multiple_of<Km, std::ratio<1, 1000>>> ==
+                  ltl::type_v<ltl::multiple_of<Meter, std::ratio<1000, 1000>>>);
+
+    static_assert(oneKilometer.get() * 1000 == oneKilometerInMeter.get());
+    ASSERT_EQ(oneKilometer.get() * 100, oneKilometerInDecimeter.get());
+    oneKilometerInDecimeter += Meter{30.0f} + Km{1.0f};
+    ASSERT_TRUE(oneKilometerInDecimeter == Meter{2030.0f} && oneKilometerInDecimeter == Km{2.03f} &&
+                oneKilometerInDecimeter == Dm{203.0f});
+
+    constexpr radians rad{pi};
+    constexpr degrees deg(rad);
+    static_assert(rad == deg);
+    static_assert(rad.get() == deg.get() * pi / 180.0f);
+    static_assert(deg.get() == rad.get() * 180.0f / pi);
+}
+
+TEST(LTL_test, test_algos) {
+    using namespace std::literals;
+    std::array<int, 5> odds = {3, 5, 7, 9, 11};
+    std::unordered_map<std::string, int> unordered_map = {{"one"s, 1}, {"two"s, 2}};
+    auto areEvens = [](auto x) { return (x & 1) == 0; };
+    auto areOdds = [](auto x) { return (x & 1) != 0; };
+    auto isSuperiorTo = [](auto n) { return [n](auto x) { return x > n; }; };
+
+    ASSERT_TRUE(ltl::all_of(odds, areOdds));
+    ASSERT_TRUE(ltl::any_of(odds, isSuperiorTo(10)));
+    ASSERT_TRUE(ltl::none_of(odds, areEvens));
+    ASSERT_TRUE(ltl::count(odds, 5) == 1);
+    ASSERT_TRUE(ltl::count(odds, 1) == 0);
+    ASSERT_TRUE(ltl::count_if(odds, isSuperiorTo(4)) == 4);
+    ASSERT_TRUE(ltl::find_if(odds, isSuperiorTo(10)) == odds.begin() + 4);
+    ASSERT_TRUE(ltl::index_of(odds, 5) == 1);
+    ASSERT_FALSE(ltl::index_of(odds, 6).has_value());
+    ASSERT_TRUE(ltl::index_if(odds, isSuperiorTo(10)) == 4);
+    ASSERT_FALSE(ltl::index_if(odds, isSuperiorTo(12)).has_value());
+    ASSERT_TRUE(ltl::accumulate(odds, 0) == 3 + 5 + 7 + 9 + 11);
+    ASSERT_TRUE(ltl::accumulate(std::move(odds), 0) == 3 + 5 + 7 + 9 + 11);
+    ASSERT_TRUE(ltl::computeMean(std::move(odds)) == (3 + 5 + 7 + 9 + 11) / 5);
+    ASSERT_TRUE(ltl::computeMean(std::vector<int>{}) == std::nullopt);
+    ASSERT_TRUE(ltl::contains(odds, 9));
+    ASSERT_TRUE(!ltl::contains(odds, 10));
+    ASSERT_TRUE(ltl::map_contains(unordered_map, "one"));
+    ASSERT_TRUE(ltl::map_contains(unordered_map, "three") == false);
+    ASSERT_TRUE(!ltl::map_find_value(unordered_map, "three"));
+    ASSERT_TRUE(*ltl::map_find_value(unordered_map, "one") == 1);
+    ASSERT_TRUE(ltl::map_find_ptr(unordered_map, "one") == &unordered_map["one"]);
+    ASSERT_TRUE(ltl::map_find_ptr(unordered_map, "three") == nullptr);
+    ASSERT_TRUE(ltl::map_find(unordered_map, "two") == unordered_map.find("two"));
+    ASSERT_FALSE(ltl::map_find(unordered_map, "three") != end(unordered_map));
+
+    std::array<int, 5> reverseOdds = {11, 9, 7, 5, 3};
+    ASSERT_TRUE(!ltl::equal(reverseOdds, odds));
+    ltl::reverse(odds);
+    ASSERT_TRUE(ltl::equal(reverseOdds, odds));
+
+    decltype(auto) oddsRef = ltl::sort(odds);
+    decltype(auto) oddsNonRef = ltl::sort(std::as_const(odds));
+    ASSERT_TRUE(&oddsRef == &odds);
+    ASSERT_TRUE(ltl::equal(oddsRef, std::array<int, 5>{3, 5, 7, 9, 11}));
+    ASSERT_TRUE(ltl::equal(oddsNonRef, std::array<int, 5>{3, 5, 7, 9, 11}));
+
+    ASSERT_TRUE(&oddsRef != &oddsNonRef);
+    static_assert(ltl::type_v<std::array<int, 5>> == type_from(oddsNonRef));
+    static_assert(ltl::type_v<std::array<int, 5> &> == type_from(oddsRef));
+    decltype(auto) v = ltl::sort(std::vector{5, 4, 6, 9, 8, 7});
+    ASSERT_TRUE(ltl::equal(v, std::vector{4, 5, 6, 7, 8, 9}));
+    static_assert(type_from(v) == ltl::type_v<std::vector<int>>);
+
+    ASSERT_TRUE(3 == ltl::min_element_value(odds));
+    ASSERT_TRUE(11 == ltl::max_element_value(odds));
+    ASSERT_TRUE((ltl::tuple_t{3, 11} == ltl::minmax_element_value(odds)));
+    ASSERT_TRUE(std::nullopt == ltl::min_element_value(std::vector<int>{}));
+    ASSERT_TRUE(std::nullopt == ltl::max_element_value(std::vector<int>{}));
+
+    {
+        auto emptyArray = std::vector<int>{};
+        ASSERT_TRUE((ltl::minmax_element(emptyArray) == std::pair{end(emptyArray), end(emptyArray)}));
+        ASSERT_FALSE(ltl::minmax_element_value(std::array<int, 0>{}));
+    }
+
+    {
+        auto array = std::array{0, 2, 1, 3, 5, 6, 4, 5, 2, 1, 3, 5, 9, 11, 12};
+        auto is_odd = _((x), (x % 2) == 1);
+        auto two = ltl::consecutive_values(array, 2, is_odd);
+        auto four = ltl::consecutive_values(array, 5, is_odd);
+        auto not_find = ltl::consecutive_values(array, 6, is_odd);
+
+        ASSERT_EQ(not_find, end(array));
+        ASSERT_EQ(two, begin(array) + 2);
+        ASSERT_EQ(four, begin(array) + 9);
+    }
+}
+
+TEST(LTL_test, test_find_range) {
+    const std::array v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+    {
+        auto find = ltl::find(v, 2);
+        auto notFind = ltl::find(v, 25);
+
+        ASSERT_TRUE(notFind == end(v));
+        ASSERT_TRUE(*find == 2);
+        ASSERT_TRUE(find == v.begin() + 2);
+    }
+
+    {
+        auto find = ltl::find_value(v, 2);
+        auto notFind = ltl::find_value(v, 25);
+
+        ASSERT_TRUE(find);
+        ASSERT_TRUE(!notFind);
+        ASSERT_TRUE(*find == 2);
+    }
+
+    {
+        auto find = ltl::find_ptr(v, 9);
+        auto notFind = ltl::find_ptr(v, 11);
+
+        ASSERT_TRUE(find == &v[9]);
+        ASSERT_TRUE(notFind == nullptr);
+    }
+
+    {
+        const std::array toFind = {3, 4, 5, 6};
+        const std::array toNotFind = {3, 4, 5, 7};
+
+        auto find = ltl::find_end(v, toFind);
+        auto notFind = ltl::find_end(v, toNotFind);
+        auto findOneOf = ltl::find_first_of(v, toFind);
+        auto notFindOneOf = ltl::find_first_of(v, std::array{87, 25, 65});
+
+        ASSERT_TRUE(find != end(v));
+        ASSERT_TRUE(notFind == end(v));
+        ASSERT_TRUE(findOneOf != end(v));
+        ASSERT_TRUE(find == v.begin() + 3);
+        ASSERT_TRUE(findOneOf == v.begin() + 3);
+        ASSERT_TRUE(notFindOneOf == end(v));
+    }
+}
+
+template <typename T, requires_f(ltl::IsFloatingPoint<T>)>
+constexpr auto f(T) {
+    return 0;
+}
+
+template <typename T, requires_f(ltl::IsIntegral<T>)>
+constexpr auto f(T) {
+    return 1;
+}
+
+TEST(LTL_test, test_concept) {
+    static_assert(f(5) == 1);
+    static_assert(f(5.0) == 0);
+    static_assert(f(5.0f) == 0);
+    static_assert(f(5u) == 1);
+    static_assert(f(5ull) == 1);
+}
+
+TEST(LTL_test, test_optional) {
+    using namespace ltl;
+    std::optional<int> a(5), b;
+    auto times_3 = map(_((x), x * 3));
+    auto plus_1 = map(_((x), x + 1));
+    auto identity = map([](auto x) -> std::optional<int> { return x; });
+    ASSERT_TRUE((a | times_3) == 15);
+    ASSERT_TRUE((b | times_3) == std::nullopt);
+
+    ASSERT_TRUE((a | times_3 | plus_1) == 16);
+    ASSERT_TRUE((b | times_3 | plus_1) == std::nullopt);
+    ASSERT_TRUE((a >> identity) == 5);
+    ASSERT_FALSE(b >> identity);
+}
+
+TEST(LTL_test, test_range_view) {
+    using namespace ltl;
+    const std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    auto array_view1 = Range{array};
+    auto array_view2 = Range{array.begin(), array.end()};
+    ASSERT_TRUE(!array_view1.empty());
+    ASSERT_TRUE(array_view2.size() == array_view1.size() && array.size() == array_view1.size());
+    ASSERT_TRUE(&array.front() == &array_view1.front() && &array.back() == &array_view2.back());
+}
+
+TEST(LTL_test, test_filter) {
+    using namespace ltl;
+    const std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    const std::array oddsArray = {1, 3, 5, 7, 9, 11};
+    const std::array evenArray = {0, 2, 4, 6, 8, 10, 12};
+    const std::array oddsSuperiorThan5Array = {7, 9, 11};
+    auto isOdd = _((x), x % 2);
+    auto isEven = _((x), x % 2 == 0);
+    auto superiorThan = [](auto x) { return [x](auto y) { return y > x; }; };
+    ASSERT_TRUE(ltl::equal(array | filter(isOdd), oddsArray));
+    ASSERT_TRUE(ltl::equal(array | filter(isEven), evenArray));
+    ASSERT_TRUE(ltl::equal(array | filter(isOdd) | filter(superiorThan(5)), oddsSuperiorThan5Array));
+
+    auto odds = array | filter(isOdd);
+    auto evens = array | filter(isEven);
+    auto oddSuperiorThan5Filter = filter(isOdd) | filter(superiorThan(5));
+    auto oddsSuperiorThan5 = array | oddSuperiorThan5Filter;
+    ASSERT_TRUE(odds.size() == 6 && evens.size() == 7 && oddsSuperiorThan5.size() == 3);
+    auto [min, max] = ltl::minmax_element(oddsSuperiorThan5);
+    ASSERT_TRUE(*min == 7 && *max == 11);
+    ASSERT_TRUE(&*min == &array[7] && max.operator->().operator->() == &array[11]);
+    ASSERT_TRUE((min + 2) == max);
+    ASSERT_TRUE((max + (-2)) == min);
+    ASSERT_TRUE((max - 2) == min);
+    ASSERT_TRUE((min - (-2)) == max);
+}
+
+TEST(LTL_test, test_map) {
+    using namespace ltl;
+    std::array times2Array = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24};
+    std::array times8Array = {0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96};
+    std::array oddTimes2 = {2, 6, 10, 14, 18, 22};
+
+    std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+
+    auto times = [](auto x) { return [x](auto y) { return y * x; }; };
+    ASSERT_TRUE(ltl::equal(array | map(times(2)), times2Array));
+    ASSERT_TRUE(ltl::equal(array | map(times(8)), times8Array));
+
+    ASSERT_TRUE(ltl::equal(array | (filter(_((x), x % 2)) | map(times(2))), oddTimes2));
+
+    // array | tuple
+    ASSERT_TRUE(ltl::equal(array | (map(times(2)) | map(times(2)) | map(times(2))), times8Array));
+    // array | (tuple | map)
+    ASSERT_TRUE(ltl::equal(array | (map(times(2)) | map(times(2))) | map(times(2)), times8Array));
+
+    // array | (map | tuple)
+    ASSERT_TRUE(ltl::equal(array | (map(times(2)) | (map(times(2)) | map(times(2)))), times8Array));
+
+    // array | (tuple | tuple)
+    ASSERT_TRUE(ltl::equal(array | (map(times(2)) | map(times(2))) | (map(times(1)) | map(times(2))), times8Array));
+
+    std::list list = {0, 1, 2, 3, 4, 5};
+    auto listWithMinusOperator = list | map(identity);
+    ASSERT_EQ(listWithMinusOperator.end() - listWithMinusOperator.begin(), 6);
+}
+
+TEST(LTL_test, test_to) {
+    using namespace ltl;
+    using namespace std::literals;
+    const std::array array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    std::array oddTimes2Array = {2, 6, 10, 14, 18, 22};
+    std::array strs = {"2"s, "6"s, "10"s, "14"s, "18"s, "22"s};
+    auto oddTimes2 = (array | filter(_((x), x % 2)) | map(_((x), x * 2)));
+    ASSERT_TRUE(ltl::equal(oddTimes2, oddTimes2Array));
+
+    auto oddTimes2List = oddTimes2 | map(_((x), std::to_string(x))) | to_list;
+    auto oddTimes2Deque = oddTimes2 | map(_((x), std::to_string(x))) | to_deque;
+    auto oddTimes2Vector = oddTimes2 | map(_((x), std::to_string(x))) | to_vector;
+
+    std::vector<std::string> oddTimes2Vector2 = oddTimes2 | map(_((x), std::to_string(x)));
+
+    std::deque<std::string> oddTimes2Deque2 = oddTimes2 | map(_((x), std::to_string(x)));
+
+    std::list<std::string> oddTimes2List2 = oddTimes2 | map(_((x), std::to_string(x)));
+
+    ASSERT_TRUE(ltl::equal(oddTimes2Deque, strs));
+    ASSERT_TRUE(ltl::equal(oddTimes2List, strs));
+    ASSERT_TRUE(ltl::equal(oddTimes2Vector, strs));
+
+    ASSERT_TRUE(ltl::equal(oddTimes2Vector2, strs));
+    ASSERT_TRUE(ltl::equal(oddTimes2Deque2, strs));
+    ASSERT_TRUE(ltl::equal(oddTimes2List2, strs));
+
+    typed_static_assert(type_v<std::vector<std::string>> == type_from(oddTimes2Vector));
+    typed_static_assert(type_v<std::deque<std::string>> == type_from(oddTimes2Deque));
+    typed_static_assert(type_v<std::list<std::string>> == type_from(oddTimes2List));
+}
+
+TEST(LTL_test, test_integer_list) {
+    std::array values = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+    ASSERT_TRUE(ltl::equal(ltl::valueRange(5) | ltl::take_n(10), values));
+    ASSERT_TRUE(ltl::equal(ltl::valueRange(5, 10), values | ltl::take_n(5)));
+    ASSERT_TRUE(ltl::equal(ltl::valueRange<uint32_t>() | ltl::drop_n(5) | ltl::take_n(10), values));
+    ASSERT_TRUE(ltl::equal(
+        ltl::valueRange<uint32_t>() | ltl::drop_while(_((x), x < 5)) | ltl::take_while(_((x), x < 15)), values));
+}
+
+TEST(LTL_test, test_zip) {
+    using namespace std::literals;
+    using ltl::tuple_t;
+    std::array strings = {"1"s, "2"s, "3"s, "4"s, "5"s};
+    const std::array strings2 = {"One"s, "Two"s, "Three"s, "Four"s, "Five"s};
+    std::array integers = {1, 2, 3, 4, 5};
+
+    std::size_t index = 0;
+    for (auto [i, s] : ltl::enumerate(strings)) {
+        ASSERT_TRUE(i == index);
+        ASSERT_TRUE(&s == &strings[i]);
+        ++index;
+    }
+
+    for (auto [index, t] : ltl::enumerate(ltl::zip(integers, strings, std::as_const(strings2)))) {
+        auto [i, s, s2] = t;
+        static_assert(type_from(s) == ltl::type_v<std::string &>);
+        static_assert(type_from(s2) == ltl::type_v<const std::string &>);
+        ASSERT_TRUE(&i == &integers[index]);
+        ASSERT_TRUE(&s == &strings[index]);
+        ASSERT_TRUE(&s2 == &strings2[index]);
+    }
+
+    ASSERT_TRUE(ltl::equal(strings, std::array{"1"s, "2"s, "3"s, "4"s, "5"s}));
+}
+
+TEST(LTL_test, test_default_view) {
+    using namespace std::literals;
+    std::array<std::optional<int>, 5> array{};
+    array[1] = 8;
+    array[4] = 14;
+
+    std::array<std::size_t, 2> indices{1, 4};
+    for (auto [i, e] : ltl::enumerate(array | ltl::remove_null() | ltl::map(ltl::dereference()))) {
+        ASSERT_TRUE(&e == std::addressof(*array[indices[i]]));
+    }
+
+    std::array<ltl::tuple_t<int, double, std::string>, 3> tuples{
+        ltl::tuple_t{8, 80.0, "80"s}, ltl::tuple_t{1, 1.0, "1"s}, ltl::tuple_t{3, 3.0, "3"s}};
+
+    for (auto [i, d] : ltl::enumerate(tuples | ltl::get(1_n))) {
+        ASSERT_TRUE(&d == &tuples[i][1_n]);
+    }
+
+    //    for (auto [index, t] : ltl::enumerate(tuples | ltl::get(2_n, 0_n))) {
+    //        auto [s, i] = t;
+    //        ASSERT_TRUE(&s == &tuples[index][2_n]);
+    //        ASSERT_TRUE(&i == &tuples[index][0_n]);
+    //        i++;
+    //    }
+}
+
+TEST(LTL_test, test_variant_utils) {
+    std::variant<int, double> variant = 5;
+    ltl::match(
+        variant, [](int) { ASSERT_TRUE(true); }, [](double) { ASSERT_TRUE(false); });
+    variant = 5.0;
+    ltl::match(
+        variant, [](double) { ASSERT_TRUE(true); }, [](int) { ASSERT_TRUE(false); });
+
+    auto result = ltl::match_result(
+        variant, [](int x) { return static_cast<double>(x); }, [](double x) { return static_cast<int>(x); });
+
+    static_assert(type_from(result) == ltl::type_v<std::variant<double, int>>);
+    static_assert(type_from(result) != ltl::type_v<std::variant<int, double>>);
+    ltl::match(
+        result, [](int) { assert(true); }, [](double) { assert(false); });
+    result = 5.0;
+    ltl::match(
+        result, [](double) { assert(true); }, [](int) { assert(false); });
+
+    {
+        std::variant<int, double, std::string> variant;
+        auto ok1 = [](auto &&) {};
+        auto ok2 = ltl::overloader{[](int) {}, [](double) {}, [](std::string) {}};
+        auto ok3 = ltl::overloader{[](int) {}, [](double) {}, [](std::string &) {}};
+        auto ok4 = ltl::overloader{[](int) {}, [](double) {}, [](const std::string &) {}};
+        auto bad1 = ltl::overloader{[](int &&) {}, [](double &&) {}, [](std::string &&) {}};
+        auto bad2 = [](int) {};
+        typed_static_assert(ltl::is_callable_from(ok1, variant));
+        typed_static_assert(ltl::is_callable_from(ok2, variant));
+        typed_static_assert(ltl::is_callable_from(ok3, variant));
+        typed_static_assert(ltl::is_callable_from(ok4, variant));
+        typed_static_assert(!ltl::is_callable_from(bad1, variant));
+        typed_static_assert(!ltl::is_callable_from(bad2, variant));
+
+        typed_static_assert(!ltl::is_callable_from(ok3, std::as_const(variant)));
+        typed_static_assert(ltl::is_callable_from(ok4, std::as_const(variant)));
+
+        typed_static_assert(!ltl::is_callable_from(ok3, std::move(variant)));
+        typed_static_assert(ltl::is_callable_from(ok4, std::move(variant)));
+        typed_static_assert(ltl::is_callable_from(bad1, std::move(variant)));
+    }
+}
+
+TEST(LTL_test, test_functional) {
+    using namespace std::literals;
+
+    auto factorial = ltl::fix{[](auto f, auto x) -> int { return x ? x * f(x - 1) : 1; }};
+    static_assert(factorial(1) == 1);
+    static_assert(factorial(2) == 2);
+    static_assert(factorial(3) == 6);
+    static_assert(factorial(4) == 24);
+    static_assert(factorial(5) == 120);
+
+    auto divisor = _((w, x, y, z), w / x / y / z);
+
+    static_assert(divisor(1000, 10, 10, 10) == 1);
+
+    ASSERT_TRUE(ltl::defer(divisor, 1000, 10, 5, 5)() == 4);
+    ASSERT_TRUE(ltl::defer(divisor, 1000, 10, 5)(5) == 4);
+    ASSERT_TRUE(ltl::defer(divisor, 1000, 10)(5, 5) == 4);
+    ASSERT_TRUE(ltl::defer(divisor, 1000)(10, 5, 5) == 4);
+    ASSERT_TRUE(ltl::defer(divisor)(1000, 10, 5, 5) == 4);
+
+    ASSERT_TRUE(ltl::curry(divisor, 1000, 10, 5, 5) == 4);
+    ASSERT_TRUE(ltl::curry(divisor, 1000, 10, 5)(5) == 4);
+    ASSERT_TRUE(ltl::curry(divisor, 1000, 10)(5, 5) == 4);
+    ASSERT_TRUE(ltl::curry(divisor)(1000, 10, 5, 5) == 4);
+    ASSERT_TRUE(ltl::curry(divisor)(1000)(10)(5)(5) == 4);
+
+    struct test {
+        int sum(int a, int b, int c) const noexcept { return a + b + c; }
+    };
+
+    test t;
+    ASSERT_TRUE(ltl::curry(&test::sum, t, 1, 2, 3) == 6);
+    ASSERT_TRUE(ltl::curry(&test::sum)(t, 1, 2, 3) == 6);
+    ASSERT_TRUE(ltl::curry(&test::sum, t, 1)(2, 3) == 6);
+    ASSERT_TRUE(ltl::curry(&test::sum)(t)(1)(2, 3) == 6);
+    ASSERT_TRUE(ltl::curry(&test::sum)(t)(1)(2)(3) == 6);
+
+    ASSERT_TRUE(ltl::curry(&test::sum)(test{})(1)(2)(3) == 6);
+
+    auto a = "One"s;
+    auto b = "Two"s;
+
+    auto curry = ltl::curry([](auto a, auto b, auto c, auto d, auto e, auto f) { return a + b + c + d + e + f; });
+    auto one = curry(a);
+    auto four = one(std::move(b), "Three"s, "Four");
+    auto end = four(a, b);
+    ASSERT_TRUE(end == "OneTwoThreeFourOne");
+}
+
+/// Issues are:
+/// contains algos for transformed iterator
+/// for_each for tuple called instead of algos
+/// std invoke
+TEST(LTL_test, test_fix_issue_1) {
+    std::array a = {0, 1, 2, 3, 4};
+    auto square = _((x), x * x);
+    ASSERT_TRUE(ltl::contains(a | ltl::map(square), 9));
+    ASSERT_TRUE(!ltl::contains(a | ltl::map(square), 2));
+
+    ltl::for_each(a, [](auto x) { ASSERT_TRUE(x == 0 || x == 1 || x == 2 || x == 3 || x == 4); });
+
+    struct obj {
+        bool isSet() const { return m_isSet; }
+        bool m_isSet;
+    };
+
+    std::array b = {obj{false}, obj{true}, obj{false}};
+    std::array c = {obj{false}, obj{false}, obj{false}};
+    std::array d = {obj{true}, obj{true}, obj{true}};
+
+    auto isSet = ltl::map(&obj::isSet);
+    auto isNotSet = ltl::map(ltl::not_(&obj::isSet));
+    auto id = [](const auto &x) { return x; };
+    ASSERT_TRUE(ltl::any_of(b | isSet, id));
+    ASSERT_TRUE(ltl::none_of(c | isSet, id));
+    ASSERT_TRUE(ltl::all_of(d | isSet, id));
+    ASSERT_TRUE(ltl::all_of(c | isNotSet, id));
+    ASSERT_TRUE(ltl::none_of(d | isNotSet, id));
+}
+
+TEST(LTL_test, test_associative_map) {
+    std::unordered_map<std::string, std::string> dict = {{"a", "A"}, {"b", "B"}, {"c", "C"},
+                                                         {"d", "D"}, {"e", "E"}, {"f", "F"}};
+
+    ASSERT_TRUE(ltl::map_contains(dict, "a"));
+    ASSERT_TRUE(ltl::map_contains(dict, "d"));
+    ASSERT_TRUE(!ltl::map_contains(dict, "g"));
+    ASSERT_TRUE(ltl::map_find_value(dict, "e") == "E");
+    ASSERT_TRUE(ltl::map_find_ptr(dict, "f") == &dict["f"]);
+    ASSERT_TRUE(ltl::map_find_value(dict, "g") == std::nullopt);
+    ASSERT_TRUE(ltl::map_take(dict, "f") == "F");
+    ASSERT_FALSE(ltl::map_take(dict, "f"));
+    ASSERT_TRUE(ltl::map_find_ptr(dict, "f") == nullptr);
+
+    std::map<ltl::tuple_t<int, double>, int> map = {{{8, 4.0}, 1}, {{3, 4.1}, -1}, {{8, 2.0}, 5}};
+
+    ASSERT_TRUE(ltl::map_contains(map, {8, 2.0}));
+    ASSERT_EQ(ltl::map_find_value(map, {3, 4.1}), -1);
+}
+
+TEST(LTL_test, test_composition) {
+    auto plus_3 = _((x), x + 3);
+    auto mul_5 = _((x), x * 5);
+    auto minus_1 = _((x), x - 1);
+
+    constexpr auto pMm = ltl::compose(plus_3, mul_5, minus_1);
+    constexpr auto mpM = ltl::compose(minus_1, plus_3, mul_5);
+    constexpr auto mMp = ltl::compose(minus_1, mul_5, plus_3);
+
+    static_assert(pMm(10) == 64);
+    static_assert(mpM(10) == 60);
+    static_assert(mMp(10) == 48);
+}
+
+TEST(LTL_test, test_join) {
+    using namespace ltl;
+    {
+        struct Test {
+            Test(int n) {
+                for (int i = 0; i < n; ++i)
+                    v.push_back(i);
+            }
+            std::vector<int> v;
+        };
+        std::array array = {0, 1, 2, 3, 4, 5};
+        auto to_range = [](auto n) { return valueRange(0, n); };
+        auto arrayRange = array >> map(to_range);
+        std::vector<int> a = arrayRange;
+        ASSERT_TRUE(equal(arrayRange, std::array{0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 0, 1, 2, 3, 4}));
+
+        std::array array2 = {Test{0}, Test{1}, Test{2}, Test{3}, Test{4}, Test{5}};
+        auto to_vector_ref = [](auto &x) -> std::vector<int> & { return x.v; };
+        auto to_vector = [](auto &x) { return x.v; };
+        auto to_ptr = [](auto &x) { return std::addressof(x); };
+        std::array array2ptr = {&array2[1].v[0], &array2[2].v[0], &array2[2].v[1], &array2[3].v[0], &array2[3].v[1],
+                                &array2[3].v[2], &array2[4].v[0], &array2[4].v[1], &array2[4].v[2], &array2[4].v[3],
+                                &array2[5].v[0], &array2[5].v[1], &array2[5].v[2], &array2[5].v[3], &array2[5].v[4]};
+
+        ASSERT_TRUE(equal(arrayRange, array2 >> map(to_vector)));
+        ASSERT_TRUE(equal(arrayRange, array2 >> map(to_vector_ref)));
+        ASSERT_TRUE(equal(array2ptr, array2 >> map(to_vector_ref) | map(to_ptr)));
+    }
+
+    {
+        std::array<std::array<std::array<int, 3>, 3>, 3> nestedArray{};
+        auto flatArray = nestedArray | ltl::join | ltl::join;
+        typed_static_assert(type_from(flatArray[0]) == ltl::type_v<int &>);
+        ASSERT_TRUE(ltl::equal(flatArray, std::array<int, 27>{}));
+        ASSERT_EQ(std::addressof(flatArray[14]), std::addressof(nestedArray[1][1][2]));
+        ASSERT_EQ(std::addressof(flatArray[26]), std::addressof(nestedArray[2][2][2]));
+        ASSERT_EQ(std::addressof(flatArray[0]), std::addressof(nestedArray[0][0][0]));
+    }
+
+    {
+        std::vector<std::vector<int>> nestedVectorEmpty;
+
+        auto to_vector = [](const auto &v) -> const auto & { return v; };
+        auto ints = nestedVectorEmpty >> map(to_vector);
+
+        ASSERT_EQ(ints.size(), 0);
+        auto sum = accumulate(ints, 0);
+        ASSERT_EQ(sum, 0);
+    }
+
+    {
+        std::vector<std::vector<int>> nestedVectorWithEmptyArray;
+
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({4, 5, 6, 7});
+
+        auto to_vector = [](const auto &v) -> const auto & { return v; };
+        auto ints = nestedVectorWithEmptyArray >> map(to_vector);
+
+        ASSERT_EQ(ints.size(), 4);
+        auto sum = accumulate(ints, 0);
+        ASSERT_EQ(sum, 22);
+    }
+
+    {
+        std::vector<std::vector<int>> nestedVectorWithEmptyArray;
+
+        nestedVectorWithEmptyArray.push_back({0, 1, 2, 3});
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({});
+
+        auto to_vector = [](const auto &v) -> const auto & { return v; };
+        auto ints = nestedVectorWithEmptyArray >> map(to_vector);
+
+        ASSERT_EQ(ints.size(), 4);
+        auto sum = accumulate(ints, 0);
+        ASSERT_EQ(sum, 6);
+    }
+
+    {
+        std::vector<std::vector<int>> nestedVectorWithEmptyArray;
+
+        nestedVectorWithEmptyArray.push_back({0, 1, 2, 3});
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({});
+        nestedVectorWithEmptyArray.push_back({4, 5, 6, 7});
+
+        auto to_vector = [](const auto &v) -> const auto & { return v; };
+        auto ints = nestedVectorWithEmptyArray >> map(to_vector);
+
+        ASSERT_EQ(ints.size(), 8);
+        auto sum = accumulate(ints, 0);
+        ASSERT_EQ(sum, 28);
+
+        std::vector<int> v = ints;
+
+        ASSERT_EQ(v.size(), 8);
+        ASSERT_TRUE(ltl::equal(v, std::array{0, 1, 2, 3, 4, 5, 6, 7}));
+
+        auto five = ints.begin() + 5;
+        ASSERT_EQ(*five, 5);
+        ASSERT_EQ(std::addressof(*five), std::addressof(nestedVectorWithEmptyArray[3][1]));
+
+        auto four = five - 1;
+        ASSERT_EQ(*four, 4);
+        ASSERT_EQ(std::addressof(*four), std::addressof(nestedVectorWithEmptyArray[3][0]));
+
+        auto three = four - 1;
+        ASSERT_EQ(*three, 3);
+        ASSERT_EQ(std::addressof(*three), std::addressof(nestedVectorWithEmptyArray[0][3]));
+
+        ASSERT_TRUE(three != four);
+        ASSERT_TRUE(three != five);
+        ASSERT_TRUE(three + 2 == five);
+        ASSERT_TRUE(four + 1 == five);
+    }
+
+    {
+        std::array<int, 3> array = {0, 1, 2};
+        std::vector<int> array2 = array >> ltl::map([](auto x) { return std::array<int, 3>{x, x, x}; });
+
+        ASSERT_TRUE(ltl::equal(array2, std::array{0, 0, 0, 1, 1, 1, 2, 2, 2}));
+    }
+}
+
+TEST(LTL_test, test_and_or) {
+    auto is_multiple_of = [](auto x) { return [x](auto y) { return y % x == 0; }; };
+
+    static_assert(ltl::or_(is_multiple_of(3), is_multiple_of(5))(9));
+    static_assert(!ltl::and_(is_multiple_of(3), is_multiple_of(5))(9));
+    static_assert(ltl::and_(is_multiple_of(3), is_multiple_of(5))(15));
+}
+
+TEST(LTL_test, test_optional_type) {
+    auto tuple = ltl::tuple_t<int, double, float, int *>{};
+    auto tuple2 = tuple + ltl::tuple_t{(char *)nullptr};
+    auto empty = ltl::find_type(tuple2, ltl::type_v<double *>);
+
+    static_assert(!empty.has_value);
+    static_assert(ltl::find_type(tuple2, ltl::type_v<char *>).has_value);
+    static_assert(*ltl::find_type(tuple2, ltl::type_v<char *>) == 4_n);
+    static_assert(ltl::find_if_type(tuple2, ltl::is_pointer).has_value);
+    static_assert(*ltl::find_if_type(tuple2, ltl::is_pointer) == 3_n);
+    static_assert(!ltl::find_if_type(tuple2, ltl::is_type(ltl::type_v<char>)).has_value);
+
+    auto two = ltl::find_type(tuple2, ltl::type_v<float>);
+
+    constexpr auto plus_3 = ltl::map([](auto n) { return n + 3_n; });
+
+    auto five = two | plus_3;
+    auto empty2 = empty | plus_3;
+
+    static_assert(five.has_value);
+    static_assert(*five == 5_n);
+    static_assert(empty2.has_value == false_v);
+
+    constexpr auto plus_3_if_sup_4 = ltl::map([](auto n) {
+        if constexpr (n > 4_n) {
+            return ltl::optional_type{n + 3_n};
+        } else {
+            return ltl::nullopt_type;
+        }
+    });
+
+    auto empty3 = two >> plus_3_if_sup_4;
+    auto eight = five >> plus_3_if_sup_4;
+
+    static_assert(!empty3.has_value);
+    static_assert(eight.has_value);
+    static_assert(*eight == 8_n);
+}
+
+TEST(LTL_test, test_condition) {
+    static_assert(ltl::AllOf{5, 3, 4} > 2);
+    static_assert(ltl::AllOf{5, 3, 4} < 10);
+    static_assert(!(ltl::AllOf{5, 3, 4} <= 4));
+    static_assert(!(ltl::AllOf{5, 3, 4} >= 4));
+    static_assert((ltl::AllOf{5, 3, 4} >= 3));
+    static_assert((ltl::AllOf{5, 3, 4} <= 6));
+    static_assert(ltl::AllOf{5, 5, 5} == 5);
+    static_assert(!(ltl::AllOf{7, 8, 10} == 9));
+    static_assert(ltl::AllOf{7, 8, 10} != 9);
+    static_assert(!(ltl::AllOf{7, 8, 10} != 8));
+
+    static_assert(8 < ltl::AllOf{9, 10, 11, 12});
+
+    static_assert(ltl::AllOf{true, true, true});
+    static_assert(!ltl::AllOf{true, true, false});
+
+    static_assert(ltl::AnyOf{8, 9, 10} < 19);
+    static_assert(!(ltl::AnyOf{8, 9, 10} < 7));
+    static_assert(ltl::AnyOf{8, 9, 10} > 9);
+    static_assert(!(ltl::AnyOf{8, 9, 10} > 12));
+    static_assert(ltl::AnyOf{9, 9, 18} == 9);
+    static_assert(!(ltl::AnyOf{9, 9, 18} == 10));
+    static_assert(ltl::AnyOf{9, 9, 18} != 9);
+    static_assert(!(ltl::AnyOf{9, 9, 9} != 9));
+    static_assert(ltl::AnyOf{8, 9, 10} >= 10);
+    static_assert(!(ltl::AnyOf{8, 9, 10} >= 15));
+    static_assert(ltl::AnyOf{8, 9, 10} <= 10);
+    static_assert(!(ltl::AnyOf{8, 9, 10} <= 5));
+
+    static_assert(ltl::AnyOf{true, true, true});
+    static_assert(ltl::AnyOf{false, true, false});
+    static_assert(!ltl::AnyOf{false, false, false});
+
+    static_assert(ltl::NoneOf{8, 9, 10} < 8);
+    static_assert(!(ltl::NoneOf{8, 9, 10} < 9));
+    static_assert(ltl::NoneOf{8, 9, 10} > 10);
+    static_assert(!(ltl::NoneOf{8, 9, 10} > 9));
+    static_assert(ltl::NoneOf{9, 9, 18} == 8);
+    static_assert(!(ltl::NoneOf{9, 9, 18} == 18));
+    static_assert(ltl::NoneOf{9, 9, 9} != 9);
+    static_assert(!(ltl::NoneOf{9, 9, 18} != 9));
+    static_assert(ltl::NoneOf{8, 9, 10} >= 12);
+    static_assert(!(ltl::NoneOf{8, 9, 10} >= 10));
+    static_assert(ltl::NoneOf{8, 9, 10} <= 6);
+    static_assert(!(ltl::NoneOf{8, 9, 10} <= 15));
+
+    static_assert(ltl::NoneOf{false, false, false});
+    static_assert(!ltl::NoneOf{true, false, false});
+}
+
+TEST(LTL_test, test_curry_metaprogramming) {
+    using list = ltl::fast::type_list<int, double, char, int *, double *>;
+    using list2 = ltl::fast::type_list<int *, double *, char *>;
+    using list3 = ltl::fast::type_list<double *, int *, char, double>;
+
+    static_assert(ltl::fast::all_of_v<list3, ltl::fast::bind2nd<ltl::fast::contains, list>::apply>);
+    static_assert(!ltl::fast::all_of_v<list2, ltl::fast::bind2nd<ltl::fast::contains, list>::apply>);
+}
+
+struct Message {
+    std::size_t size;
+    std::array<char, 252> data;
+
+    friend bool operator==(const Message &a, const Message &b) {
+        return a.size == b.size &&
+               std::equal(a.data.begin(), a.data.begin() + a.size, b.data.begin(), b.data.begin() + b.size);
+    }
+};
+
+std::ostream &operator<<(std::ostream &stream, const Message &msg) {
+    std::ostream::sentry s{stream};
+    if (s) {
+        stream << ltl::as_byte{0x01234567};
+        stream << ltl::as_byte{msg.size};
+        stream.write(msg.data.data(), msg.size);
+    }
+    return stream;
+}
+
+std::istream &operator>>(std::istream &stream, Message &msg) {
+    std::istream::sentry s{stream, true};
+    if (s) {
+        auto pos = stream.tellg();
+        unsigned int header{};
+
+        stream >> ltl::as_byte{header};
+        stream >> ltl::as_byte{msg.size};
+        stream.read(msg.data.data(), msg.size);
+
+        if (header != 0x01234567 || !stream) {
+            auto state = stream.rdstate();
+            stream.clear();
+            stream.seekg(pos);
+            stream.setstate(std::ios_base::failbit | state);
+        }
+
+        stream.rdbuf()->pubsync();
+    }
+    return stream;
+}
+
+TEST(LTL_test, simple_test_stream) {
+    using namespace std::literals;
+    ltl::writeonly_streambuf<std::string> ostreambuf;
+    std::ostream ostream(&ostreambuf);
+
+    ostream << 'a' << "b"
+            << " I am a test" << '!';
+
+    auto result = ostreambuf.takeContainer();
+    assert(result == "ab I am a test!");
+    assert(ostreambuf.getContainer() == "");
+    ostream << "I am a second test";
+    assert(ostreambuf.getContainer() == "I am a second test");
+
+    ostream << ' ' << 18 << ' ' << 18.56 << ' ' << std::string("lol") << std::boolalpha << true << false;
+    ostream.write("lol", 3);
+
+    result = ostreambuf.takeContainer();
+    assert(result == "I am a second test 18 18.56 loltruefalselol");
+
+    ltl::readonly_streambuf<std::string> istreambuf(std::move(result));
+    std::istream istream(&istreambuf);
+    char c;
+    std::string s1, s2, s3;
+    double d;
+    int i;
+
+    istream >> c;
+    assert(c == 'I');
+    istream >> s1;
+    assert(s1 == "am");
+    istream >> c;
+    assert(c == 'a');
+    istreambuf.feed(" another");
+
+    istream >> s1 >> s2 >> i >> d >> c >> s3;
+
+    assert(s1 == "second" && s2 == "test" && i == 18 && d == 18.56 && c == 'l' && s3 == "oltruefalselol");
+    char another[9] = "";
+
+    istream.read(another, 8);
+    ASSERT_TRUE(another == " another"s);
+}
+
+TEST(LTL_test, stream_test_message) {
+    Message a;
+    ltl::writeonly_streambuf<std::vector<char>> writebuf;
+    std::ostream wstream{&writebuf};
+
+    a.size = 10;
+    std::iota(a.data.begin(), a.data.end(), 0);
+
+    wstream << a;
+
+    auto buf = writebuf.takeContainer();
+
+    ltl::readonly_streambuf<std::vector<char>> readbuf{buf};
+    std::istream rstream(&readbuf);
+
+    Message b;
+    rstream >> b;
+    assert(a == b);
+}
+
+namespace detail {
+auto createMessages() {
+    std::vector<Message> msgs;
+    for (int i = 0; i < 200; ++i) {
+        Message m;
+        m.size = i;
+        for (int j = 0; j < i; ++j) {
+            m.data[j] = j;
+        }
+        msgs.push_back(m);
+    }
+    return msgs;
+}
+
+auto createComplexeBuffer() {
+    ltl::writeonly_streambuf<std::vector<std::byte>> buf;
+    std::ostream stream(&buf);
+    ltl::copy(createMessages(), std::ostream_iterator<Message>{stream});
+    return buf.takeContainer();
+}
+} // namespace detail
+
+TEST(LTL_test, complexe_stream_test_message) {
+    auto msgs = detail::createMessages();
+    auto buffer = detail::createComplexeBuffer();
+    {
+        ltl::readonly_streambuf<std::vector<std::byte>> buf(buffer);
+        std::istream stream(&buf);
+        std::vector<Message> decodedMsgs(std::istream_iterator<Message>{stream}, std::istream_iterator<Message>{});
+        ASSERT_TRUE(ltl::equal(msgs, decodedMsgs));
+    }
+    {
+        std::vector<Message> decodedMsgs;
+        ltl::readonly_streambuf<std::vector<std::byte>> buf{std::vector<std::byte>()};
+
+        for (std::uint32_t i = 0; i < buffer.size(); i += 73) {
+            buf.feed(ltl::Range{buffer.begin() + i, buffer.end()} | ltl::take_n(73));
+            std::istream stream(&buf);
+            std::copy(std::istream_iterator<Message>(stream), std::istream_iterator<Message>{},
+                      std::back_inserter(decodedMsgs));
+        }
+        ASSERT_TRUE(ltl::equal(msgs, decodedMsgs));
+    }
+}
+
+TEST(LTL_test, test_variant_recursive) {
+    using namespace ltl;
+
+    using Variant = recursive_variant<int, double, std::string, recursive_wrapper<struct R>>;
+    struct R {
+        Variant v;
+    };
+
+    Variant i = 5;
+    Variant d = 5.0;
+    Variant s = std::string{"Test"};
+    Variant r = 0;
+    R firstR{8};
+    firstR.v = R{8};
+    r = std::move(firstR);
+
+    recursive_visit(overloader{[](auto &&) { assert(false); }, [](int) {}}, i);
+    recursive_visit(overloader{[](auto &&) { assert(false); }, [](double) {}}, d);
+    recursive_visit(overloader{[](auto &&) { assert(false); }, [](std::string) {}}, s);
+    recursive_visit(
+        overloader{[](auto &&) { assert(false); },
+                   [](R &r) {
+                       recursive_visit(
+                           overloader{[](auto &&) { assert(false); },
+                                      [](R &r) {
+                                          recursive_visit(overloader{[](auto &&) { assert(false); }, [](int) {}}, r.v);
+                                      }},
+                           r.v);
+                   }},
+        r);
+}
+
+TEST(LTL_test, test_typed_tuple) {
+    ltl::TypedTuple<int, double, int *> tuple;
+    static_assert(type_from(tuple.get<int>()) == ltl::type_v<int &>);
+    static_assert(type_from(tuple.get<double>()) == ltl::type_v<double &>);
+    static_assert(type_from(std::as_const(tuple).get<int *>()) == ltl::type_v<int *const &>);
+
+    ltl::TypedTuple<std::string, ltl::TypedTuple<int, double>> tuple2{"lol", {0, 3.0}};
+    ASSERT_EQ("lol", tuple2.get<std::string>());
+    ASSERT_EQ((tuple2.get<ltl::TypedTuple<int, double>>()), (ltl::TypedTuple{0, 3.0}));
+}
+
+TEST(LTL_test, test_rvalue) {
+    auto returnStrings = []() -> std::vector<std::string> {
+        return {"1", "2", "3", "not a digit", "lol", "4", "5", "less", "9"};
+    };
+
+    auto enumerated = ltl::enumerate(returnStrings());
+
+    static_assert(type_from(enumerated[0][1_n]) == ltl::type_v<const std::string &>);
+    ASSERT_TRUE(size(enumerated) == 9);
+
+    ASSERT_TRUE(ltl::equal(enumerated,
+                           std::array{ltl::tuple_t{0u, "1"}, ltl::tuple_t{1u, "2"}, ltl::tuple_t{2u, "3"},
+                                      ltl::tuple_t{3u, "not a digit"}, ltl::tuple_t{4u, "lol"}, ltl::tuple_t{5u, "4"},
+                                      ltl::tuple_t{6u, "5"}, ltl::tuple_t{7u, "less"}, ltl::tuple_t{8u, "9"}}));
+
+    auto isDigit = ltl::filter(_((x), std::isdigit(x[0])));
+    auto toInt = ltl::map(_((x), std::atoi(x.c_str())));
+
+    auto listOfNumber = returnStrings() | isDigit | toInt;
+
+    ASSERT_TRUE(ltl::accumulate(listOfNumber, 0) == 1 + 2 + 3 + 4 + 5 + 9);
+    ASSERT_TRUE(size(listOfNumber) == 6);
+
+    auto identity = ltl::map([](auto &x) -> decltype(x) { return (x); });
+    auto listOfChar = returnStrings() >> identity;
+    ASSERT_TRUE(listOfChar[5] == 't');
+    ASSERT_TRUE(size(listOfChar) == 24);
+
+    auto listOfCharDigit = (returnStrings() | isDigit) >> identity;
+    ASSERT_TRUE(ltl::equal(listOfCharDigit, std::array{'1', '2', '3', '4', '5', '9'}));
+    ASSERT_TRUE(size(listOfCharDigit) == size(listOfNumber));
+
+    auto vector = returnStrings() | ltl::map(_((x), x)) | ltl::to_vector;
+    ASSERT_TRUE(ltl::equal(vector, returnStrings()));
+    static_assert(type_from(vector) == ltl::type_v<std::vector<std::string>>);
+
+    std::vector<std::any> any = {0, 5.0, "lol", std::string{"lol2"}};
+    auto anyLValueReference = any | ltl::map(&std::any::has_value);
+    auto anyRValueReference = std::vector(any) | ltl::map(&std::any::has_value);
+
+    ASSERT_EQ(any.size(), anyLValueReference.size());
+    ASSERT_EQ(any.size(), anyRValueReference.size());
+}
+
+TEST(LTL_test, test_zip_tuple) {
+    ltl::tuple_t<int, double> a{1, 3.0};
+    ltl::tuple_t<int, double> b{4, 10.0};
+    auto indexer = a.make_indexer();
+
+    typed_static_assert((indexer == ltl::number_list_v<0, 1>));
+
+    int sumI = 0;
+    double sumD = 0.0;
+
+    (void)ltl::zip_with(
+        ltl::overloader{[&sumI](int a, int b) { sumI += a + b; }, [&sumD](double a, double b) { sumD += a + b; }}, a,
+        b);
+
+    ASSERT_TRUE(sumI == 5);
+    ASSERT_TRUE(sumD == 10.0 + 3.0);
+
+    (void)ltl::enumerate_with(ltl::overloader{[&sumI](auto i, int x) { sumI += i.value + x; },
+                                              [&sumD](auto i, double x) { sumD += double(i.value) + x; }},
+                              b);
+
+    ASSERT_TRUE(sumI == 5 + 4);
+    ASSERT_TRUE(sumD == 10.0 + 3.0 + 1.0 + 10.0);
+
+    ltl::tuple_t tuple1 = {0, 5.0, std::string{"lol"}};
+    ltl::tuple_t tuple2 = {0.0, std::string{"lul"}, 18};
+    auto tuple3 = ltl::zip_type(tuple1, tuple2);
+    auto type = ltl::type_v<
+        ltl::tuple_t<ltl::tuple_t<int, double>, ltl::tuple_t<double, std::string>, ltl::tuple_t<std::string, int>>>;
+    typed_static_assert(ltl::is_aggregate(type));
+    typed_static_assert(type_from(tuple3) == type);
+    ASSERT_TRUE((tuple3 == decltype_t(type){{{0, 0.0}, {5.0, "lul"}, {"lol", 18}}}));
+}
+
+TEST(LTL_test, test_scanl_tuple) {
+    auto list = ltl::number_list_v<0, 1, 2, 3, 4, 5, 6>;
+    auto scanned = ltl::partial_sum(_((x, y), x + y), list);
+    typed_static_assert((scanned == ltl::number_list_v<0, 1, 3, 6, 10, 15, 21>));
+}
+
+TEST(LTL_test, test_construct) {
+    struct A {
+        A(int a, int b, int c) : a(a), b(b), c(c) {}
+        int a, b, c;
+        bool operator==(A d) const noexcept { return a == d.a && b == d.b && c == d.c; }
+    };
+
+    ltl::tuple_t tuple{0, 1, 2};
+    auto a = ltl::construct<A>(0, 1, 2)();
+
+    typed_static_assert(type_from(a) == ltl::type_v<A>);
+
+    ASSERT_TRUE(a.a == 0);
+    ASSERT_TRUE(a.b == 1);
+    ASSERT_TRUE(a.c == 2);
+    ASSERT_TRUE(a == ltl::construct<A>(0)(1, 2));
+    ASSERT_TRUE(a == ltl::construct<A>(0, 1)(2));
+    ASSERT_TRUE(a == ltl::construct<A>()(0, 1, 2));
+
+    auto b = ltl::construct_with_tuple<A>(tuple);
+    auto c = ltl::construct_with_tuple<A>()(tuple);
+
+    typed_static_assert(type_from(a) == type_from(b) && type_from(b) == type_from(c));
+
+    ASSERT_TRUE(a == b);
+    ASSERT_TRUE(b == c);
+}
+
+TEST(LTL_test, test_comparators) {
+    using namespace ltl;
+    std::array array1 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    std::array array2 = {5, 4, 2, 3, 6, 5, 4, 1, 2, 5, 6, 10, 4, 2, 1, 3, 5};
+
+    ASSERT_EQ(count_if(array1, less_than(5)), 5);
+    ASSERT_EQ(count_if(array1, greater_than(7)), 3);
+    ASSERT_EQ(count_if(array1, less_than_equal(5)), 6);
+    ASSERT_EQ(count_if(array1, greater_than_equal(8)), 3);
+    ASSERT_EQ(count_if(array2, equal_to(5)), 4);
+    ASSERT_EQ(count_if(array2, not_equal_to(5)), array2.size() - 4);
+
+    constexpr auto list = number_list_v<1, 3, 4, 2, 5, 10, 4>;
+
+    typed_static_assert(ltl::count_if_type(list, equal_to(4_n)) == 2_n);
+    typed_static_assert(ltl::count_if_type(list, less_than(4_n)) == 3_n);
+    typed_static_assert(ltl::count_if_type(list, less_than_equal(1_n)) == 1_n);
+    typed_static_assert((ltl::filter_type(list, greater_than_equal(4_n)) == ltl::number_list_v<4, 5, 10, 4>));
+}
+
+TEST(LTL_test, test_actions) {
+    std::vector a = {0, 5, 4, 1, 2, 3, 8, 1, 4, 1, 2, 1, 3};
+    std::array b = {0, 5, 1, 1, 2, 3, 4, 0, 2, 4, 12, 5};
+
+    ASSERT_TRUE(a.size() == 13);
+    ASSERT_TRUE(!a.empty());
+
+    a |= ltl::actions::sort | ltl::actions::unique;
+    b |= ltl::actions::sort;
+    auto c = std::vector{5, 4, 1, 3, 2, 1, 5, 9, 6} | (ltl::actions::sort | ltl::actions::unique);
+    auto d = std::vector{5, 4, 3, 2, 1, 1} | ltl::actions::sort;
+
+    ASSERT_TRUE(ltl::equal(a, std::array{0, 1, 2, 3, 4, 5, 8}));
+    ASSERT_TRUE(ltl::equal(b, std::array{0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 12}));
+    ASSERT_TRUE(ltl::equal(c, std::array{1, 2, 3, 4, 5, 6, 9}));
+    ASSERT_TRUE(ltl::equal(d, std::array{1, 1, 2, 3, 4, 5}));
+
+    std::vector e = {5, 4, 2, 1, 6, 5, 8, 9, 10};
+
+    e |= ltl::actions::sort_by_ascending();
+    ASSERT_TRUE(ltl::equal(e, std::array{1, 2, 4, 5, 5, 6, 8, 9, 10}));
+
+    e |= ltl::actions::sort_by_descending();
+    ASSERT_TRUE(ltl::equal(e, std::array{10, 9, 8, 6, 5, 5, 4, 2, 1}));
+
+    e |= ltl::actions::reverse;
+    ASSERT_TRUE(ltl::equal(e, std::array{1, 2, 4, 5, 5, 6, 8, 9, 10}));
+}
+
+TEST(LTL_test, test_move_range) {
+    using namespace ltl;
+    std::vector<std::string> array = {"My", "name", "is", "Antoine"};
+    std::vector<std::string> copied = array | map(identity);
+    std::vector<std::string> empty = {"", "", "", ""};
+    ASSERT_TRUE(equal(array, copied));
+
+    std::vector<std::string> moved = make_move_range(array);
+    ASSERT_EQ(moved.size(), 4);
+    ASSERT_TRUE(equal(array, empty));
+    ASSERT_TRUE(equal(moved, copied));
+}
+
+TEST(LTL_test, test_map_composed) {
+    using namespace ltl;
+    std::vector<int> array = {0, 10, 20, 100, 320, 1456, 85};
+    auto arrayTransformed = array | map(lift(std::to_string), &std::string::size);
+    ASSERT_TRUE(equal(arrayTransformed, std::array{1, 2, 2, 3, 3, 4, 2}));
+}
+
+TEST(LTL_test, test_filter_composed) {
+    using namespace ltl;
+    std::array array = {0, 1, 2, 3, 4, 5, 6};
+    auto square = [](auto x) { return x * x; };
+    auto sup_than10 = [](auto x) { return x > 10; };
+
+    auto result = array | filter(square, sup_than10);
+
+    ASSERT_EQ(result.size(), 3);
+    ASSERT_TRUE(equal(result, std::array{4, 5, 6}));
+}
+
+TEST(LTL_test, test_remove_if) {
+    using namespace ltl;
+    std::array array = {0, 1, 2, 3, 4, 5, 6, 7};
+    auto is_odd = [](auto x) { return x % 2 == 1; };
+    auto result = array | remove_if(is_odd);
+
+    ASSERT_TRUE(equal(result, std::array{0, 2, 4, 6}));
+}
+
+TEST(LTL_test, test_transform) {
+    using namespace ltl;
+    std::array array = {0, 1, 2, 3, 4, 5, 6, 7};
+    auto square = [](auto x) { return x * x; };
+    auto result = array | transform(square);
+    ASSERT_TRUE(equal(result, std::array{0, 1, 4, 9, 16, 25, 36, 49}));
+}
+
+TEST(LTL_test, test_expected) {
+    using namespace ltl;
+
+    {
+        expected<int, std::string> exp{0};
+
+        typed_static_assert(type_from(std::move(exp).result()) == ltl::type_v<int>);
+        typed_static_assert(type_from(std::move(exp).error()) == ltl::type_v<std::string>);
+        typed_static_assert(type_from(std::as_const(exp).result()) == ltl::type_v<const int &>);
+        typed_static_assert(type_from(std::as_const(exp).error()) == ltl::type_v<const std::string &>);
+        typed_static_assert(type_from(exp.result()) == ltl::type_v<int &>);
+        typed_static_assert(type_from(exp.error()) == ltl::type_v<std::string &>);
+
+        ASSERT_TRUE(exp);
+        ASSERT_TRUE(exp.is_result());
+        ASSERT_FALSE(exp.is_error());
+        ASSERT_EQ(exp.result(), 0);
+
+        exp = expected<long long, const char *>("Error");
+        ASSERT_TRUE(exp.is_error());
+        ASSERT_EQ(exp.error(), "Error");
+
+        exp = decltype(exp){5};
+        ASSERT_TRUE(exp.is_result());
+        ASSERT_EQ(exp.result(), 5);
+    }
+}
+
+TEST(LTL_test, test_expected_monade) {
+    using namespace ltl;
+    expected<int, const char *> res = 18;
+    expected<int, const char *> err{"wrong"};
+
+    typed_static_assert(is_expected_f(res));
+    typed_static_assert(is_expected_f(std::move(err)));
+    typed_static_assert(!is_expected_f(4));
+
+    {
+        auto plus_3 = [](auto x) { return x + 3; };
+
+        auto a = res | map(plus_3);
+        auto b = err | map(plus_3);
+
+        typed_static_assert(is_expected_f(a) && is_expected_f(b));
+
+        ASSERT_TRUE(a.is_result());
+        ASSERT_TRUE(b.is_error());
+
+        ASSERT_EQ(a.result(), res.result() + 3);
+        ASSERT_EQ(b.error(), err.error());
+
+        auto c = res | map(lift(std::to_string));
+        ASSERT_EQ(c.result(), std::to_string(res.result()));
+    }
+
+    {
+        auto good = [](auto x) { return expected<std::string, std::string>{value_tag, std::to_string(x)}; };
+        auto bad = [](auto) { return expected<double, std::string>{"FALSE"}; };
+
+        auto a = res >> map(good);
+        auto b = err >> map(good);
+        auto c = res >> map(bad);
+        auto d = err >> map(bad);
+
+        ASSERT_TRUE(a.is_result());
+        ASSERT_TRUE(b.is_error());
+        ASSERT_TRUE(c.is_error());
+        ASSERT_TRUE(d.is_error());
+
+        ASSERT_EQ(a.result(), std::to_string(res.result()));
+        ASSERT_EQ(b.error(), err.error());
+        ASSERT_EQ(c.error(), "FALSE");
+        ASSERT_EQ(d.error(), err.error());
+    }
+}
+
+TEST(LTL_test, test_to_pair) {
+    using namespace ltl;
+    std::vector<int> a = {0, 1, 2, 3, 4};
+    std::vector<std::string> b = {"0", "1", "2", "3", "4"};
+
+    std::map<int, std::string> result = zip(a, b) | map(to_pair);
+
+    ASSERT_TRUE(equal(
+        result, std::vector{std::pair<const int, std::string>{0, b[0]}, {1, b[1]}, {2, b[2]}, {3, b[3]}, {4, b[4]}}));
+
+    int dummy1{};
+    std::string dummy2{};
+    ltl::tuple_t<int, std::string> tuple;
+    ltl::tuple_t<int &, std::string &> tuple2{dummy1, dummy2};
+    ltl::tuple_t<const int, const std::string &> tuple3{dummy1, dummy2};
+
+    typed_static_assert((type_from(to_pair(tuple)) == ltl::type_v<std::pair<int, std::string>>));
+    typed_static_assert((type_from(to_pair(std::move(tuple))) == ltl::type_v<std::pair<int, std::string>>));
+    typed_static_assert((type_from(to_pair(std::as_const(tuple))) == ltl::type_v<std::pair<int, std::string>>));
+
+    typed_static_assert((type_from(to_pair(tuple2)) == ltl::type_v<std::pair<int &, std::string &>>));
+    typed_static_assert((type_from(to_pair(std::move(tuple2))) == ltl::type_v<std::pair<int &, std::string &>>));
+    typed_static_assert((type_from(to_pair(std::as_const(tuple2))) == ltl::type_v<std::pair<int &, std::string &>>));
+
+    typed_static_assert((type_from(to_pair(tuple3)) == ltl::type_v<std::pair<int, const std::string &>>));
+}
+
+TEST(LTL_test, test_repeater) {
+    auto strings = ltl::make_repeater_range(std::string("TEST"), 4);
+    std::vector<char> string_vector = ltl::make_repeater_range(std::string("TEST"), 4) | ltl::join;
+
+    ASSERT_EQ(4, strings.size());
+    ASSERT_TRUE(ltl::equal(strings, std::vector<std::string>{"TEST", "TEST", "TEST", "TEST"}));
+
+    ASSERT_TRUE(ltl::equal(strings | ltl::join, string_vector));
+
+    auto continuous = ltl::valueRange(0, 5) >> ltl::map([](auto x) { return ltl::make_repeater_range(x, x); });
+
+    ASSERT_TRUE(ltl::equal(continuous, std::array{1, 2, 2, 3, 3, 3, 4, 4, 4, 4}));
+
+    auto empty = ltl::make_empty_range<std::string>();
+    ASSERT_EQ(empty.size(), 0);
+    ASSERT_TRUE(empty.empty());
+    ASSERT_TRUE(ltl::equal(empty, std::vector<std::string>{}));
+
+    auto mono = ltl::make_mono_element_range(5);
+    ASSERT_EQ(mono.size(), 1);
+    ASSERT_EQ(mono[0], 5);
+    ASSERT_EQ(ltl::accumulate(mono, 2), 2 + 5);
+
+    auto sum =
+        ltl::accumulate(ltl::valueRange(0, 10) >> ltl::map([](auto x) { return ltl::yield_if(x % 2 == 1, x); }), 0);
+    ASSERT_EQ(sum, 0 + 1 + 3 + 5 + 7 + 9);
+
+    {
+        struct Person {
+            std::string name;
+        };
+        std::vector<std::optional<Person>> persons;
+        persons.push_back(Person{"Bill"});
+        persons.push_back(std::nullopt);
+        persons.push_back(Person{"John"});
+
+        // persons2 = [Person{"Bill"}, Person{"John"}];
+        std::vector<Person> persons2 = persons >> ltl::map([](auto x) { return ltl::yield(std::move(x)); });
+
+        ASSERT_EQ(persons2.size(), 2);
+        ASSERT_EQ(persons2[0].name, "Bill");
+        ASSERT_EQ(persons2[1].name, "John");
+    }
+}
+
+TEST(LTL_test, test_reverse) {
+    std::array a = {0, 1, 2, 3, 4};
+    std::vector<int> b;
+    auto square = [](auto x) { return x * x; };
+    auto isOdd = [](auto x) { return ((x & 1) == 1); };
+    auto isEven = ltl::not_(isOdd);
+
+    ASSERT_EQ((a | ltl::reversed).size(), 5);
+    ASSERT_EQ((a | ltl::reversed | ltl::reversed).size(), 5);
+
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed, std::array{4, 3, 2, 1, 0}));
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::map(square), std::array{16, 9, 4, 1, 0}));
+
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::reversed, std::array{0, 1, 2, 3, 4}));
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::map(square) | ltl::reversed, std::array{0, 1, 4, 9, 16}));
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::reversed | ltl::map(square), std::array{0, 1, 4, 9, 16}));
+
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::filter(isOdd), std::array{3, 1}));
+    ASSERT_TRUE(ltl::equal(a | ltl::filter(isOdd) | ltl::reversed, std::array{3, 1}));
+
+    ASSERT_TRUE(ltl::equal(a | ltl::reversed | ltl::filter(isEven), std::array{4, 2, 0}));
+    ASSERT_TRUE(ltl::equal(a | ltl::filter(isEven) | ltl::reversed, std::array{4, 2, 0}));
+
+    ASSERT_EQ((b | ltl::reversed).size(), 0);
+}
+
+TEST(LTL_test, test_split) {
+    auto to_view = [](auto &&r) { return std::string_view(&*r.begin(), r.size()); };
+
+    {
+        std::string to_split = "";
+        auto splitted = to_split | ltl::split(' ') | ltl::map(to_view);
+        ASSERT_EQ(splitted.size(), 0);
+        ASSERT_TRUE(ltl::equal(splitted, std::vector<std::string_view>{}));
+    }
+
+    {
+        std::string to_split = "My name is Antoine and I live in France";
+        auto splitted = to_split | ltl::split(',') | ltl::map(to_view);
+
+        ASSERT_EQ(splitted.size(), 1);
+        ASSERT_TRUE(ltl::equal(splitted, std::array{"My name is Antoine and I live in France"}));
+    }
+
+    {
+        std::string to_split = "My name is Antoine and I live in France";
+        auto splitted = to_split | ltl::split(' ') | ltl::map(to_view);
+
+        auto beg = splitted.begin();
+
+        ASSERT_EQ(*(beg + 1), "name"sv);
+        ASSERT_EQ(*((beg + 1) - 1), "My"sv);
+        ASSERT_EQ(*(beg + 2), "is"sv);
+        ASSERT_EQ(*((beg + 2) - 1), "name"sv);
+        ASSERT_EQ(*((beg + 2) - 2), "My"sv);
+        ASSERT_EQ(*(beg + 8), "France"sv);
+        ASSERT_EQ(*((beg + 8) - 3), "I"sv);
+        ASSERT_EQ(*(((beg + 8) - 3) + 3), "France"sv);
+        ASSERT_EQ(*((beg + 9) - 1), "France"sv);
+        ASSERT_EQ(splitted.size(), 9);
+        ASSERT_TRUE(
+            ltl::equal(splitted, std::array{"My", "name", "is", "Antoine", "and", "I", "live", "in", "France"}));
+    }
+
+    {
+        std::string to_split = "My name is Antoine and I live in France";
+        auto splitted1 = to_split | ltl::split(' ') | ltl::map(to_view) | ltl::reversed;
+        auto splitted2 = to_split | ltl::split(' ') | ltl::reversed | ltl::map(to_view);
+
+        ASSERT_TRUE(
+            ltl::equal(splitted1, std::array{"France", "in", "live", "I", "and", "Antoine", "is", "name", "My"}));
+        ASSERT_TRUE(ltl::equal(splitted2, splitted1));
+    }
+}
+
+TEST(LTL_test, test_chunks) {
+    std::vector<int> vect(20);
+    ltl::iota(vect, 0);
+
+    {
+        auto view = vect | ltl::chunks(5);
+
+        ASSERT_EQ(view.size(), 4);
+        ASSERT_TRUE(ltl::equal(view[0], std::array{0, 1, 2, 3, 4}));
+        ASSERT_TRUE(ltl::equal(view[1], std::array{5, 6, 7, 8, 9}));
+        ASSERT_TRUE(ltl::equal(view[2], std::array{10, 11, 12, 13, 14}));
+        ASSERT_TRUE(ltl::equal(view[3], std::array{15, 16, 17, 18, 19}));
+    }
+
+    {
+        auto view = std::move(vect) | ltl::chunks(5) | ltl::reversed;
+
+        ASSERT_EQ(vect.size(), 0);
+        ASSERT_EQ(view.size(), 4);
+        ASSERT_TRUE(ltl::equal(view[0], std::array{15, 16, 17, 18, 19}));
+        ASSERT_TRUE(ltl::equal(view[1], std::array{10, 11, 12, 13, 14}));
+        ASSERT_TRUE(ltl::equal(view[2], std::array{5, 6, 7, 8, 9}));
+        ASSERT_TRUE(ltl::equal(view[3], std::array{0, 1, 2, 3, 4}));
+    }
+
+    {
+        auto view = std::vector{0, 1, 2, 3, 4, 5, 6} | ltl::chunks(3);
+
+        ASSERT_EQ(view.size(), 3);
+        ASSERT_TRUE(ltl::equal(view[0], std::array{0, 1, 2}));
+        ASSERT_TRUE(ltl::equal(view[1], std::array{3, 4, 5}));
+        ASSERT_TRUE(ltl::equal(view[2], std::array{6}));
+    }
+
+    {
+        auto view = std::vector{0, 1, 2, 3, 4, 5, 6} | ltl::chunks(3) | ltl::reversed;
+
+        ASSERT_EQ(view.size(), 3);
+        ASSERT_TRUE(ltl::equal(view[0], std::array{6}));
+        ASSERT_TRUE(ltl::equal(view[1], std::array{3, 4, 5}));
+        ASSERT_TRUE(ltl::equal(view[2], std::array{0, 1, 2}));
+    }
+}
+
+struct Person {
+    std::string name;
+    int age = 18;
+
+    friend bool operator==(const Person &a, const Person &b) { return a.name == b.name; }
+    friend bool operator!=(const Person &a, const Person &b) { return a.name != b.name; }
+};
+
+TEST(LTL_test, test_actions_find) {
+    using namespace ltl;
+    using namespace std::literals;
+
+    std::array array_string = {"Antoine"s, "Nicolas"s, "Baptiste"s, "Luc"s, "Jean-Pierre"s, "Jean-Francois-Michel"s};
+
+    auto itNicolas = array_string | actions::find("Nicolas");
+    auto valueLuc = array_string | actions::find_value("Luc");
+    auto ptrJP = array_string | actions::find_ptr("Jean-Pierre");
+    auto nulptr = array_string | actions::find_ptr("Wattt");
+    auto nulopt = array_string | actions::find_value("WATTTT");
+    auto nulit = array_string | actions::find("WATTTTTTTT");
+
+    ASSERT_EQ(itNicolas, array_string.begin() + 1);
+    ASSERT_EQ(valueLuc, "Luc");
+    ASSERT_EQ(ptrJP, std::addressof(array_string[4]));
+    ASSERT_EQ(nulptr, nullptr);
+    ASSERT_EQ(nulopt, std::nullopt);
+    ASSERT_EQ(nulit, end(array_string));
+
+    auto itJFM = array_string | actions::find_if(&std::string::size, greater_than(12));
+    auto optJFM = array_string | actions::find_if_value(&std::string::size, greater_than(12));
+    auto ptrJFM = array_string | actions::find_if_ptr(&std::string::size, greater_than(12));
+
+    ASSERT_EQ(itJFM, begin(array_string) + 5);
+    ASSERT_EQ(optJFM, "Jean-Francois-Michel");
+    ASSERT_EQ(ptrJFM, std::addressof(array_string.back()));
+
+    auto make_optional_person = [](const auto &string) { return ltl::make_optional(Person{string}); };
+    auto make_shared_person = [](const auto &string) { return std::make_shared<Person>(Person{string}); };
+    auto optional_persons = array_string | map(make_optional_person) | to_vector;
+    auto shared_persons = array_string | map(make_shared_person) | to_vector;
+
+    {
+        auto personToFind = Person{"Baptiste", 28};
+        auto found = optional_persons | actions::find_nullable(personToFind);
+        ASSERT_TRUE(found);
+        ASSERT_EQ(found->age, 18);
+
+        personToFind.name = "lolll";
+        ASSERT_FALSE(optional_persons | actions::find_nullable(personToFind));
+
+        static_assert(std::is_same_v<decltype(found), ltl::optional<Person>>);
+    }
+
+    {
+        auto found_shared = shared_persons | actions::find_if_nullable(&Person::name, equal_to("Baptiste"));
+        auto found_optional = optional_persons | actions::find_if_nullable(&Person::name, equal_to("Baptiste"));
+        ASSERT_TRUE(found_shared);
+        ASSERT_TRUE(found_optional);
+        ASSERT_EQ(found_shared->age, 18);
+        ASSERT_EQ(found_optional->age, 18);
+
+        static_assert(std::is_same_v<decltype(found_shared), std::shared_ptr<Person>>);
+        static_assert(std::is_same_v<decltype(found_optional), ltl::optional<Person>>);
+
+        ASSERT_FALSE(shared_persons | actions::find_if_nullable(&Person::name, equal_to("Lolll")));
+        ASSERT_FALSE(optional_persons | actions::find_if_nullable(&Person::name, equal_to("Lolll")));
+    }
+}
+
+TEST(LTL_test, test_group_by) {
+    enum class PlayerGenre { MALE, FEMALE };
+    struct Player {
+        std::string team;
+        std::string name;
+        PlayerGenre genre;
+    };
+
+    std::vector<Player> players = {{"FRA", "Antoine", PlayerGenre::MALE},  {"FRA", "Boris", PlayerGenre::MALE},
+                                   {"FRA", "Ludi", PlayerGenre::FEMALE},   {"FRA", "Baptou", PlayerGenre::MALE},
+                                   {"ENG", "Rowena", PlayerGenre::FEMALE}, {"ENG", "Hermione", PlayerGenre::FEMALE},
+                                   {"ENG", "John", PlayerGenre::MALE},     {"POR", "Christiano", PlayerGenre::MALE},
+                                   {"POR", "Jose", PlayerGenre::MALE},     {"POR", "Raul", PlayerGenre::MALE},
+                                   {"JPN", "Stef", PlayerGenre::MALE},     {"JPN", "Hishiro", PlayerGenre::FEMALE},
+                                   {"JPN", "Kariu", PlayerGenre::FEMALE},  {"JPN", "An", PlayerGenre::FEMALE}};
+
+    auto group_by_team = ltl::group_by(&Player::team);
+    auto groupped_by_team = players | group_by_team;
+
+    ASSERT_EQ(size(groupped_by_team), 4);
+    ASSERT_EQ(size(groupped_by_team[2][1_n]), 3);
+    ASSERT_EQ((*((groupped_by_team.begin() + 2) - 1))[0_n], "ENG");
+    ASSERT_EQ((*((groupped_by_team.begin() + 2) - 2))[0_n], "FRA");
+    ASSERT_EQ(size((*((groupped_by_team.begin() + 2) - 1))[1_n]), 3);
+    ASSERT_EQ(size((*((groupped_by_team.begin() + 2) - 2))[1_n]), 4);
+    ASSERT_EQ((*(groupped_by_team.begin() + 3))[0_n], "JPN");
+    ASSERT_EQ((*((groupped_by_team.begin() + 4) - 1))[0_n], "JPN");
+    ASSERT_EQ((*((groupped_by_team.begin() + 4) - 2))[0_n], "POR");
+    ASSERT_EQ((*((groupped_by_team.begin() + 4) - 3))[0_n], "ENG");
+    ASSERT_EQ((*((groupped_by_team.begin() + 4) - 4))[0_n], "FRA");
+    ASSERT_TRUE(std::addressof(groupped_by_team[3][0_n]) == std::addressof(players[10].team));
+    ASSERT_TRUE(std::addressof(groupped_by_team[3][1_n][2]) == std::addressof(players[12]));
+
+    auto onlyFemale = ltl::filter(_((x), x.genre == PlayerGenre::FEMALE));
+    auto femaleTeams = players | onlyFemale | group_by_team;
+
+    static_assert(type_from(femaleTeams[0][0_n]) == ltl::type_v<std::string &>);
+    static_assert(type_from(femaleTeams[0][1_n][0]) == ltl::type_v<Player &>);
+
+    ASSERT_EQ(size(femaleTeams), 3);
+    ASSERT_EQ(size(femaleTeams[1][1_n]), 2);
+    ASSERT_TRUE(std::addressof(femaleTeams[2][1_n][2]) == std::addressof(players[13]));
+    ASSERT_TRUE(std::addressof((*(((femaleTeams.begin() + 2) - 1) - 1))[1_n][0]) == std::addressof(players[2]));
+
+    auto japan = groupped_by_team.begin() + 3;
+    auto portugal = japan - 1;
+
+    ASSERT_EQ((*japan)[0_n], "JPN");
+    ASSERT_EQ((*portugal)[0_n], "POR");
+
+    auto reversedTeams = groupped_by_team | ltl::reversed;
+
+    ASSERT_EQ(size(reversedTeams), 4);
+    ASSERT_EQ(reversedTeams[0][0_n], "JPN");
+    ASSERT_EQ(reversedTeams[1][0_n], "POR");
+    ASSERT_EQ(reversedTeams[2][0_n], "ENG");
+    ASSERT_EQ(reversedTeams[3][0_n], "FRA");
+
+    auto reversedFemaleTeams = femaleTeams | ltl::reversed;
+
+    ASSERT_EQ(size(reversedFemaleTeams), 3);
+    ASSERT_EQ(reversedFemaleTeams[0][0_n], "JPN");
+    ASSERT_EQ(reversedFemaleTeams[1][0_n], "ENG");
+    ASSERT_EQ(reversedFemaleTeams[2][0_n], "FRA");
+    ASSERT_TRUE(std::addressof(reversedFemaleTeams[1][1_n][1]) == std::addressof(players[5]));
+    ASSERT_TRUE(std::addressof(reversedFemaleTeams[1][1_n][0]) == std::addressof(players[4]));
+    ASSERT_TRUE(std::addressof(reversedFemaleTeams[0][1_n][0]) == std::addressof(players[11]));
+    ASSERT_TRUE(std::addressof(reversedFemaleTeams[2][1_n][0]) == std::addressof(players[2]));
+}
+
+TEST(LTL_test, test_complexe_range) {
+    using namespace ltl;
+    std::string text =
+        "My name is Antoine. I own a Hyundai i30N. She has 275 horses power, she is beautiful. The idea "
+        "of this test is to test the range thing with a complex thing : So I wrote a random text to test "
+        "this thing. This test is about having the five first words the most used.";
+
+    std::istringstream iss{std::move(text)};
+    auto onlyAlphaNum = [](const auto &s) -> std::string { return s | filter(lift(std::isalnum)); };
+    auto toLower = [](const auto &s) -> std::string { return s | map(lift(std::tolower)); };
+    auto count_group = [](const auto &tupleWordRange) { //
+        return tuple_t{tupleWordRange[1_n].size(), tupleWordRange[0_n]};
+    };
+
+    auto words = make_istream_range<std::string>(iss) | //
+                 map(onlyAlphaNum) |                    //
+                 filter(not_(&std::string::empty)) |    //
+                 map(toLower) | to_vector |             //
+                 actions::sort |                        //
+                 group_by(identity) |                   //
+                 map(count_group) | to_vector |         //
+                 actions::sort_by(std::greater<>{}) |   //
+                 ltl::get(1_n) |                        //
+                 ltl::take_n(5) | to_vector;
+
+    static_assert(type_from(words) == ltl::type_v<std::vector<std::string>>);
+
+    ASSERT_EQ(words.size(), 5);
+    ASSERT_TRUE(ltl::equal(words, std::array{"the", "test", "is", "this", "thing"}));
+}
+
+TEST(LTL_test, test_join_with) {
+    using namespace ltl;
+    using namespace std::literals;
+
+    {
+        std::array array = {"My"s, "name"s, "is"s, "Antoine"s};
+
+        auto result = array | actions::join_with(' ');
+        ASSERT_EQ(result, "My name is Antoine");
+    }
+
+    {
+        std::array array = {"id=0"s, "name=Antoine"s};
+        auto result = array | actions::join_with(" AND ");
+        ASSERT_EQ(result, "id=0 AND name=Antoine");
+    }
+
+    {
+        std::array<std::string, 0> array = {};
+        auto result = array | actions::join_with(" ");
+        ASSERT_EQ(result, "");
+    }
+
+    {
+        std::array array = {"Antoine"s};
+        auto result = array | actions::join_with(" ");
+        ASSERT_EQ(result, "Antoine");
+    }
+
+    {
+        struct A {
+            std::string str;
+        };
+        auto comp = [](const A &a, const A &b) { return a.str < b.str; };
+
+        std::array array = {A{"A2"}, A{"A3"}, A{"A4"}, A{"A1"}};
+
+        auto result = array | actions::sort_by(comp) | map(&A::str) | actions::join_with(", ");
+        static_assert(type_from(result) == ltl::type_v<std::string>);
+        ASSERT_EQ(result, "A1, A2, A3, A4"s);
+    }
+}
+
+TEST(LTL_test, test_forward_iterator) {
+    using namespace ltl;
+
+    {
+        std::forward_list array = {0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3};
+
+        auto is_odd = [](auto x) { return x % 2 == 1; };
+        auto square = [](auto x) { return x * x; };
+        auto filtered = array | filter(is_odd);
+        ASSERT_TRUE(equal(filtered, std::array{1, 1, 1, 3, 3, 3}));
+
+        auto mapped = array | map(square);
+        ASSERT_TRUE(equal(mapped, std::array{0, 0, 0, 1, 1, 1, 4, 4, 4, 9, 9, 9}));
+
+        auto groupped = array | group_by(identity);
+        ASSERT_EQ(groupped.size(), 4);
+        ASSERT_EQ(groupped[0][0_n], 0);
+        ASSERT_EQ(groupped[1][0_n], 1);
+        ASSERT_EQ(groupped[2][0_n], 2);
+        ASSERT_EQ(groupped[3][0_n], 3);
+
+        ASSERT_TRUE(equal(groupped[0][1_n], std::array{0, 0, 0}));
+        ASSERT_TRUE(equal(groupped[1][1_n], std::array{1, 1, 1}));
+        ASSERT_TRUE(equal(groupped[2][1_n], std::array{2, 2, 2}));
+        ASSERT_TRUE(equal(groupped[3][1_n], std::array{3, 3, 3}));
+
+        auto chunked = array | chunks(6);
+
+        ASSERT_EQ(chunked.size(), 2);
+        ASSERT_TRUE(equal(chunked[0], std::array{0, 0, 0, 1, 1, 1}));
+        ASSERT_TRUE(equal(chunked[1], std::array{2, 2, 2, 3, 3, 3}));
+
+        auto joined = chunked | join;
+
+        ASSERT_EQ(joined.size(), 12);
+        ASSERT_TRUE(equal(joined, std::array{0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3}));
+    }
+}
+
+TEST(LTL_test, test_accumulate) {
+    std::array array = {0, 1, 2, 3, 4, 5, 6};
+
+    auto result1 = array | ltl::actions::accumulate(10);
+    auto result2 = array | ltl::actions::accumulate(0, std::minus<>{});
+    auto result3 = array | ltl::actions::sum;
+
+    ASSERT_EQ(result1, 10 + 0 + 1 + 2 + 3 + 4 + 5 + 6);
+    ASSERT_EQ(result2, 0 - 0 - 1 - 2 - 3 - 4 - 5 - 6);
+    ASSERT_EQ(result3, 0 + 1 + 2 + 3 + 4 + 5 + 6);
+}
+
+TEST(LTL_test, test_seq) {
+    using namespace ltl;
+    auto is_even = [](auto x) { return x % 2 == 0; };
+
+    {
+        auto generator = [i = 0]() mutable { return i++; };
+
+        auto range1 = seq(generator) | filter(is_even) | take_n(5);
+        auto range2 = seq(generator) | filter(is_even) | map([](auto x) { return x + 1; }) | take_n(10);
+        auto range3 = seq(generator) | filter(is_even) | map([](auto x) { return x + 1; }) | drop_n(5) | take_n(10);
+
+        ASSERT_TRUE(equal(range1, std::array{0, 2, 4, 6, 8}));
+        ASSERT_TRUE(equal(range2, std::array{1, 3, 5, 7, 9, 11, 13, 15, 17, 19}));
+        ASSERT_TRUE(equal(range3, std::array{11, 13, 15, 17, 19, 21, 23, 25, 27, 29}));
+    }
+
+    {
+        auto generator = [i = 0]() mutable {
+            if (i == 10) {
+                end_seq();
+            }
+            return i++;
+        };
+
+        auto range1 = seq(generator);
+        auto range2 = seq(generator) | filter(is_even);
+        auto range3 = seq(generator) | filter(is_even) | map([](auto x) { return x + 1; });
+        auto range4 = seq(generator) | filter(is_even) | map([](auto x) { return x + 1; }) | drop_n(5);
+
+        ASSERT_TRUE(equal(range1, std::array{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+        ASSERT_TRUE(equal(range2, std::array{0, 2, 4, 6, 8}));
+        ASSERT_TRUE(equal(range3, std::array{1, 3, 5, 7, 9}));
+        ASSERT_TRUE(range4.empty());
+    }
+}
+
+TEST(LTL_test, immutable) {
+    {
+        struct Immutable {
+            ltl::immutable_t<std::string> x;
+        };
+
+        Immutable a{{"TEST"}};
+        Immutable b{a};
+
+        ASSERT_EQ(a.x, "TEST");
+        ASSERT_EQ(a.x, b.x);
+
+        Immutable c = std::move(a);
+
+        ASSERT_EQ(a.x, "");
+        ASSERT_NE(a.x, "TEST");
+        ASSERT_EQ(c.x, "TEST");
+        ASSERT_EQ(c.x, b.x);
+
+        ASSERT_EQ(b.x->size(), 4);
+        ASSERT_EQ(b.x, "TEST");
+        ASSERT_EQ(std::move(b).x->size(), 4);
+        ASSERT_EQ(b.x, "");
+
+        ASSERT_EQ(*c.x, "TEST");
+        ASSERT_EQ(*std::move(c).x, "TEST");
+        ASSERT_EQ(c.x, "");
+        ASSERT_EQ(&c.x, &*c.x);
+    }
+
+    {
+        struct Immutable {
+            ltl::immutable_t<std::string, Immutable> x;
+            void change() { x = "TEST2"; }
+        };
+
+        Immutable a{{"TEST"}};
+        ASSERT_EQ(a.x, "TEST");
+        a.change();
+        ASSERT_EQ(a.x, "TEST2");
+    }
+}
+
+TEST(LTL_test, filter_anyOf) {
+    using namespace ltl;
+    std::vector v = {0, 1, 3, 4, 5, 6, 9, 8, 10, 3};
+
+    auto v2 = v | filter(equal_to(AnyOf{3, 9, 10}));
+
+    ASSERT_TRUE(equal(v2, std::array{3, 9, 10, 3}));
+}
+
+TEST(LTL_test, temporary_objects) {
+    using namespace ltl;
+    struct X {
+        std::string x = "Test";
+    };
+
+    auto create = [] { return std::vector{X{}, X{}, X{}}; };
+
+    auto xs = create() | map(&X::x) | to_vector;
+
+    ASSERT_EQ(xs.size(), 3);
+    ASSERT_EQ(xs.front(), "Test");
+
+    auto sum = xs | actions::join_with(",");
+    ASSERT_EQ(sum, "Test,Test,Test");
+}
+
+TEST(LTL_test, optional_cpp17) {
+    ltl::optional<int> x{18};
+    ltl::optional<int> y;
+    ASSERT_EQ(x, 18);
+    ASSERT_EQ(x, ltl::make_optional(18));
+    ASSERT_LE(ltl::nullopt, x);
+    ASSERT_GE(x, ltl::nullopt);
+    ASSERT_LE(17, x);
+    ASSERT_GE(x, 17);
+    ASSERT_LE(ltl::make_optional(12), x);
+    ASSERT_GE(x, ltl::make_optional(4));
+
+    ASSERT_EQ(ltl::make_optional(12).map([](int &&x) { return x + 1; }), 13);
+    ASSERT_EQ(std::move(std::as_const(x)).map([](const int &&x) { return x + 1; }), 19);
+    ASSERT_EQ(x.map([](int &x) { return x + 1; }), 19);
+    ASSERT_EQ(std::as_const(x).map([](const int &x) { return x + 1; }), 19);
+
+    ASSERT_EQ(y.map([](int x) { return x; }), ltl::nullopt);
+
+    ASSERT_EQ(ltl::make_optional(12).and_then([](int &&x) { return ltl::make_optional(x + 1); }), 13);
+    ASSERT_EQ(std::move(std::as_const(x)).and_then([](const int &&x) { return ltl::make_optional(x + 1); }),
+              ltl::make_optional(19));
+    ASSERT_EQ(x.and_then([](int &x) { return ltl::make_optional(x + 1); }), ltl::make_optional(19));
+    ASSERT_EQ(std::as_const(x).and_then([](const int &x) { return ltl::make_optional(x + 1); }), 19);
+
+    ASSERT_EQ(y.and_then([](int x) { return ltl::make_optional(x); }), ltl::nullopt);
+    ASSERT_EQ(x.and_then([](int) -> ltl::optional<int> { return {}; }), ltl::nullopt);
+
+    ASSERT_EQ(x.value_or({}), 18);
+    ASSERT_EQ(y.value_or({}), 0);
+
+    x = 19;
+    ASSERT_EQ(x, 19);
+
+    static_assert(ltl::is_optional_v<std::optional<int>>);
+    static_assert(ltl::is_optional_v<ltl::optional<int>>);
+
+    {
+        ltl::optional<int> x = ltl::optional<std::size_t>{5};
+        ASSERT_EQ(x, 5);
+        x = ltl::optional<std::size_t>{7};
+        ASSERT_EQ(x, 7);
+    }
+}
+
+TEST(LTL_test, expected_map_and_then) {
+    using namespace std::string_literals;
+    ltl::expected<int, const char *> x{18};
+    using X = decltype(x);
+    X y{"Error 1"};
+
+    ASSERT_EQ(x.map([](int &a) { return a + 2; }).result(), 20);
+    ASSERT_EQ(std::as_const(x).map([](const int &a) { return a + 2; }).result(), 20);
+    ASSERT_EQ(std::move(x).map([](int &&a) { return a + 2; }).result(), 20);
+    ASSERT_EQ(std::move(std::as_const(x)).map([](const int &&a) { return a + 2; }).result(), 20);
+
+    ASSERT_STREQ(y.map([](int x) { return x + 3; }).error(), "Error 1");
+
+    ASSERT_EQ(x.and_then([](int &a) { return X{a + 2}; }).result(), 20);
+    ASSERT_EQ(std::as_const(x).and_then([](const int &a) { return X{a + 2}; }).result(), 20);
+    ASSERT_EQ(std::move(x).and_then([](int &&a) { return X{a + 2}; }).result(), 20);
+    ASSERT_EQ(std::move(std::as_const(x)).and_then([](const int &&a) { return X{a + 2}; }).result(), 20);
+
+    ASSERT_STREQ(x.and_then([](int &) { return X{"Error 2"}; }).error(), "Error 2");
+    ASSERT_STREQ(y.and_then([](int x) { return X{x + 3}; }).error(), "Error 1");
+
+    auto to_string = lift(std::to_string);
+    auto to_exp = [&](auto) { return ltl::expected<double, std::string>("Error 3"); };
+    static_assert(decay_from(x.map(to_string)) == ltl::type_v<ltl::expected<std::string, const char *>>);
+    static_assert(decay_from(x.and_then(to_exp)) == ltl::type_v<ltl::expected<double, std::string>>);
+
+    ASSERT_EQ(x.map(to_string).result(), "18");
+    ASSERT_EQ(x.and_then(to_exp).error(), "Error 3");
+}
+
+TEST(LTL_test, predicate) {
+    using namespace ltl;
+    constexpr auto less_18_or_equals_to_65 = ltl::equal_to(65) || ltl::less_than(18);
+    static_assert(less_18_or_equals_to_65(17));
+    static_assert(less_18_or_equals_to_65(65));
+    static_assert(!less_18_or_equals_to_65(64));
+
+    struct Person {
+        std::string name;
+    };
+
+    std::vector<Person> persons = {{"John"}, {"Bill"}, {"Natasha"}, {"Woodie"}};
+
+    auto bill = find_if(persons, does(&Person::name) == "Bill");
+    auto woodie = find_if(persons, does(&Person::name, &std::string::size) == 6);
+    ASSERT_EQ(bill, persons.begin() + 1);
+    ASSERT_EQ(woodie, persons.begin() + 3);
+}
+
+TEST(LTL_test, test_mutex) {
+    ltl::mutex<int> value;
+
+    auto isConst = [](auto &x) { return std::is_const_v<std::remove_reference_t<decltype(x)>>; };
+
+    ASSERT_TRUE(std::as_const(value).with_lock(isConst));
+    ASSERT_FALSE(value.with_lock(isConst));
+}
+
+TEST(LTL_test, test_finally) {
+    int x = 0;
+    {
+        ltl::finally{[&] { x++; }};
+    }
+    ASSERT_EQ(x, 1);
+
+    auto make_finally = [&] {
+        auto finally = ltl::deferrable_finally{[&] { x++; }};
+        return finally;
+    };
+
+    { auto f = make_finally(); }
+    ASSERT_EQ(x, 2);
+}
+
+TEST(LTL_test, test_filter_value) {
+    std::map<int, std::unique_ptr<int>> map;
+    map[0] = nullptr;
+    map[1] = std::make_unique<int>(5);
+    map[2] = std::make_unique<int>(6);
+    map[3] = nullptr;
+    map[10] = std::make_unique<int>(1);
+
+    auto values = map | ltl::filter(ltl::values()) | ltl::values() | ltl::dereference();
+    auto values2 =
+        map | ltl::filter(ltl::values(), ltl::not_equal_to(nullptr)) | ltl::values() | ltl::map(ltl::dereference());
+
+    auto array = std::array{5, 6, 1};
+    ASSERT_EQ(values.size(), 3);
+    ASSERT_EQ(values2.size(), 3);
+    ASSERT_TRUE(ltl::equal(values, array));
+    ASSERT_TRUE(ltl::equal(values, values2));
+}
+
+TEST(LTL_test, test_optional_temporary_failure) {
+    struct Person {
+        ltl::optional<std::string> name;
+    };
+
+    {
+        Person a{"Antoine"};
+        Person b;
+
+        ASSERT_EQ(a.name, "Antoine");
+        ASSERT_EQ(std::move(b).name, ltl::nullopt);
+        ASSERT_EQ(Person{"Antoine"}.name, "Antoine");
+    }
+
+    {
+        ltl::optional<Person> o_a = Person{"Antoine"};
+        ltl::optional<Person> o_b;
+        ASSERT_EQ(o_a.and_then(&Person::name), "Antoine");
+        ASSERT_EQ(o_b.and_then(&Person::name), ltl::nullopt);
+
+        ASSERT_EQ(std::move(o_a).and_then(&Person::name), "Antoine");
+        ASSERT_EQ(ltl::optional<Person>{Person{"Antoine"}}.and_then(&Person::name), "Antoine");
+    }
+}
+
+#if LTL_COROUTINE
+namespace opt {
+ltl::optional<int> h(bool success) {
+    if (success)
+        co_return 5;
+    co_return std::nullopt;
+}
+
+ltl::optional<double> g(bool success) { co_return co_await h(success) * 2.5; }
+
+ltl::optional<double> f(bool success) { co_return co_await g(success) * 10; }
+} // namespace opt
+
+namespace ex {
+ltl::expected<int, const char *> h(bool success) {
+    if (success)
+        co_return 5;
+    co_return "Error";
+}
+
+ltl::expected<double, const char *> g(bool success) { co_return co_await h(success) * 2.5; }
+
+ltl::expected<double, std::string_view> f(bool success) { co_return co_await g(success) * 10; }
+} // namespace ex
+
+TEST(LTL_test, awaiter_optional) {
+    ASSERT_FALSE(opt::h(false));
+    ASSERT_EQ(opt::h(true), 5);
+
+    ASSERT_FALSE(opt::f(false));
+    ASSERT_EQ(opt::f(true), 5 * 2.5 * 10);
+}
+
+TEST(LTL_test, awaiter_expected) {
+    using namespace std::string_view_literals;
+    ASSERT_FALSE(ex::h(false));
+    ASSERT_EQ(ex::h(true).result(), 5);
+
+    ASSERT_FALSE(ex::f(false));
+    ASSERT_EQ(ex::f(false).error(), "Error"sv);
+    ASSERT_EQ(ex::f(true).result(), 5 * 2.5 * 10);
+}
+#endif
