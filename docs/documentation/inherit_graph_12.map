@@ -1,0 +1,10 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$structltl_1_1bool__t.html" title=" " alt="" coords="5,181,127,208"/>
+<area shape="rect" id="node2" href="$structltl_1_1is__chainable__operation.html" title=" " alt="" coords="175,5,405,32"/>
+<area shape="rect" id="node3" href="$structltl_1_1is__optional_3_01ltl_1_1optional_3_01T_01_4_01_4.html" title=" " alt="" coords="219,57,361,98"/>
+<area shape="rect" id="node4" href="$structltl_1_1is__smart__pointer.html" title=" " alt="" coords="195,123,385,149"/>
+<area shape="rect" id="node5" href="$structltl_1_1is__smart__pointer_3_01std_1_1shared__ptr_3_01T_01_4_01_4.html" title=" " alt="" coords="197,174,383,215"/>
+<area shape="rect" id="node6" href="$structltl_1_1is__smart__pointer_3_01std_1_1unique__ptr_3_01T_01_4_01_4.html" title=" " alt="" coords="197,239,383,281"/>
+<area shape="rect" id="node7" href="$structltl_1_1is__weak__ptr.html" title=" " alt="" coords="211,305,369,332"/>
+<area shape="rect" id="node8" href="$structltl_1_1is__weak__ptr_3_01std_1_1weak__ptr_3_01T_01_4_01_4.html" title=" " alt="" coords="212,357,368,398"/>
+</map>
